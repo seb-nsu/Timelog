@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   type LocalData,
   type Profile,
+  computeDeviceDays,
   computeLocalDays,
   detectedBreaks,
   eventsOfDay,
@@ -129,5 +130,45 @@ describe('Lokale Berechnung über das Regelwerk', () => {
       '2026-10-19T07:00:00Z',
     );
     expect(reviewItems(confirmed)).toEqual([]);
+  });
+});
+
+describe('Daten mehrerer Geräte', () => {
+  it('Handy-Netz und Laptop ergeben eine Sitzung (Fall 4)', () => {
+    type T = LocalData['events'][number]['type'];
+    const at = (id: string, deviceId: string, type: T, ts: string) => ({
+      ...ev(id, type, ts, type === 'boot' ? new Date(Date.parse(ts) + 300_000).toISOString() : ts),
+      deviceId,
+      source: deviceId === 'H' ? ('wifi' as const) : ('system' as const),
+    });
+    const days = computeDeviceDays(
+      {
+        events: [
+          at('n1', 'H', 'net_connected', '2026-10-14T05:50:00Z'),
+          at('b1', 'L', 'boot', '2026-10-14T06:10:00Z'),
+          at('s1', 'L', 'shutdown', '2026-10-14T14:30:00Z'),
+          at('n2', 'H', 'net_lost', '2026-10-14T14:32:00Z'),
+        ],
+        spans: [
+          {
+            id: 'p1',
+            deviceId: 'L',
+            deviceKind: 'desktop',
+            start: '2026-10-14T06:10:00Z',
+            end: '2026-10-14T14:30:00Z',
+            open: false,
+          },
+        ],
+      },
+      profile,
+      '2026-10-15T07:00:00Z',
+    );
+    expect(days[0]).toMatchObject({
+      date: '2026-10-14',
+      start: '2026-10-14T05:50:00.000Z',
+      end: '2026-10-14T14:35:00.000Z',
+      workMinutes: 525,
+      netMinutes: 495,
+    });
   });
 });

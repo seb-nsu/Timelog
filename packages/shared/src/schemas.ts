@@ -203,6 +203,7 @@ export const deviceResponse = z.object({
   revokedAt: isoDateTime.optional(),
 });
 export type DeviceResponse = z.infer<typeof deviceResponse>;
+export const devicesResponse = z.object({ devices: z.array(deviceResponse) });
 export const deviceIdParams = z.object({ id: z.uuid() });
 
 // ── Arbeitstage ───────────────────────────────────────────────────────────────

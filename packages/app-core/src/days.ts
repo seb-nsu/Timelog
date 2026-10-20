@@ -73,13 +73,47 @@ export function computeLocalDays(
     end: s.end,
     open: s.open,
   }));
-  const config = resolveConfig({
+  return computeDays(events, spans, profile.absences ?? [], configOf(profile), now);
+}
+
+/** Ereignis mit Gerät, z. B. vom Server geladene Daten aller Geräte des Nutzers. */
+export interface DeviceEvent extends LocalEvent {
+  deviceId: string;
+}
+
+export interface DeviceSpan extends LocalSpan {
+  deviceId: string;
+  deviceKind: DeviceKind;
+}
+
+export interface DeviceData {
+  events: DeviceEvent[];
+  spans: DeviceSpan[];
+}
+
+/**
+ * Wie `computeLocalDays`, aber mit Daten mehrerer Geräte (Handy zeigt auch die Laptop-Zeiten).
+ * Gerätezuordnung bleibt erhalten, damit das Regelwerk Neustarts und Waisen je Gerät erkennt.
+ */
+export function computeDeviceDays(data: DeviceData, profile: Profile, now: string): WorkDay[] {
+  const events: TimeEvent[] = data.events.map((e) => ({ ...e, userId: LOCAL_USER }));
+  const spans = data.spans.map((s) => ({
+    deviceId: s.deviceId,
+    deviceKind: s.deviceKind,
+    start: s.start,
+    end: s.end,
+    open: s.open,
+  }));
+  return computeDays(events, spans, profile.absences ?? [], configOf(profile), now);
+}
+
+function configOf(profile: Profile) {
+  return resolveConfig({
     state: profile.state,
     ...(profile.targetSchedule && profile.targetSchedule.length > 0
       ? { targetSchedule: profile.targetSchedule }
       : {}),
   });
-  return computeDays(events, spans, profile.absences ?? [], config, now);
 }
 
 export interface TodaySummary {
