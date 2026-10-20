@@ -6,6 +6,7 @@ import {
   computeLocalDays,
   detectedBreaks,
   eventsOfDay,
+  periodDays,
   reviewItems,
   todaySummary,
 } from '../src/index.js';
@@ -170,5 +171,40 @@ describe('Daten mehrerer Geräte', () => {
       workMinutes: 525,
       netMinutes: 495,
     });
+  });
+});
+
+describe('Woche/Monat', () => {
+  it('Tage ohne Erfassung zählen mit Sollzeit, Zukunft nicht', () => {
+    const data: LocalData = {
+      events: [
+        ev('b1', 'boot', '2026-10-14T06:00:00Z', '2026-10-14T06:05:00Z'),
+        ev('s1', 'shutdown', '2026-10-14T15:00:00Z'),
+      ],
+      spans: [
+        { id: 'p1', start: '2026-10-14T06:00:00Z', end: '2026-10-14T10:00:00Z', open: false },
+        { id: 'p2', start: '2026-10-14T10:45:00Z', end: '2026-10-14T15:00:00Z', open: false },
+      ],
+    };
+    const withVacation: Profile = {
+      ...profile,
+      absences: [{ date: '2026-10-13', kind: 'vacation', minutes: 480 }],
+    };
+    const days = computeLocalDays(data, withVacation, '2026-10-15T07:00:00Z');
+    const week = periodDays(days, withVacation, '2026-10-12', '2026-10-18', '2026-10-14');
+    expect(week.days.map((d) => d.date)).toEqual([
+      '2026-10-12',
+      '2026-10-13',
+      '2026-10-14',
+      '2026-10-15',
+      '2026-10-16',
+      '2026-10-17',
+      '2026-10-18',
+    ]);
+    expect(week.days.map((d) => d.targetMinutes)).toEqual([480, 480, 480, 480, 480, 0, 0]);
+    expect(week.netMinutes).toBe(500);
+    expect(week.absenceMinutes).toBe(480);
+    // Mo −480, Di Urlaub ±0, Mi +20; Do/Fr liegen nach `until`
+    expect(week.balanceMinutes).toBe(-460);
   });
 });

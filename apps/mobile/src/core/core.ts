@@ -1,10 +1,11 @@
 // Kern der Handy-App: Warteschlange, Tokens, Sync mit Backoff und Anbindung des nativen Moduls.
 // Arbeitszeit berechnet nur @timelog/rules (über @timelog/app-core); hier entstehen nur Ereignisse.
 import { type LocalEvent, type Profile, computeDeviceDays } from '@timelog/app-core';
-import type { EventType, WorkDay } from '@timelog/rules';
+import type { Absence, EventType, WorkDay } from '@timelog/rules';
 import {
   type ApiClient,
   ApiError,
+  type DeviceResponse,
   type NetworksResponse,
   type Settings,
   createApiClient,
@@ -17,6 +18,8 @@ import type {
   TimelogNativeApi,
   WidgetState,
 } from '../../modules/timelog-native';
+import { isWeakFingerprint, normalizeForHmac } from '../../modules/timelog-native/src/fingerprint';
+import { type Sha256, bytesToBase64, hmacHex } from './hmac';
 import { type DirtySpan, type QueuedEvent, Store, withoutStatus } from './store';
 import {
   MAX_BATCH_EVENTS,
@@ -43,6 +46,8 @@ export interface CoreDeps {
   /** IANA-Zeitzone des Geräts (jetzt) */
   timezone: () => string;
   device: { os: string; name: string };
+  /** Für Arbeitsnetze im Modus „Nur lokal“ (HMAC ohne Server). */
+  crypto?: { sha256: Sha256; randomBytes: (n: number) => Uint8Array };
 }
 
 export type Account = 'none' | 'localOnly' | 'loggedIn';
@@ -76,6 +81,18 @@ export type Correction =
 
 /** Rückblick für Hinweise wie den 24-Wochen-Durchschnitt (wie Desktop). */
 export const LOOKBACK_DAYS = 175;
+
+export type AddNetworkResult =
+  | { status: 'none' }
+  | {
+      status: 'added';
+      id: string;
+      /** typische Router-Werkseinstellung, leicht verwechselbar */ weak: boolean;
+    };
+
+function weakOf(fingerprint: string | null, ssid: boolean): boolean {
+  return !ssid && fingerprint !== null && isWeakFingerprint(fingerprint);
+}
 const DAY_MS = 86_400_000;
 const PROFILE_MAX_AGE_MS = 60 * 60_000;
 const REFRESH_KEY = 'timelog.refreshToken';
@@ -93,6 +110,7 @@ const K = {
   cursorEvents: 'cursor.events',
   cursorSpans: 'cursor.spans',
   pushToken: 'pushToken',
+  localKey: 'timelog.localNetworkKey',
   totp: 'totpSetupRequired',
 } as const;
 
@@ -107,6 +125,7 @@ export class MobileCore {
   private readonly uuid: () => string;
   private readonly tz: () => string;
   private readonly device: { os: string; name: string };
+  private readonly crypto: CoreDeps['crypto'];
 
   private access: string | undefined;
   private refreshing: Promise<boolean> | undefined;
@@ -127,6 +146,7 @@ export class MobileCore {
     this.uuid = deps.uuid;
     this.tz = deps.timezone;
     this.device = deps.device;
+    this.crypto = deps.crypto;
   }
 
   // ── Zustand ─────────────────────────────────────────────────────────────────
@@ -633,6 +653,144 @@ export class MobileCore {
   async setSsidEnabled(enabled: boolean): Promise<void> {
     await this.store.set(K.ssid, enabled);
     await this.configureNative();
+    this.emit();
+  }
+
+  /**
+   * „Aktuelles Netz übernehmen“: Kennung des Netzes, in dem das Handy gerade ist. Mit Konto
+   * speichert der Server nur den HMAC; „Nur lokal“ rechnet den HMAC hier mit einem eigenen
+   * Schlüssel. Den WLAN-Namen nur, wenn die Option an ist und das System ihn liefert.
+   */
+  async addCurrentNetwork(label: string): Promise<AddNetworkResult> {
+    const current = await this.native.currentNetwork();
+    const ssidEnabled = (await this.store.get<boolean>(K.ssid)) ?? false;
+    const useSsid = ssidEnabled && current.ssid !== null;
+    if (!current.fingerprint && !useSsid) return { status: 'none' };
+    const name = label.trim() || (useSsid ? (current.ssid ?? '') : 'Arbeitsnetz');
+    if ((await this.account()) === 'loggedIn') {
+      const api = await this.api();
+      const added = await api.networks.add(
+        useSsid && current.ssid
+          ? {
+              kind: 'ssid',
+              label: name,
+              ssid: current.ssid,
+              ...(current.bssid ? { bssid: current.bssid } : {}),
+            }
+          : { kind: 'fingerprint', label: name, fingerprint: current.fingerprint ?? '' },
+      );
+      await this.refreshNetworks(api);
+      this.emit();
+      return { status: 'added', id: added.id, weak: weakOf(current.fingerprint, useSsid) };
+    }
+    if (!current.fingerprint) return { status: 'none' };
+    const nets = await this.localNetworks();
+    const fingerprintHmac = await hmacHex(
+      this.requireCrypto().sha256,
+      nets.keys.user,
+      normalizeForHmac(current.fingerprint),
+    );
+    const id = this.uuid();
+    nets.networks.push({ id, scope: 'user', kind: 'fingerprint', label: name, fingerprintHmac });
+    await this.store.set(K.networks, nets);
+    await this.configureNative(nets);
+    this.emit();
+    return { status: 'added', id, weak: weakOf(current.fingerprint, false) };
+  }
+
+  async removeNetwork(id: string): Promise<void> {
+    if ((await this.account()) === 'loggedIn') {
+      const api = await this.api();
+      await api.networks.remove(id);
+      await this.refreshNetworks(api);
+    } else {
+      const nets = await this.localNetworks();
+      nets.networks = nets.networks.filter((n) => n.id !== id);
+      await this.store.set(K.networks, nets);
+      await this.configureNative(nets);
+    }
+    this.emit();
+  }
+
+  private requireCrypto(): NonNullable<CoreDeps['crypto']> {
+    if (!this.crypto) throw new Error('crypto_unavailable');
+    return this.crypto;
+  }
+
+  private async localNetworks(): Promise<NetworksResponse> {
+    const stored = await this.networks();
+    let key = await this.secure.getItem(K.localKey);
+    if (!key) {
+      key = bytesToBase64(this.requireCrypto().randomBytes(32));
+      await this.secure.setItem(K.localKey, key);
+    }
+    return { networks: stored?.networks ?? [], keys: { user: key } };
+  }
+
+  // ── Abwesenheiten, Geräte, Export ───────────────────────────────────────────
+
+  /** Abwesenheiten im Zeitraum ersetzen (Urlaub, Krank, …); ohne Konto nur lokal. */
+  async saveAbsences(from: string, to: string, absences: Absence[]): Promise<void> {
+    if ((await this.account()) === 'loggedIn') {
+      const api = await this.api();
+      await api.absences.put({ from, to, absences });
+      await this.refreshProfile(api);
+      return;
+    }
+    const profile = await this.profile();
+    const others = (profile.absences ?? []).filter((a) => a.date < from || a.date > to);
+    await this.store.set(K.profile, {
+      ...profile,
+      absences: [...others, ...absences].sort((a, b) => a.date.localeCompare(b.date)),
+    });
+    this.emit();
+  }
+
+  async devices(): Promise<DeviceResponse[]> {
+    if ((await this.account()) !== 'loggedIn') return [];
+    return (await (await this.api()).devices.list()).devices;
+  }
+
+  async revokeDevice(id: string): Promise<void> {
+    await (await this.api()).devices.revoke(id);
+  }
+
+  /** Tag abschließen (nur mit Konto; der Server führt die Freigabe). */
+  async confirmDay(date: string): Promise<number> {
+    const { confirmed } = await (await this.api()).corrections.confirmDay(date);
+    return confirmed;
+  }
+
+  /** CSV/PDF-Export vom Server. */
+  async exportReport(from: string, to: string, format: 'csv' | 'pdf'): Promise<Blob> {
+    return (await this.api()).export({ from, to, format });
+  }
+
+  /** Datenauskunft (Art. 15 DSGVO): mit Konto vom Server, sonst alle lokalen Daten. */
+  async dataExport(): Promise<unknown> {
+    if ((await this.account()) === 'loggedIn') return (await this.api()).me.export();
+    const own = (await this.store.get<string>(K.deviceId)) ?? 'local';
+    const data = await this.store.deviceData('1970-01-01T00:00:00Z', '9999-12-31T00:00:00Z', own);
+    return {
+      exportedAt: this.now(),
+      profile: await this.profile(),
+      settings: await this.settings(),
+      networks: (await this.networks())?.networks ?? [],
+      events: data.events,
+      spans: data.spans,
+    };
+  }
+
+  /** Alle lokalen Daten löschen (Modus „Nur lokal“). */
+  async wipeLocal(): Promise<void> {
+    await this.native.configure({
+      detection: false,
+      ssid: false,
+      networks: [],
+      keys: { user: '' },
+    });
+    await this.secure.deleteItem(K.localKey);
+    await this.store.wipe();
     this.emit();
   }
 

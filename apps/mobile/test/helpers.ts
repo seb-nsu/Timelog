@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { MobileCore } from '../src/core/core';
 import { Store } from '../src/core/store';
 import { type FakeNative, fakeNative } from './fakeNative';
@@ -47,6 +47,10 @@ export async function harness(
     uuid: () => randomUUID(),
     timezone: () => 'Europe/Berlin',
     device: { os: 'android 16', name: 'Pixel' },
+    crypto: {
+      sha256: (data) => Promise.resolve(new Uint8Array(createHash('sha256').update(data).digest())),
+      randomBytes: (n) => new Uint8Array(randomBytes(n)),
+    },
     secure: {
       getItem: (k) => Promise.resolve(secure.get(k) ?? null),
       setItem: (k, v) => {
