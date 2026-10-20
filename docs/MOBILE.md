@@ -53,8 +53,9 @@ Weitere Entscheidungen beim Prüfen:
   die Kurzbefehl-Automation erledigt das ohne beides. Die Spec nennt `fetchCurrent`; bewusst
   weggelassen.
 - **Kein Expo-Push-Dienst.** Hinterlegt wird das native Token (FCM bzw. APNs) über
-  `POST /devices` (`pushToken`). Das Backend kann das schon. Der Versand vom Server ist
-  **noch nicht gebaut** (offen, siehe unten).
+  `POST /devices` (`pushToken`, dazu `locale` für die Sprache der Texte). Der Server sendet
+  Rückfragen und den Wochenrückblick selbst über FCM HTTP v1 und APNs (siehe
+  [PUSH.md](PUSH.md)), mit Aktionen „Stimmt“ und „Korrigieren“.
 - **`expo-app-intents` und `expo-widgets` noch Alpha.** Die Intents liegen deshalb als Swift
   im App-Target, und das Widget kommt über `@bacons/apple-targets`.
 - **`androidx.security:security-crypto` ist abgekündigt.** Die HMAC-Schlüssel liegen in privaten
@@ -164,8 +165,9 @@ Das ist für Firmennetze akzeptiert (eigener DNS, eigene Domäne).
 - Ob alle Swift-Dateien kompilieren: Modul, App Intents, Widget, `GeofenceManager`.
 - Codesignierung, App-Group-Provisioning und `ios.appleTeamId`.
 - Verhalten am Gerät: alle 👤-Punkte unten.
-- Push-Versand vom Server: **nicht gebaut**. Die Tokens werden registriert, aber das Backend
-  sendet noch nichts. Erinnerungen laufen lokal.
+- Push-Versand an echte Geräte (FCM/APNs) und der Swift-Handler für „Stimmt“ ohne App-Start
+  (`TimelogPromptDelegate.swift`); Prüfanleitung in [PUSH.md](PUSH.md). Erinnerungen laufen
+  weiterhin lokal.
 - Datei-Export über `expo-file-system`/`expo-sharing` am Gerät.
 
 ## 👤 Prüfanleitungen
@@ -189,7 +191,7 @@ Das ist für Firmennetze akzeptiert (eigener DNS, eigene Domäne).
 7. Widget hinzufügen, Start/Stopp tippen. Erwartung: Die Anzeige wechselt sofort, und das
    Ereignis erscheint nach dem Öffnen.
 8. Push: Benachrichtigungen erlauben. Erwartung: In der Geräteliste (Web) ist ein Push-Token
-   hinterlegt.
+   hinterlegt. Rückfragen und Wochenrückblick: Prüfanleitung in [PUSH.md](PUSH.md).
 
 ### iOS: Kurzbefehl und Geofence
 
@@ -270,7 +272,8 @@ Umgebungsvariablen stehen in `.env.example`, Abschnitt „Handy-App“:
 
 - [x] Expo-App mit allen Screens, natives Netz-Modul mit Netzwerk-Kennung aus `LinkProperties`
   (ohne Standort), WorkManager-Check, Widget, Push-Token (FCM), Einrichtungsassistent.
-  Kompilieren am Gerät steht aus; der Push-Versand vom Server fehlt.
+  Kompilieren am Gerät steht aus. Push-Versand vom Server gebaut ([PUSH.md](PUSH.md)), am Gerät
+  ungeprüft.
 - [x] WLAN-Name nur optional und standardmäßig aus; Store-Unterlagen für Hintergrund-Standort
   vorbereitet (oben).
 - 👤 Auf echtem Gerät prüfen: Netz-Ereignis bei beendeter App, auch auf Samsung (Anleitung oben).
@@ -281,8 +284,8 @@ Umgebungsvariablen stehen in `.env.example`, Abschnitt „Handy-App“:
 - [x] Apple-Doku zu Kurzbefehle-Auslösern, `NWPath`, `CLMonitor`/`CLCircularRegion` und
   Review-Richtlinien 5.1.1, 5.1.2, 5.1.5, 2.5.4 geprüft und dokumentiert (oben).
 - [x] App Intents für Kurzbefehle, Geofence fürs Arbeitsende (opt-in) mit
-  `CLCircularRegion`-Fallback, Widget, Push-Token (APNs). Kompilieren in Xcode steht aus; der
-  Push-Versand vom Server fehlt.
+  `CLCircularRegion`-Fallback, Widget, Push-Token (APNs). Kompilieren in Xcode steht aus.
+  Push-Versand vom Server gebaut ([PUSH.md](PUSH.md)), am Gerät ungeprüft.
 - 👤 Auf echtem Gerät prüfen: Geofence-Verlassen weckt die App im Hintergrund und erzeugt
   `net_lost`.
 - 👤 App-Review-Begründung für „Immer“-Standort einreichen (Entwurf oben).

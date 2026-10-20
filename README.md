@@ -11,23 +11,25 @@ Automatische Arbeitszeiterfassung für Laptop (Windows, macOS) und Handy (Androi
 | [docs/PLATFORM.md](docs/PLATFORM.md)             | Desktop: Systemereignisse je Plattform, Prüfanleitung                                                  |
 | [docs/MOBILE.md](docs/MOBILE.md)                 | Handy-App: Herstellerdoku-Prüfung, Netzwerk-Kennung, Entscheidungen, Prüfanleitungen, Store-Unterlagen |
 | [docs/ADMIN.md](docs/ADMIN.md)                   | Firmenversion: Rollen, Web-Admin, SSO-Einrichtung (Entra ID, Google, SAML) und Prüfanleitung           |
+| [docs/PUSH.md](docs/PUSH.md)                     | Rückfragen per Push (FCM, APNs), Wochenrückblick, Einrichtung und Prüfanleitung                        |
 | [docs/RELEASE.md](docs/RELEASE.md)               | Desktop-Release: Signierung Windows/macOS, Updater-Schlüssel                                           |
 | [docs/BETRIEB.md](docs/BETRIEB.md)               | Server-Betrieb: Container, Compose, Sicherung, Überwachung                                             |
 | [CLAUDE.md](CLAUDE.md)                           | Regeln für Claude Code                                                                                 |
 
 ## Stand
 
-| Phase              | Status                                                 |
-| ------------------ | ------------------------------------------------------ |
-| 0 – Grundgerüst    | erledigt                                               |
-| 1 – Regelwerk      | erledigt                                               |
-| 2a – Backend-Kern  | erledigt                                               |
-| 2b – Backend-Fach  | erledigt                                               |
-| 3a – Desktop-Kern  | erledigt                                               |
-| 3b/3c – Win, macOS | gebaut; Gerätetest und Signierung 👤 offen             |
-| 4/5 – Android, iOS | gebaut; Gerätetest, Store-Tests und Push-Versand offen |
-| 6 – Firmenversion  | gebaut; SSO mit echtem IdP 👤 offen                    |
-| Betrieb            | Container, Compose, Sicherung, Release-Workflow        |
+| Phase              | Status                                          |
+| ------------------ | ----------------------------------------------- |
+| 0 – Grundgerüst    | erledigt                                        |
+| 1 – Regelwerk      | erledigt                                        |
+| 2a – Backend-Kern  | erledigt                                        |
+| 2b – Backend-Fach  | erledigt                                        |
+| 3a – Desktop-Kern  | erledigt                                        |
+| 3b/3c – Win, macOS | gebaut; Gerätetest und Signierung 👤 offen      |
+| 4/5 – Android, iOS | gebaut; Gerätetest und Store-Tests 👤 offen     |
+| Rückfragen, Woche  | gebaut; Push mit echten Schlüsseln 👤 offen     |
+| 6 – Firmenversion  | gebaut; SSO mit echtem IdP 👤 offen             |
+| Betrieb            | Container, Compose, Sicherung, Release-Workflow |
 
 ## Repo-Struktur
 
