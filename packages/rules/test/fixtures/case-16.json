@@ -1,0 +1,59 @@
+{
+  "name": "Wochenende über Zeitumstellung (Sommerzeit)",
+  "events": [
+    [
+      "22:00",
+      "boot",
+      {
+        "date": "2026-03-28"
+      }
+    ],
+    [
+      "05:00",
+      "shutdown",
+      {
+        "date": "2026-03-29"
+      }
+    ],
+    [
+      "10:00",
+      "session_confirm",
+      {
+        "date": "2026-03-29",
+        "refEventId": "e1"
+      }
+    ]
+  ],
+  "expect": [
+    {
+      "date": "2026-03-28",
+      "start": "22:00",
+      "end": "24:00",
+      "breaksMin": 0,
+      "workMin": 120,
+      "topUpMin": 0,
+      "netMin": 120,
+      "pendingMin": 0,
+      "absenceMin": 0,
+      "targetMin": 0,
+      "status": "unchecked",
+      "corrected": false,
+      "warnings": ["break_placement", "break_violation"]
+    },
+    {
+      "date": "2026-03-29",
+      "start": "00:00",
+      "end": "05:05",
+      "breaksMin": 0,
+      "workMin": 245,
+      "topUpMin": 30,
+      "netMin": 215,
+      "pendingMin": 0,
+      "absenceMin": 0,
+      "targetMin": 0,
+      "status": "unchecked",
+      "corrected": false,
+      "warnings": ["break_placement", "break_violation", "sunday_or_holiday"]
+    }
+  ]
+}

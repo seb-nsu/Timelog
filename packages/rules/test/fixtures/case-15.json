@@ -1,0 +1,59 @@
+{
+  "name": "Wochenende über Zeitumstellung (Winterzeit)",
+  "events": [
+    [
+      "22:00",
+      "boot",
+      {
+        "date": "2026-10-24"
+      }
+    ],
+    [
+      "05:00",
+      "shutdown",
+      {
+        "date": "2026-10-25"
+      }
+    ],
+    [
+      "10:00",
+      "session_confirm",
+      {
+        "date": "2026-10-25",
+        "refEventId": "e1"
+      }
+    ]
+  ],
+  "expect": [
+    {
+      "date": "2026-10-24",
+      "start": "22:00",
+      "end": "24:00",
+      "breaksMin": 0,
+      "workMin": 120,
+      "topUpMin": 0,
+      "netMin": 120,
+      "pendingMin": 0,
+      "absenceMin": 0,
+      "targetMin": 0,
+      "status": "unchecked",
+      "corrected": false,
+      "warnings": ["break_placement", "break_violation"]
+    },
+    {
+      "date": "2026-10-25",
+      "start": "00:00",
+      "end": "05:05",
+      "breaksMin": 0,
+      "workMin": 365,
+      "topUpMin": 30,
+      "netMin": 335,
+      "pendingMin": 0,
+      "absenceMin": 0,
+      "targetMin": 0,
+      "status": "unchecked",
+      "corrected": false,
+      "warnings": ["break_placement", "break_violation", "sunday_or_holiday"]
+    }
+  ]
+}

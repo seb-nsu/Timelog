@@ -1,0 +1,45 @@
+{
+  "name": "Auffüllung rückwärts über Mitternacht",
+  "events": [
+    ["15:00", "boot"],
+    [
+      "00:00",
+      "shutdown",
+      {
+        "date": "2026-10-15"
+      }
+    ]
+  ],
+  "expect": [
+    {
+      "date": "2026-10-14",
+      "start": "15:00",
+      "end": "24:00",
+      "breaksMin": 0,
+      "workMin": 540,
+      "topUpMin": 40,
+      "netMin": 500,
+      "pendingMin": 0,
+      "absenceMin": 0,
+      "targetMin": 480,
+      "status": "unchecked",
+      "corrected": false,
+      "warnings": ["break_placement", "break_violation"]
+    },
+    {
+      "date": "2026-10-15",
+      "start": "00:00",
+      "end": "00:05",
+      "breaksMin": 0,
+      "workMin": 5,
+      "topUpMin": 5,
+      "netMin": 0,
+      "pendingMin": 0,
+      "absenceMin": 0,
+      "targetMin": 480,
+      "status": "unchecked",
+      "corrected": false,
+      "warnings": ["break_placement", "break_violation"]
+    }
+  ]
+}

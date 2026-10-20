@@ -1,0 +1,38 @@
+{
+  "name": "Handy-Netz vor Laptop, Ende nach Laptop",
+  "events": [
+    [
+      "07:50",
+      "net_connected",
+      {
+        "device": "H"
+      }
+    ],
+    ["08:10", "boot"],
+    ["16:30", "shutdown"],
+    [
+      "16:32",
+      "net_lost",
+      {
+        "device": "H"
+      }
+    ]
+  ],
+  "expect": [
+    {
+      "date": "2026-10-14",
+      "start": "07:50",
+      "end": "16:35",
+      "breaksMin": 0,
+      "workMin": 525,
+      "topUpMin": 30,
+      "netMin": 495,
+      "pendingMin": 0,
+      "absenceMin": 0,
+      "targetMin": 480,
+      "status": "unchecked",
+      "corrected": false,
+      "warnings": ["break_placement", "break_violation"]
+    }
+  ]
+}

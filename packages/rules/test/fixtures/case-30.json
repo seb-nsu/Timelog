@@ -1,0 +1,30 @@
+{
+  "name": "Nur Handy, kein net_lost",
+  "events": [
+    [
+      "08:00",
+      "net_connected",
+      {
+        "device": "H"
+      }
+    ]
+  ],
+  "spans": [["H", "08:00", "15:45"]],
+  "expect": [
+    {
+      "date": "2026-10-14",
+      "start": "08:00",
+      "end": "15:45",
+      "breaksMin": 0,
+      "workMin": 465,
+      "topUpMin": 30,
+      "netMin": 435,
+      "pendingMin": 0,
+      "absenceMin": 0,
+      "targetMin": 480,
+      "status": "unchecked",
+      "corrected": false,
+      "warnings": ["break_placement", "break_violation", "no_end"]
+    }
+  ]
+}

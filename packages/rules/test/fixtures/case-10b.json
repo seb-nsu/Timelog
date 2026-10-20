@@ -1,0 +1,22 @@
+{
+  "name": "Wie 10, now = selber Tag 18:30 (Sitzung offen)",
+  "now": "2026-10-14 18:30",
+  "events": [["08:00", "boot"]],
+  "spans": [["L", "08:00", "18:12"]],
+  "expect": [
+    {
+      "date": "2026-10-14",
+      "start": "08:00",
+      "breaksMin": 0,
+      "workMin": 612,
+      "topUpMin": 45,
+      "netMin": 567,
+      "pendingMin": 0,
+      "absenceMin": 0,
+      "targetMin": 480,
+      "status": "open",
+      "corrected": false,
+      "warnings": ["break_placement", "break_violation", "over_10h"]
+    }
+  ]
+}

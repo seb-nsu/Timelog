@@ -1,0 +1,24 @@
+{
+  "name": "Sitzung über 16 h wird gekappt",
+  "events": [
+    ["06:00", "boot"],
+    ["23:00", "shutdown"]
+  ],
+  "expect": [
+    {
+      "date": "2026-10-14",
+      "start": "06:00",
+      "end": "22:00",
+      "breaksMin": 0,
+      "workMin": 960,
+      "topUpMin": 45,
+      "netMin": 915,
+      "pendingMin": 0,
+      "absenceMin": 0,
+      "targetMin": 480,
+      "status": "unchecked",
+      "corrected": false,
+      "warnings": ["break_placement", "break_violation", "over_10h", "session_capped"]
+    }
+  ]
+}

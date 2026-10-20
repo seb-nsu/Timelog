@@ -1,0 +1,50 @@
+{
+  "name": "Nur Handy, Netz-Lücke 7 min überbrückt",
+  "events": [
+    [
+      "08:00",
+      "net_connected",
+      {
+        "device": "H"
+      }
+    ],
+    [
+      "12:00",
+      "net_lost",
+      {
+        "device": "H"
+      }
+    ],
+    [
+      "12:07",
+      "net_connected",
+      {
+        "device": "H"
+      }
+    ],
+    [
+      "16:00",
+      "net_lost",
+      {
+        "device": "H"
+      }
+    ]
+  ],
+  "expect": [
+    {
+      "date": "2026-10-14",
+      "start": "08:00",
+      "end": "16:00",
+      "breaksMin": 0,
+      "workMin": 480,
+      "topUpMin": 30,
+      "netMin": 450,
+      "pendingMin": 0,
+      "absenceMin": 0,
+      "targetMin": 480,
+      "status": "unchecked",
+      "corrected": false,
+      "warnings": ["break_placement", "break_violation"]
+    }
+  ]
+}

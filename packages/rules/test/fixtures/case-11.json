@@ -1,0 +1,45 @@
+{
+  "name": "Über Mitternacht",
+  "events": [
+    ["22:00", "boot"],
+    [
+      "01:00",
+      "shutdown",
+      {
+        "date": "2026-10-15"
+      }
+    ]
+  ],
+  "expect": [
+    {
+      "date": "2026-10-14",
+      "start": "22:00",
+      "end": "24:00",
+      "breaksMin": 0,
+      "workMin": 120,
+      "topUpMin": 0,
+      "netMin": 120,
+      "pendingMin": 0,
+      "absenceMin": 0,
+      "targetMin": 480,
+      "status": "auto",
+      "corrected": false,
+      "warnings": []
+    },
+    {
+      "date": "2026-10-15",
+      "start": "00:00",
+      "end": "01:05",
+      "breaksMin": 0,
+      "workMin": 65,
+      "topUpMin": 0,
+      "netMin": 65,
+      "pendingMin": 0,
+      "absenceMin": 0,
+      "targetMin": 480,
+      "status": "auto",
+      "corrected": false,
+      "warnings": []
+    }
+  ]
+}

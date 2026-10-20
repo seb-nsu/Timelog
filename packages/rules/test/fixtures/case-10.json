@@ -1,0 +1,22 @@
+{
+  "name": "Kein shutdown, aktiv bis 18:12",
+  "events": [["08:00", "boot"]],
+  "spans": [["L", "08:00", "18:12"]],
+  "expect": [
+    {
+      "date": "2026-10-14",
+      "start": "08:00",
+      "end": "18:12",
+      "breaksMin": 0,
+      "workMin": 612,
+      "topUpMin": 45,
+      "netMin": 567,
+      "pendingMin": 0,
+      "absenceMin": 0,
+      "targetMin": 480,
+      "status": "unchecked",
+      "corrected": false,
+      "warnings": ["break_placement", "break_violation", "no_end", "over_10h"]
+    }
+  ]
+}

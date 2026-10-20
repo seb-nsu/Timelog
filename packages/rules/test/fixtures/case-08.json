@@ -1,0 +1,32 @@
+{
+  "name": "Beginn nachträglich auf 07:30 korrigiert",
+  "events": [
+    ["08:00", "boot"],
+    [
+      "07:30",
+      "manual_start",
+      {
+        "createdAt": "2026-10-14 18:00"
+      }
+    ],
+    ["17:00", "shutdown"]
+  ],
+  "spans": [["L", "08:00", "17:00"]],
+  "expect": [
+    {
+      "date": "2026-10-14",
+      "start": "07:30",
+      "end": "17:05",
+      "breaksMin": 0,
+      "workMin": 575,
+      "topUpMin": 45,
+      "netMin": 530,
+      "pendingMin": 0,
+      "absenceMin": 0,
+      "targetMin": 480,
+      "status": "unchecked",
+      "corrected": true,
+      "warnings": ["break_placement", "break_violation"]
+    }
+  ]
+}

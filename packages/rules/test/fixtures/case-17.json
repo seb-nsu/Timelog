@@ -1,0 +1,49 @@
+{
+  "name": "Deckel über Nacht zu, Aufwachen ist kein boot",
+  "events": [
+    ["08:00", "boot"],
+    [
+      "17:00",
+      "shutdown",
+      {
+        "date": "2026-10-15"
+      }
+    ]
+  ],
+  "spans": [
+    ["L", "08:00", "18:00"],
+    ["L", "2026-10-15 08:00", "2026-10-15 17:00"]
+  ],
+  "expect": [
+    {
+      "date": "2026-10-14",
+      "start": "08:00",
+      "end": "18:00",
+      "breaksMin": 0,
+      "workMin": 600,
+      "topUpMin": 45,
+      "netMin": 555,
+      "pendingMin": 0,
+      "absenceMin": 0,
+      "targetMin": 480,
+      "status": "unchecked",
+      "corrected": false,
+      "warnings": ["break_placement", "break_violation", "gap_end"]
+    },
+    {
+      "date": "2026-10-15",
+      "start": "08:00",
+      "end": "17:05",
+      "breaksMin": 0,
+      "workMin": 545,
+      "topUpMin": 45,
+      "netMin": 500,
+      "pendingMin": 0,
+      "absenceMin": 0,
+      "targetMin": 480,
+      "status": "unchecked",
+      "corrected": false,
+      "warnings": ["break_placement", "break_violation"]
+    }
+  ]
+}

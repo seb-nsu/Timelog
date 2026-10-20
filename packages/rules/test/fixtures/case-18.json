@@ -1,0 +1,26 @@
+{
+  "name": "Zweite Sitzung am Abend, unbestätigt",
+  "events": [
+    ["08:00", "boot"],
+    ["17:00", "shutdown"],
+    ["21:00", "boot"],
+    ["23:00", "shutdown"]
+  ],
+  "expect": [
+    {
+      "date": "2026-10-14",
+      "start": "08:00",
+      "end": "23:05",
+      "breaksMin": 0,
+      "workMin": 545,
+      "topUpMin": 45,
+      "netMin": 500,
+      "pendingMin": 125,
+      "absenceMin": 0,
+      "targetMin": 480,
+      "status": "unchecked",
+      "corrected": false,
+      "warnings": ["break_placement", "break_violation", "second_session"]
+    }
+  ]
+}
