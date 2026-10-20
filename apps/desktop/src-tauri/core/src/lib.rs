@@ -14,5 +14,5 @@ pub mod tracker;
 pub use model::{Event, EventType, NetworkConfig, Source, Span};
 pub use store::Store;
 pub use sync::{Api, ApiError, SyncState, Syncer};
-pub use system::{FakeSystem, NetworkInfo, PowerOff, Signal, SystemEvents};
+pub use system::{Envelope, FakeSystem, NetworkInfo, PowerOff, Signal, SignalSink, SystemEvents};
 pub use tracker::{Tracker, TrackerConfig, TrackerError, TrackerStatus};

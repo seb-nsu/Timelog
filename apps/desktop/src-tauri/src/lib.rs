@@ -6,7 +6,7 @@ mod platform;
 mod runtime;
 mod tray;
 
-use std::sync::{mpsc, Arc};
+use std::sync::Arc;
 
 use tauri::{AppHandle, Emitter, Manager, WindowEvent};
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
@@ -35,7 +35,7 @@ pub fn run() {
         .setup(|app| {
             let dir = app.path().app_data_dir()?;
             std::fs::create_dir_all(&dir)?;
-            let (tx, rx) = mpsc::channel();
+            let (tx, rx) = timelog_core::SignalSink::channel();
             let rt = Arc::new(Runtime::open(&dir.join("timelog.sqlite"), tx)?);
             app.manage(Arc::clone(&rt));
 

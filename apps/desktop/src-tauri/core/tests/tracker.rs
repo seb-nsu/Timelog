@@ -6,7 +6,7 @@ use chrono::{DateTime, Duration, TimeZone, Utc};
 use timelog_core::model::{EventFlag, NetworkKeys, NetworkScope, WorkNetwork};
 use timelog_core::network::hmac_hex;
 use timelog_core::{
-    EventType, FakeSystem, NetworkConfig, NetworkInfo, PowerOff, Signal, Source, Store,
+    EventType, FakeSystem, NetworkConfig, NetworkInfo, PowerOff, Signal, SignalSink, Source, Store,
     SystemEvents, Tracker, TrackerConfig,
 };
 
@@ -372,11 +372,25 @@ fn manuelle_ereignisse_und_bestaetigung() {
 #[test]
 fn attrappe_liefert_signale_ueber_watch() {
     let (mut sys, fake) = FakeSystem::new(at(6, 0), TZ);
-    let (tx, rx) = std::sync::mpsc::channel();
+    let (sink, rx) = SignalSink::channel();
     assert!(!fake.emit(Signal::Lock));
-    sys.watch(tx);
+    sys.watch(sink.clone());
     assert!(fake.emit(Signal::Lock));
-    assert_eq!(rx.recv().unwrap(), Signal::Lock);
+    assert_eq!(rx.recv().unwrap().0, Signal::Lock);
+
+    // Quittung beim Herunterfahren: wartet, bis die Laufzeit das Signal verarbeitet hat
+    let worker = std::thread::spawn(move || {
+        let (signal, ack) = rx.recv().unwrap();
+        ack.unwrap().send(()).unwrap();
+        signal
+    });
+    assert!(sink.send_and_wait(
+        Signal::PowerOff(PowerOff::Shutdown),
+        std::time::Duration::from_secs(5)
+    ));
+    assert_eq!(worker.join().unwrap(), Signal::PowerOff(PowerOff::Shutdown));
+    // Ohne Empfänger kommt keine Quittung
+    assert!(!sink.send_and_wait(Signal::Lock, std::time::Duration::from_millis(50)));
     fake.set_timezone("America/New_York");
     fake.set_boot_time(at(7, 0));
     assert_eq!(sys.timezone(), "America/New_York");

@@ -1,14 +1,16 @@
 //! Laufzeit: Tracker, Sync und Anmeldung, geteilt zwischen Hintergrund-Thread und Befehlen.
 
 use std::path::Path;
-use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender};
+use std::sync::mpsc::{Receiver, RecvTimeoutError};
 use std::sync::{Mutex, MutexGuard, PoisonError};
 use std::time::Duration;
 
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use timelog_core::http::{HttpApi, Tokens};
-use timelog_core::{Signal, Store, SyncState, Syncer, Tracker, TrackerConfig};
+use timelog_core::{
+    Envelope, Signal, SignalSink, Store, SyncState, Syncer, Tracker, TrackerConfig,
+};
 
 const KEY_AUTH: &str = "auth";
 /// Zeitgrenze für normale Anfragen und für den Sende-Versuch beim Herunterfahren.
@@ -37,7 +39,7 @@ fn lock<T>(m: &Mutex<T>) -> MutexGuard<'_, T> {
 }
 
 impl Runtime {
-    pub fn open(db: &Path, signals: Sender<Signal>) -> Result<Self, String> {
+    pub fn open(db: &Path, signals: SignalSink) -> Result<Self, String> {
         let store = Store::open(db).map_err(|e| e.to_string())?;
         let auth: Option<StoredAuth> = store.get(KEY_AUTH).map_err(|e| e.to_string())?;
         let api = auth.map(|a| HttpApi::new(&a.base_url, a.tokens, REQUEST_TIMEOUT));
@@ -137,10 +139,10 @@ impl Runtime {
     }
 
     /// Hintergrund-Schleife: Signale verarbeiten, im Takt verlängern und synchronisieren.
-    pub fn run(&self, signals: &Receiver<Signal>, on_change: &dyn Fn()) {
+    pub fn run(&self, signals: &Receiver<Envelope>, on_change: &dyn Fn()) {
         loop {
             match signals.recv_timeout(TICK) {
-                Ok(signal) => {
+                Ok((signal, ack)) => {
                     let now = Utc::now();
                     let _ = self.tracker().handle(&signal, now);
                     match signal {
@@ -148,6 +150,9 @@ impl Runtime {
                         Signal::PowerOff(_) => self.sync(true, Some(SHUTDOWN_TIMEOUT)),
                         Signal::NetworkChanged | Signal::Resume => self.sync(true, None),
                         _ => {}
+                    }
+                    if let Some(ack) = ack {
+                        let _ = ack.send(());
                     }
                 }
                 Err(RecvTimeoutError::Timeout) => {

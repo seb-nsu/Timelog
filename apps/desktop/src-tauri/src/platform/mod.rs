@@ -1,10 +1,8 @@
 //! Plattform-Anbindung hinter [`SystemEvents`]. Windows (Phase 3b) und macOS (Phase 3c) bekommen
 //! eigene Implementierungen; bis dahin liefert [`GenericSystem`] nur Startzeit und Zeitzone.
 
-use std::sync::mpsc::Sender;
-
 use chrono::{DateTime, Utc};
-use timelog_core::{NetworkInfo, Signal, SystemEvents};
+use timelog_core::{NetworkInfo, SignalSink, SystemEvents};
 
 pub fn system() -> Box<dyn SystemEvents> {
     Box::new(GenericSystem)
@@ -36,5 +34,5 @@ impl SystemEvents for GenericSystem {
         NetworkInfo::default()
     }
 
-    fn watch(&mut self, _sink: Sender<Signal>) {}
+    fn watch(&mut self, _sink: SignalSink) {}
 }

@@ -1,8 +1,9 @@
 //! Schnittstelle zu den Betriebssystem-Ereignissen. Windows und macOS implementieren sie in
 //! Phase 3b/3c; Tests nutzen [`FakeSystem`].
 
-use std::sync::mpsc::Sender;
+use std::sync::mpsc::{self, Receiver, Sender, SyncSender};
 use std::sync::{Arc, Mutex, PoisonError};
+use std::time::Duration;
 
 use chrono::{DateTime, Utc};
 
@@ -44,6 +45,34 @@ pub struct NetworkInfo {
     pub wired: bool,
 }
 
+/// Ein Signal mit optionaler Quittung: der Empfänger meldet, sobald es verarbeitet ist.
+pub type Envelope = (Signal, Option<SyncSender<()>>);
+
+/// Ausgang für Signale an die Laufzeit.
+#[derive(Debug, Clone)]
+pub struct SignalSink {
+    tx: Sender<Envelope>,
+}
+
+impl SignalSink {
+    pub fn channel() -> (Self, Receiver<Envelope>) {
+        let (tx, rx) = mpsc::channel();
+        (Self { tx }, rx)
+    }
+
+    /// Sendet ohne zu warten. `false`, wenn die Laufzeit beendet ist.
+    pub fn send(&self, signal: Signal) -> bool {
+        self.tx.send((signal, None)).is_ok()
+    }
+
+    /// Sendet und wartet höchstens `timeout`, bis das Signal verarbeitet ist. Für das
+    /// Herunterfahren: das System darf die App erst danach beenden.
+    pub fn send_and_wait(&self, signal: Signal, timeout: Duration) -> bool {
+        let (ack_tx, ack_rx) = mpsc::sync_channel(1);
+        self.tx.send((signal, Some(ack_tx))).is_ok() && ack_rx.recv_timeout(timeout).is_ok()
+    }
+}
+
 pub trait SystemEvents: Send {
     /// Echte Einschaltzeit des Rechners (nicht die Aufwachzeit).
     fn boot_time(&self) -> DateTime<Utc>;
@@ -51,7 +80,7 @@ pub trait SystemEvents: Send {
     fn timezone(&self) -> String;
     fn current_network(&self) -> NetworkInfo;
     /// Startet die Überwachung; Signale gehen an `sink`.
-    fn watch(&mut self, sink: Sender<Signal>);
+    fn watch(&mut self, sink: SignalSink);
 }
 
 /// Test-Attrappe: Werte werden von außen gesetzt, Signale per [`FakeHandle::emit`] ausgelöst.
@@ -64,7 +93,7 @@ struct FakeState {
     boot_time: DateTime<Utc>,
     timezone: String,
     network: NetworkInfo,
-    sink: Option<Sender<Signal>>,
+    sink: Option<SignalSink>,
 }
 
 #[derive(Clone)]
@@ -118,7 +147,7 @@ impl FakeHandle {
             .unwrap_or_else(PoisonError::into_inner)
             .sink
             .clone();
-        sink.is_some_and(|s| s.send(signal).is_ok())
+        sink.is_some_and(|s| s.send(signal))
     }
 }
 
@@ -135,7 +164,7 @@ impl SystemEvents for FakeSystem {
         self.read(|s| s.network.clone())
     }
 
-    fn watch(&mut self, sink: Sender<Signal>) {
+    fn watch(&mut self, sink: SignalSink) {
         self.state
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
