@@ -253,7 +253,11 @@ describe('Urlaub', () => {
     expect(screen.getByText(/über dem Höchstwert/)).toBeOnTheScreen();
     await user.press(screen.getByRole('radio', { name: 'Überstundenabbau' }));
     await user.type(screen.getByLabelText('Von'), '2026-11-02');
-    await fireEvent(screen.getByRole('switch', { name: 'Letzter Tag nur halb' }), 'valueChange', true);
+    await fireEvent(
+      screen.getByRole('switch', { name: 'Letzter Tag nur halb' }),
+      'valueChange',
+      true,
+    );
     await user.press(screen.getByRole('button', { name: 'Beantragen' }));
     expect(await screen.findByText(/Antrag gestellt/)).toBeOnTheScreen();
     expect(h.server.leaveRequests[0]).toMatchObject({

@@ -34,10 +34,10 @@ export const leaveRequestInput = z
     note: z.string().trim().max(500).optional(),
   })
   .refine((r) => r.from <= r.to, { message: 'from muss vor to liegen', path: ['to'] })
-  .refine(
-    (r) => (Date.parse(r.to) - Date.parse(r.from)) / 86_400_000 < MAX_LEAVE_RANGE_DAYS,
-    { message: `Höchstens ${String(MAX_LEAVE_RANGE_DAYS)} Tage`, path: ['to'] },
-  );
+  .refine((r) => (Date.parse(r.to) - Date.parse(r.from)) / 86_400_000 < MAX_LEAVE_RANGE_DAYS, {
+    message: `Höchstens ${String(MAX_LEAVE_RANGE_DAYS)} Tage`,
+    path: ['to'],
+  });
 export type LeaveRequestInput = z.input<typeof leaveRequestInput>;
 
 export const leaveHistoryEntry = z.object({
