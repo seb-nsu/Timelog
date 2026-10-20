@@ -9,6 +9,7 @@ import {
 import { addDays, type WorkDay } from '@timelog/rules';
 import { useState } from 'react';
 import { useBackend, useT } from '../context.js';
+import { DayExtras } from './DayExtras.js';
 
 export function DayLog({
   days,
@@ -71,6 +72,7 @@ export function DayLog({
           ))}
         </ul>
       )}
+      <DayExtras date={date} tz={tz} />
       <h3>{t('log.events')}</h3>
       {list.length === 0 ? (
         <p>{t('log.empty')}</p>

@@ -10,6 +10,7 @@ const tz = 'Europe/Berlin';
 const actions: PlatformActions = {
   shareFile: () => Promise.resolve(),
   requestNotifications: () => Promise.resolve(true),
+  openUrl: () => Promise.resolve(),
 };
 
 /** Montag 4 h am Arbeitsnetz (unproblematisch), Samstag 2 h (Tag ohne Soll: zu prüfen). */

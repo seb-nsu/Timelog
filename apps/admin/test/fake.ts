@@ -162,6 +162,8 @@ export function fakeServer(over: Partial<FakeState> = {}) {
     ...over,
   };
   const calls: Call[] = [];
+  /** Zusätzliche Antworten je „METHODE /pfad“ (Projekte, Kalender, Homeoffice); Funktion erhält den Aufruf */
+  const extra: Record<string, unknown> = {};
 
   const me = () => ({
     user: { id: ID.admin, name: 'Alex Admin', email: 'alex@firma.de', role: state.role },
@@ -179,6 +181,12 @@ export function fakeServer(over: Partial<FakeState> = {}) {
   const route = (c: Call): [number, unknown] => {
     const err = (status: number, error: string): [number, unknown] => [status, { error }];
     const m = `${c.method} ${c.path}`;
+    const special = extra[m];
+    if (special !== undefined) {
+      const v: unknown =
+        typeof special === 'function' ? (special as (c: Call) => unknown)(c) : special;
+      return Array.isArray(v) && typeof v[0] === 'number' ? (v as [number, unknown]) : [200, v];
+    }
     const decide = /^POST \/org\/approvals\/([^/]+)\/([^/]+)\/(approve|reject)$/.exec(m);
     if (decide) {
       const a = state.approvals.find((x) => x.userId === decide[1] && x.month === decide[2]);
@@ -467,7 +475,7 @@ export function fakeServer(over: Partial<FakeState> = {}) {
     );
   };
 
-  return { state, calls, fetch: fetchImpl };
+  return { state, calls, extra, fetch: fetchImpl };
 }
 
 export function memoryStore(initial: Record<string, string> = {}) {

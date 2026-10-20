@@ -259,13 +259,14 @@ table {
   width: 100%;
 }
 
-caption {
-  text-align: left;
-}
-
 th,
 td {
   text-align: left;
   padding: 0.25rem 0.5rem;
   border-bottom: 1px solid var(--border);
+}
+
+caption {
+  text-align: left;
+  font-weight: 600;
 }

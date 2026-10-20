@@ -8,6 +8,7 @@ import {
 import { type SyntheticEvent, useState } from 'react';
 import { RULE_LABELS, errorText } from '../texts.js';
 import { ErrorText, Loading, useAdmin, useLoad } from '../ui.js';
+import { Features } from './Features.js';
 
 /** Regelwerk-Parameter, Aufbewahrungsfrist und SSO der Organisation. */
 export function Settings() {
@@ -18,6 +19,7 @@ export function Settings() {
       <h1 id="page-title" tabIndex={-1}>
         Einstellungen
       </h1>
+      <Features />
       <ErrorText text={config.error} />
       {!config.data && !config.error && <Loading what="Einstellungen" />}
       {config.data && <SettingsForm config={config.data} onSaved={config.reload} />}

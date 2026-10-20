@@ -2,9 +2,11 @@
 // Geofence), Sollzeiten, Benachrichtigungen, Geräte, Datenauskunft und Löschen.
 import type { DeviceResponse, NetworksResponse, Settings } from '@timelog/shared';
 import { useEffect, useState } from 'react';
+import { View } from 'react-native';
 import type { GeofenceStatus } from '../../modules/timelog-native';
 import { Body, Button, Choice, Field, Notice, Screen, Section, ToggleRow } from '../ui/components';
 import { useMobile } from '../ui/context';
+import { CalendarSection, NetworkExtras, ProjectsSection } from './Extras';
 import { LoginForm, ProfileForm } from './forms';
 
 type Msg = { tone: 'success' | 'error' | 'warning' | 'info'; text: string } | null;
@@ -16,6 +18,8 @@ export function SettingsScreen() {
       <AccountSection />
       <NetworkSection />
       <DetectionSection />
+      <ProjectsSection />
+      <CalendarSection />
       <Section title={t.m('settings.profile')}>
         <ProfileForm />
       </Section>
@@ -103,12 +107,14 @@ export function NetworkSection() {
         n.scope === 'org' ? (
           <Body key={n.id}>{t.m('settings.orgNetwork', { label: n.label })}</Body>
         ) : (
-          <Button
-            key={n.id}
-            variant="secondary"
-            label={t.m('settings.removeNetwork', { label: n.label })}
-            onPress={() => core.removeNetwork(n.id)}
-          />
+          <View key={n.id} style={{ gap: 8 }}>
+            <NetworkExtras network={n} />
+            <Button
+              variant="secondary"
+              label={t.m('settings.removeNetwork', { label: n.label })}
+              onPress={() => core.removeNetwork(n.id)}
+            />
+          </View>
         ),
       )}
       {state.capabilities.networkDetection ? (

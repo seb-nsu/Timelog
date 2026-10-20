@@ -5,7 +5,7 @@ import Constants from 'expo-constants';
 import { getLocales } from 'expo-localization';
 import { StatusBar } from 'expo-status-bar';
 import { createElement, useCallback, useEffect, useState } from 'react';
-import { AppState } from 'react-native';
+import { AppState, Linking } from 'react-native';
 import { App } from './src/App';
 import { registerBackgroundSync } from './src/background';
 import type { MobileCore } from './src/core/core';
@@ -100,6 +100,9 @@ function Root() {
   const actions: PlatformActions = {
     shareFile,
     requestNotifications: () => requestNotifications(core, locale),
+    openUrl: async (url) => {
+      await Linking.openURL(url);
+    },
   };
   return [
     createElement(StatusBar, { key: 'bar', style: 'auto' }),

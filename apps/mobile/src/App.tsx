@@ -5,6 +5,7 @@ import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-cont
 import { AbsencesScreen } from './screens/Absences';
 import { DayLogScreen } from './screens/DayLog';
 import { LeaveScreen } from './screens/Leave';
+import { ReportsScreen } from './screens/Extras';
 import { OverviewScreen } from './screens/Overview';
 import { ReviewScreen } from './screens/Review';
 import { SettingsScreen } from './screens/Settings';
@@ -17,7 +18,12 @@ import { TOUCH, useTheme } from './ui/theme';
 type Tab = 'today' | 'log' | 'review' | 'overview' | 'settings';
 
 function tabOf(route: Route): Tab {
-  if (route.name === 'absences' || route.name === 'week' || route.name === 'leave')
+  if (
+    route.name === 'absences' ||
+    route.name === 'week' ||
+    route.name === 'leave' ||
+    route.name === 'reports'
+  )
     return 'overview';
   if (route.name === 'setup') return 'settings';
   return route.name;
@@ -45,6 +51,8 @@ function Content() {
       return <AbsencesScreen />;
     case 'leave':
       return <LeaveScreen />;
+    case 'reports':
+      return <ReportsScreen />;
     case 'settings':
       return <SettingsScreen />;
   }

@@ -6,10 +6,16 @@ import type { PlatformActions } from '../src/ui/context';
 import { IOS, fakeNative } from './fakeNative';
 import { type Harness, harness, loggedIn } from './helpers';
 
-function actions(): PlatformActions & { shared: string[] } {
+function actions(): PlatformActions & { shared: string[]; opened: string[] } {
   const shared: string[] = [];
+  const opened: string[] = [];
   return {
     shared,
+    opened,
+    openUrl: (url) => {
+      opened.push(url);
+      return Promise.resolve();
+    },
     shareFile: (name) => {
       shared.push(name);
       return Promise.resolve();

@@ -27,7 +27,6 @@ import {
   memberParams,
   transferSchema,
   transfersResponse,
-  workDaySchema,
 } from '@timelog/shared';
 import { and, desc, eq, gte, lte } from 'drizzle-orm';
 import { z } from 'zod';
@@ -46,7 +45,7 @@ import { namesOf } from '../../leave/service.js';
 import { PayrollConfigError, type PayrollRow, renderPayroll } from '../../payroll/formats.js';
 import { PersonioClient, PersonioError } from '../../payroll/personio.js';
 import { decrypt, encrypt } from '../../security/crypto.js';
-import { loadRulesConfig } from '../days.js';
+import { loadRulesConfig, snapshotSchema } from '../days.js';
 import { ADMINS, actorOf, actorScope, audit, loadMember } from './access.js';
 import { monthRange } from './approvals.js';
 import { visibleMembers } from './manage.js';
@@ -72,7 +71,6 @@ function personnelNumberOf(member: UserRow, mapping: MappingRow | undefined): st
   return s.success && s.data.personnelNumber ? s.data.personnelNumber : undefined;
 }
 
-const snapshotDays = z.array(workDaySchema);
 const snapshotAbsences = z.array(absenceSchema.pick({ date: true, kind: true, minutes: true }));
 
 interface MonthData {
@@ -96,8 +94,9 @@ async function approvedMonthData(
     .from(approvals)
     .where(and(eq(approvals.userId, memberId), eq(approvals.month, month)));
   if (row?.status !== 'approved') return undefined;
-  const days = snapshotDays.safeParse(row.snapshot);
-  if (!days.success) return undefined;
+  const parsed = snapshotSchema.safeParse(row.snapshot);
+  if (!parsed.success) return undefined;
+  const days = { data: Array.isArray(parsed.data) ? parsed.data : parsed.data.days };
   const loaded = await loadRulesConfig(tx, memberId);
   let list = snapshotAbsences.safeParse(row.absencesSnapshot);
   if (!list.success || row.absencesSnapshot === null) {

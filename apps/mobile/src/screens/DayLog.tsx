@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react';
 import type { Correction } from '../core/core';
 import { Body, Button, Choice, Field, Notice, Row, Screen, Section } from '../ui/components';
 import { useMobile } from '../ui/context';
+import { DayExtrasSection } from './Extras';
 
 const CLOCK = /^([01]?\d|2[0-3]):[0-5]\d$/;
 type FieldKind = Correction['field'];
@@ -131,6 +132,8 @@ export function DayLogScreen({ date: initial }: { date?: string }) {
           })}
         </Section>
       ) : null}
+
+      <DayExtrasSection key={date} date={date} />
 
       <Section title={t.t('log.events')}>
         {events.length > 0 ? (

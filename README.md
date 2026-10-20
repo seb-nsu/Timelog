@@ -4,34 +4,36 @@ Automatische Arbeitszeiterfassung für Laptop (Windows, macOS) und Handy (Androi
 
 ## Dokumente
 
-| Datei                                            | Inhalt                                                                                                 |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
-| [docs/PRODUKTKONZEPT.md](docs/PRODUKTKONZEPT.md) | Produktkonzept: Erfassungslogik, Sonderfälle, Funktionsumfang, Datenschutz, Markt, Entscheidungen      |
-| [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md) | Implementierungskonzept: Tech-Stack, Regelwerk, Testfälle, API, Clients, Phasen mit Akzeptanzkriterien |
-| [docs/PLATFORM.md](docs/PLATFORM.md)             | Desktop: Systemereignisse je Plattform, Prüfanleitung                                                  |
-| [docs/MOBILE.md](docs/MOBILE.md)                 | Handy-App: Herstellerdoku-Prüfung, Netzwerk-Kennung, Entscheidungen, Prüfanleitungen, Store-Unterlagen |
-| [docs/ADMIN.md](docs/ADMIN.md)                   | Firmenversion: Rollen, Web-Admin, SSO-Einrichtung (Entra ID, Google, SAML) und Prüfanleitung           |
-| [docs/PUSH.md](docs/PUSH.md)                     | Rückfragen per Push (FCM, APNs), Wochenrückblick, Einrichtung und Prüfanleitung                        |
-| [docs/URLAUB_LOHN.md](docs/URLAUB_LOHN.md)       | Urlaubs- und Überstundenkonto, Anträge, Lohn-Export (DATEV, Lexware, Personio), Quellen, Prüfanleitung |
-| [docs/RELEASE.md](docs/RELEASE.md)               | Desktop-Release: Signierung Windows/macOS, Updater-Schlüssel                                           |
-| [docs/BETRIEB.md](docs/BETRIEB.md)               | Server-Betrieb: Container, Compose, Sicherung, Überwachung                                             |
-| [CLAUDE.md](CLAUDE.md)                           | Regeln für Claude Code                                                                                 |
+| Datei                                                  | Inhalt                                                                                                             |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| [docs/PRODUKTKONZEPT.md](docs/PRODUKTKONZEPT.md)       | Produktkonzept: Erfassungslogik, Sonderfälle, Funktionsumfang, Datenschutz, Markt, Entscheidungen                  |
+| [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md)       | Implementierungskonzept: Tech-Stack, Regelwerk, Testfälle, API, Clients, Phasen mit Akzeptanzkriterien             |
+| [docs/PLATFORM.md](docs/PLATFORM.md)                   | Desktop: Systemereignisse je Plattform, Prüfanleitung                                                              |
+| [docs/MOBILE.md](docs/MOBILE.md)                       | Handy-App: Herstellerdoku-Prüfung, Netzwerk-Kennung, Entscheidungen, Prüfanleitungen, Store-Unterlagen             |
+| [docs/ADMIN.md](docs/ADMIN.md)                         | Firmenversion: Rollen, Web-Admin, SSO-Einrichtung (Entra ID, Google, SAML) und Prüfanleitung                       |
+| [docs/PUSH.md](docs/PUSH.md)                           | Rückfragen per Push (FCM, APNs), Wochenrückblick, Einrichtung und Prüfanleitung                                    |
+| [docs/URLAUB_LOHN.md](docs/URLAUB_LOHN.md)             | Urlaubs- und Überstundenkonto, Anträge, Lohn-Export (DATEV, Lexware, Personio), Quellen, Prüfanleitung             |
+| [docs/PROJEKTE_KALENDER.md](docs/PROJEKTE_KALENDER.md) | Projekte, Kalender-Anbindung (Google, Microsoft 365), Homeoffice-Nachweis: Einrichtung, Datenschutz, Prüfanleitung |
+| [docs/RELEASE.md](docs/RELEASE.md)                     | Desktop-Release: Signierung Windows/macOS, Updater-Schlüssel                                                       |
+| [docs/BETRIEB.md](docs/BETRIEB.md)                     | Server-Betrieb: Container, Compose, Sicherung, Überwachung                                                         |
+| [CLAUDE.md](CLAUDE.md)                                 | Regeln für Claude Code                                                                                             |
 
 ## Stand
 
-| Phase              | Status                                                      |
-| ------------------ | ----------------------------------------------------------- |
-| 0 – Grundgerüst    | erledigt                                                    |
-| 1 – Regelwerk      | erledigt                                                    |
-| 2a – Backend-Kern  | erledigt                                                    |
-| 2b – Backend-Fach  | erledigt                                                    |
-| 3a – Desktop-Kern  | erledigt                                                    |
-| 3b/3c – Win, macOS | gebaut; Gerätetest und Signierung 👤 offen                  |
-| 4/5 – Android, iOS | gebaut; Gerätetest und Store-Tests 👤 offen                 |
-| Rückfragen, Woche  | gebaut; Push mit echten Schlüsseln 👤 offen                 |
-| 6 – Firmenversion  | gebaut; SSO mit echtem IdP 👤 offen                         |
-| Urlaub und Lohn    | gebaut; Testimport DATEV/Lexware, Personio-Sandbox 👤 offen |
-| Betrieb            | Container, Compose, Sicherung, Release-Workflow             |
+| Phase                          | Status                                                            |
+| ------------------------------ | ----------------------------------------------------------------- |
+| 0 – Grundgerüst                | erledigt                                                          |
+| 1 – Regelwerk                  | erledigt                                                          |
+| 2a – Backend-Kern              | erledigt                                                          |
+| 2b – Backend-Fach              | erledigt                                                          |
+| 3a – Desktop-Kern              | erledigt                                                          |
+| 3b/3c – Win, macOS             | gebaut; Gerätetest und Signierung 👤 offen                        |
+| 4/5 – Android, iOS             | gebaut; Gerätetest und Store-Tests 👤 offen                       |
+| Rückfragen, Woche              | gebaut; Push mit echten Schlüsseln 👤 offen                       |
+| 6 – Firmenversion              | gebaut; SSO mit echtem IdP 👤 offen                               |
+| Urlaub und Lohn                | gebaut; Testimport DATEV/Lexware, Personio-Sandbox 👤 offen       |
+| Projekte, Kalender, Homeoffice | gebaut; Anmeldung bei Google/Microsoft mit echten Konten 👤 offen |
+| Betrieb                        | Container, Compose, Sicherung, Release-Workflow                   |
 
 ## Repo-Struktur
 
@@ -115,6 +117,10 @@ pnpm --filter @timelog/admin dev     # Web-Admin auf http://localhost:5174, /api
 ```
 
 Manager geben Monate frei oder weisen sie mit Kommentar zurück und sehen je Tag nur Beginn, Ende, Pausen, Auffüllung, Netto, Status und Hinweise ihrer Teams. Admins verwalten zusätzlich Mitglieder, Einladungen, Teams, Sollzeiten, Firmen-Netze, Regelwerk-Parameter, SSO, Export und Audit-Log. Für Manager und Admins ist Zwei-Faktor Pflicht (oder SSO). In `.env` sind `ADMIN_URL` (Einladungslinks, SSO-Rücksprung), `API_URL` (SSO-Callback) und bei getrenntem Ursprung `CORS_ORIGINS` zu setzen; SSO-Secrets nur als `SSO_*`-Variablen. Einrichtung und Prüfanleitung: [docs/ADMIN.md](docs/ADMIN.md). Die UI-Tests prüfen jede Hauptseite mit axe-core.
+
+### Projekte, Kalender, Homeoffice (optional)
+
+Arbeitszeit lässt sich Projekten zuordnen (von Hand, per Netz-Standardprojekt oder Kalender-Stichwort; von Hand gewinnt). Google- und Microsoft-Kalender werden nur gelesen; gespeichert werden Beginn, Ende und Art, keine Titel. Termine liefern Vorschläge in „Zu prüfen“, gebucht wird nie automatisch. Netze haben einen Ort (Büro/Homeoffice/sonstiges), daraus entsteht der Homeoffice-Nachweis mit Tagespauschale. Einrichtung der OAuth-Clients, Umgebungsvariablen und Prüfanleitung: [docs/PROJEKTE_KALENDER.md](docs/PROJEKTE_KALENDER.md).
 
 ## Weiter mit Claude Code
 
