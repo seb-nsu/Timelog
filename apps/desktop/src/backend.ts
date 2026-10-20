@@ -1,6 +1,6 @@
 // Schnittstelle zum Rust-Kern. Tests ersetzen sie durch eine Attrappe.
 import type { LocalData, Profile } from '@timelog/app-core';
-import { GERMAN_STATES } from '@timelog/rules';
+import { ABSENCE_KINDS, GERMAN_STATES } from '@timelog/rules';
 import { type ApiClient, createApiClient } from '@timelog/shared';
 import { z } from 'zod';
 
@@ -86,7 +86,7 @@ export const profileSchema = z.object({
     .array(
       z.object({
         date: z.iso.date(),
-        kind: z.enum(['vacation', 'sick', 'holiday', 'other']),
+        kind: z.enum(ABSENCE_KINDS),
         minutes: z.number(),
       }),
     )
