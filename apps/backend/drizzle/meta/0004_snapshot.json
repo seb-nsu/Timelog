@@ -74,12 +74,8 @@
           "name": "absences_user_id_users_id_fk",
           "tableFrom": "absences",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -155,12 +151,8 @@
           "name": "approvals_user_id_users_id_fk",
           "tableFrom": "approvals",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -168,10 +160,7 @@
       "compositePrimaryKeys": {
         "approvals_user_id_month_pk": {
           "name": "approvals_user_id_month_pk",
-          "columns": [
-            "user_id",
-            "month"
-          ]
+          "columns": ["user_id", "month"]
         }
       },
       "uniqueConstraints": {},
@@ -234,12 +223,8 @@
           "name": "audit_log_org_id_organizations_id_fk",
           "tableFrom": "audit_log",
           "tableTo": "organizations",
-          "columnsFrom": [
-            "org_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["org_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -321,12 +306,8 @@
           "name": "auth_tokens_user_id_users_id_fk",
           "tableFrom": "auth_tokens",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -410,12 +391,8 @@
           "name": "corrections_user_id_users_id_fk",
           "tableFrom": "corrections",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -515,12 +492,8 @@
           "name": "devices_user_id_users_id_fk",
           "tableFrom": "devices",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -670,12 +643,8 @@
           "name": "events_user_id_users_id_fk",
           "tableFrom": "events",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -683,12 +652,8 @@
           "name": "events_device_id_devices_id_fk",
           "tableFrom": "events",
           "tableTo": "devices",
-          "columnsFrom": [
-            "device_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["device_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -696,10 +661,7 @@
       "compositePrimaryKeys": {
         "events_user_id_id_pk": {
           "name": "events_user_id_id_pk",
-          "columns": [
-            "user_id",
-            "id"
-          ]
+          "columns": ["user_id", "id"]
         }
       },
       "uniqueConstraints": {},
@@ -735,10 +697,7 @@
       "compositePrimaryKeys": {
         "holidays_state_date_pk": {
           "name": "holidays_state_date_pk",
-          "columns": [
-            "state",
-            "date"
-          ]
+          "columns": ["state", "date"]
         }
       },
       "uniqueConstraints": {},
@@ -856,12 +815,8 @@
           "name": "invitations_org_id_organizations_id_fk",
           "tableFrom": "invitations",
           "tableTo": "organizations",
-          "columnsFrom": [
-            "org_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["org_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -869,12 +824,8 @@
           "name": "invitations_team_id_teams_id_fk",
           "tableFrom": "invitations",
           "tableTo": "teams",
-          "columnsFrom": [
-            "team_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["team_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -965,9 +916,7 @@
         "organizations_slug_unique": {
           "name": "organizations_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         }
       },
       "policies": {},
@@ -1070,12 +1019,8 @@
           "name": "presence_spans_user_id_users_id_fk",
           "tableFrom": "presence_spans",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1083,12 +1028,8 @@
           "name": "presence_spans_device_id_devices_id_fk",
           "tableFrom": "presence_spans",
           "tableTo": "devices",
-          "columnsFrom": [
-            "device_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["device_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1096,10 +1037,7 @@
       "compositePrimaryKeys": {
         "presence_spans_user_id_id_pk": {
           "name": "presence_spans_user_id_id_pk",
-          "columns": [
-            "user_id",
-            "id"
-          ]
+          "columns": ["user_id", "id"]
         }
       },
       "uniqueConstraints": {},
@@ -1190,12 +1128,8 @@
           "name": "push_prompts_user_id_users_id_fk",
           "tableFrom": "push_prompts",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1203,11 +1137,7 @@
       "compositePrimaryKeys": {
         "push_prompts_user_id_kind_ref_pk": {
           "name": "push_prompts_user_id_kind_ref_pk",
-          "columns": [
-            "user_id",
-            "kind",
-            "ref"
-          ]
+          "columns": ["user_id", "kind", "ref"]
         }
       },
       "uniqueConstraints": {},
@@ -1320,12 +1250,8 @@
           "name": "refresh_tokens_user_id_users_id_fk",
           "tableFrom": "refresh_tokens",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1333,12 +1259,8 @@
           "name": "refresh_tokens_device_id_devices_id_fk",
           "tableFrom": "refresh_tokens",
           "tableTo": "devices",
-          "columnsFrom": [
-            "device_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["device_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1409,12 +1331,8 @@
           "name": "sso_requests_org_id_organizations_id_fk",
           "tableFrom": "sso_requests",
           "tableTo": "organizations",
-          "columnsFrom": [
-            "org_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["org_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1460,12 +1378,8 @@
           "name": "target_hours_user_id_users_id_fk",
           "tableFrom": "target_hours",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1473,11 +1387,7 @@
       "compositePrimaryKeys": {
         "target_hours_user_id_weekday_valid_from_pk": {
           "name": "target_hours_user_id_weekday_valid_from_pk",
-          "columns": [
-            "user_id",
-            "weekday",
-            "valid_from"
-          ]
+          "columns": ["user_id", "weekday", "valid_from"]
         }
       },
       "uniqueConstraints": {},
@@ -1521,12 +1431,8 @@
           "name": "teams_org_id_organizations_id_fk",
           "tableFrom": "teams",
           "tableTo": "organizations",
-          "columnsFrom": [
-            "org_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["org_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1678,12 +1584,8 @@
           "name": "users_org_id_organizations_id_fk",
           "tableFrom": "users",
           "tableTo": "organizations",
-          "columnsFrom": [
-            "org_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["org_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1691,12 +1593,8 @@
           "name": "users_team_id_teams_id_fk",
           "tableFrom": "users",
           "tableTo": "teams",
-          "columnsFrom": [
-            "team_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["team_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1796,12 +1694,8 @@
           "name": "work_days_user_id_users_id_fk",
           "tableFrom": "work_days",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1809,10 +1703,7 @@
       "compositePrimaryKeys": {
         "work_days_user_id_date_pk": {
           "name": "work_days_user_id_date_pk",
-          "columns": [
-            "user_id",
-            "date"
-          ]
+          "columns": ["user_id", "date"]
         }
       },
       "uniqueConstraints": {},
@@ -1898,12 +1789,8 @@
           "name": "work_networks_user_id_users_id_fk",
           "tableFrom": "work_networks",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1911,12 +1798,8 @@
           "name": "work_networks_org_id_organizations_id_fk",
           "tableFrom": "work_networks",
           "tableTo": "organizations",
-          "columnsFrom": [
-            "org_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["org_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
