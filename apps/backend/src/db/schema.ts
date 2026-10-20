@@ -40,6 +40,10 @@ export const organizations = pgTable('organizations', {
   slug: text('slug').unique(),
   /** SSO-Einstellungen (OIDC/SAML); Secrets nur als Name einer Umgebungsvariable. */
   sso: jsonb('sso').notNull().default({}),
+  /** Urlaubs- und Überstundenregeln (Standardanspruch, Verfall, Höchstsaldo). */
+  leaveConfig: jsonb('leave_config').notNull().default({}),
+  /** Lohn-Export: Berater-/Mandantennummer, Lohnarten, Ausfallschlüssel, Personio-Optionen. */
+  payrollConfig: jsonb('payroll_config').notNull().default({}),
   createdAt: createdAt(),
 });
 
@@ -102,11 +106,16 @@ export const absences = pgTable(
       .notNull()
       .references(() => users.id),
     date: date('date').notNull(),
-    kind: text('kind', { enum: ['vacation', 'sick', 'holiday', 'other'] }).notNull(),
+    kind: text('kind', { enum: ['vacation', 'sick', 'holiday', 'other', 'overtime'] }).notNull(),
     minutes: integer('minutes').notNull(),
     note: text('note'),
+    /** Von einem genehmigten Antrag erzeugt; nur über den Antrag änderbar (Stornierung). */
+    requestId: uuid('request_id'),
   },
-  (t) => [index('absences_user_date').on(t.userId, t.date)],
+  (t) => [
+    index('absences_user_date').on(t.userId, t.date),
+    index('absences_request').on(t.requestId),
+  ],
 );
 
 export const holidays = pgTable(
@@ -253,6 +262,8 @@ export const approvals = pgTable(
     approverId: uuid('approver_id'),
     comment: text('comment'),
     decidedAt: tstz('decided_at'),
+    /** Abwesenheiten des Monats zum Zeitpunkt der Freigabe (Lohn-Export aus dem Snapshot). */
+    absencesSnapshot: jsonb('absences_snapshot'),
   },
   (t) => [primaryKey({ columns: [t.userId, t.month] })],
 );
@@ -343,3 +354,150 @@ export const ssoRequests = pgTable('sso_requests', {
   expiresAt: tstz('expires_at').notNull(),
   createdAt: createdAt(),
 });
+
+// ── Urlaubs- und Überstundenkonto, Lohn-Export (Migration 0006) ───────────────
+
+/** Anspruch je Person; Firma: pflegt der Admin, privat: die Person selbst. */
+export const leaveProfiles = pgTable('leave_profiles', {
+  userId: uuid('user_id')
+    .primaryKey()
+    .references(() => users.id),
+  annualDays: doublePrecision('annual_days'),
+  workdaysPerWeek: doublePrecision('workdays_per_week'),
+  entryDate: date('entry_date'),
+  exitDate: date('exit_date'),
+  /** Nur Privatkonto: eigene Regeln (Verfall, Höchstsaldo); Firma: organizations.leave_config. */
+  settings: jsonb('settings').notNull().default({}),
+  updatedAt: tstz('updated_at').notNull().defaultNow(),
+});
+
+export const leaveRequests = pgTable(
+  'leave_requests',
+  {
+    id: id(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    orgId: uuid('org_id').references(() => organizations.id),
+    kind: text('kind', { enum: ['vacation', 'overtime'] }).notNull(),
+    fromDate: date('from_date').notNull(),
+    toDate: date('to_date').notNull(),
+    halfDayStart: boolean('half_day_start').notNull().default(false),
+    halfDayEnd: boolean('half_day_end').notNull().default(false),
+    days: doublePrecision('days').notNull(),
+    minutes: integer('minutes').notNull(),
+    note: text('note'),
+    status: text('status', { enum: ['pending', 'approved', 'rejected', 'cancelled'] }).notNull(),
+    createdAt: createdAt(),
+    decidedBy: uuid('decided_by'),
+    decidedAt: tstz('decided_at'),
+    decisionComment: text('decision_comment'),
+    cancelledBy: uuid('cancelled_by'),
+    cancelledAt: tstz('cancelled_at'),
+    cancelComment: text('cancel_comment'),
+  },
+  (t) => [
+    index('leave_requests_user').on(t.userId, t.fromDate),
+    index('leave_requests_org').on(t.orgId, t.status),
+  ],
+);
+
+/** Unveränderliches Protokoll je Antrag (nur Insert). */
+export const leaveRequestEvents = pgTable(
+  'leave_request_events',
+  {
+    id: id(),
+    requestId: uuid('request_id')
+      .notNull()
+      .references(() => leaveRequests.id),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    action: text('action', { enum: ['request', 'approve', 'reject', 'cancel'] }).notNull(),
+    actorId: uuid('actor_id').notNull(),
+    comment: text('comment'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('leave_request_events_request').on(t.requestId)],
+);
+
+/** Manuelle Urlaubsbuchungen (Übertrag setzen, Korrektur); nur Insert. */
+export const leaveAdjustments = pgTable(
+  'leave_adjustments',
+  {
+    id: id(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    year: integer('year').notNull(),
+    kind: text('kind', { enum: ['carry_over', 'correction'] }).notNull(),
+    days: doublePrecision('days').notNull(),
+    comment: text('comment').notNull(),
+    authorId: uuid('author_id').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('leave_adjustments_user').on(t.userId, t.year)],
+);
+
+/** Manuelle Überstundenbuchungen (Auszahlung, Kappung, Korrektur); nur Insert. */
+export const overtimeBookings = pgTable(
+  'overtime_bookings',
+  {
+    id: id(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    month: text('month').notNull(),
+    minutes: integer('minutes').notNull(),
+    kind: text('kind', { enum: ['payout', 'cap', 'correction'] }).notNull(),
+    comment: text('comment').notNull(),
+    authorId: uuid('author_id').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('overtime_bookings_user').on(t.userId, t.month)],
+);
+
+/** Lohn-Zuordnung je Mitglied (nur Admin): Personalnummer, Personio-ID. */
+export const memberPayroll = pgTable('member_payroll', {
+  userId: uuid('user_id')
+    .primaryKey()
+    .references(() => users.id),
+  orgId: uuid('org_id')
+    .notNull()
+    .references(() => organizations.id),
+  personnelNumber: text('personnel_number'),
+  personioId: text('personio_id'),
+  updatedAt: tstz('updated_at').notNull().defaultNow(),
+});
+
+/** API-Zugang zum Lohnsystem; Secret mit AES-256-GCM verschlüsselt (wie TOTP). */
+export const payrollCredentials = pgTable('payroll_credentials', {
+  orgId: uuid('org_id')
+    .primaryKey()
+    .references(() => organizations.id),
+  provider: text('provider', { enum: ['personio'] }).notNull(),
+  clientId: text('client_id').notNull(),
+  clientSecretEnc: text('client_secret_enc').notNull(),
+  updatedBy: uuid('updated_by').notNull(),
+  updatedAt: tstz('updated_at').notNull().defaultNow(),
+});
+
+/** Ergebnisprotokoll jeder Übertragung (nur Insert). */
+export const payrollTransfers = pgTable(
+  'payroll_transfers',
+  {
+    id: id(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id),
+    month: text('month').notNull(),
+    provider: text('provider', { enum: ['personio'] }).notNull(),
+    actorId: uuid('actor_id').notNull(),
+    status: text('status', { enum: ['ok', 'partial', 'failed'] }).notNull(),
+    result: jsonb('result').notNull(),
+    /** Angelegte Personio-Perioden je Mitglied (für Ersetzen bei erneuter Übertragung). */
+    periodIds: jsonb('period_ids').notNull().default({}),
+    createdAt: createdAt(),
+  },
+  (t) => [index('payroll_transfers_org').on(t.orgId, t.month)],
+);

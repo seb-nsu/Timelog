@@ -7,6 +7,8 @@ import {
   authTokens,
   corrections,
   events,
+  leaveRequestEvents,
+  leaveRequests,
   organizations,
   presenceSpans,
   refreshTokens,
@@ -65,6 +67,15 @@ export async function purgeExpired(db: Db, nowMs: number): Promise<PurgeResult> 
       await tx
         .delete(approvals)
         .where(and(inArray(approvals.userId, ids), lt(approvals.month, cutoffDate.slice(0, 7))));
+      // Anträge, die vollständig vor der Frist enden, samt Protokoll
+      const oldRequests = tx
+        .select({ id: leaveRequests.id })
+        .from(leaveRequests)
+        .where(and(inArray(leaveRequests.userId, ids), lt(leaveRequests.toDate, cutoffDate)));
+      await tx.delete(leaveRequestEvents).where(inArray(leaveRequestEvents.requestId, oldRequests));
+      await tx
+        .delete(leaveRequests)
+        .where(and(inArray(leaveRequests.userId, ids), lt(leaveRequests.toDate, cutoffDate)));
 
       // Anonymisierte Konten nach Ablauf der Frist vollständig löschen
       for (const m of members) {

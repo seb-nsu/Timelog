@@ -12,7 +12,13 @@ import {
   corrections,
   devices,
   events,
+  leaveAdjustments,
+  leaveProfiles,
+  leaveRequestEvents,
+  leaveRequests,
+  memberPayroll,
   organizations,
+  overtimeBookings,
   presenceSpans,
   refreshTokens,
   targetHours,
@@ -86,6 +92,12 @@ export async function deleteUserData(tx: Tx, userId: string, includeUser: boolea
     approvals,
     absences,
     targetHours,
+    leaveRequestEvents,
+    leaveRequests,
+    leaveAdjustments,
+    overtimeBookings,
+    leaveProfiles,
+    memberPayroll,
   ]) {
     await tx.delete(table).where(eq(table.userId, userId));
   }
@@ -199,6 +211,11 @@ export function privacyRoutes(app: App, ctx: AppContext): void {
             .where(eq(workNetworks.userId, claims.sub)),
           corrections: await tx.select().from(corrections),
           approvals: await tx.select().from(approvals),
+          leaveProfile: await tx.select().from(leaveProfiles),
+          leaveRequests: await tx.select().from(leaveRequests),
+          leaveRequestEvents: await tx.select().from(leaveRequestEvents),
+          leaveAdjustments: await tx.select().from(leaveAdjustments),
+          overtimeBookings: await tx.select().from(overtimeBookings),
         };
       });
       return reply
