@@ -380,3 +380,14 @@ dd {
     animation: none !important;
   }
 }
+
+.notice {
+  background: var(--info-bg);
+  color: var(--info-fg);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+}
+
+.scroll {
+  overflow-x: auto;
+}
