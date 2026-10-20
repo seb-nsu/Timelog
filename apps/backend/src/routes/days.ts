@@ -61,6 +61,36 @@ interface Computed {
   config: RulesConfig;
 }
 
+type UserRow = typeof users.$inferSelect;
+type OrgRow = typeof organizations.$inferSelect;
+
+/**
+ * Regelwerk-Konfiguration des Nutzers: Organisations-Parameter, Bundesland und Sollzeiten (RLS: die
+ * Transaktion muss für diesen Nutzer laufen).
+ */
+export async function loadRulesConfig(
+  tx: Tx,
+  userId: string,
+): Promise<{ user: UserRow; org: OrgRow | undefined; config: RulesConfig } | undefined> {
+  const [user] = await tx.select().from(users).where(eq(users.id, userId));
+  if (!user) return undefined;
+  const org = user.orgId
+    ? (await tx.select().from(organizations).where(eq(organizations.id, user.orgId)))[0]
+    : undefined;
+  const targetRows = await tx.select().from(targetHours);
+  const state = (GERMAN_STATES as readonly string[]).includes(user.state)
+    ? (user.state as RulesConfig['state'])
+    : 'BE';
+  const orgConfig = orgRulesConfig.safeParse(org?.rulesConfig ?? {});
+  const schedule = buildSchedule(targetRows);
+  const config = resolveConfig({
+    ...(orgConfig.success ? orgConfig.data : {}),
+    state,
+    ...(schedule ? { targetSchedule: schedule } : {}),
+  });
+  return { user, org, config };
+}
+
 /** Lädt alle Eingaben des Nutzers und berechnet die Arbeitstage mit dem Regelwerk. */
 export async function computeUserDays(
   tx: Tx,
@@ -69,11 +99,9 @@ export async function computeUserDays(
   to: string,
   nowMs: number,
 ): Promise<Computed> {
-  const [user] = await tx.select().from(users).where(eq(users.id, userId));
-  if (!user) return { days: [], timezone: 'Europe/Berlin', config: resolveConfig() };
-  const org = user.orgId
-    ? (await tx.select().from(organizations).where(eq(organizations.id, user.orgId)))[0]
-    : undefined;
+  const loaded = await loadRulesConfig(tx, userId);
+  if (!loaded) return { days: [], timezone: 'Europe/Berlin', config: resolveConfig() };
+  const { user, config } = loaded;
 
   const loadFrom = new Date(Date.parse(`${addDays(from, -LOOKBACK_DAYS)}T00:00:00Z`));
   const loadTo = new Date(Date.parse(`${addDays(to, 2)}T00:00:00Z`));
@@ -88,7 +116,6 @@ export async function computeUserDays(
     .from(presenceSpans)
     .innerJoin(devices, eq(devices.id, presenceSpans.deviceId))
     .where(and(gte(presenceSpans.end, loadFrom), lte(presenceSpans.start, loadTo)));
-  const targetRows = await tx.select().from(targetHours);
   const absenceRows = await tx
     .select()
     .from(absences)
@@ -107,17 +134,6 @@ export async function computeUserDays(
     kind: a.kind,
     minutes: a.minutes,
   }));
-
-  const state = (GERMAN_STATES as readonly string[]).includes(user.state)
-    ? (user.state as RulesConfig['state'])
-    : 'BE';
-  const orgConfig = orgRulesConfig.safeParse(org?.rulesConfig ?? {});
-  const schedule = buildSchedule(targetRows);
-  const config = resolveConfig({
-    ...(orgConfig.success ? orgConfig.data : {}),
-    state,
-    ...(schedule ? { targetSchedule: schedule } : {}),
-  });
 
   const days = computeDays(
     ruleEvents,

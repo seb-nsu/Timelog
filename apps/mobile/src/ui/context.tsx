@@ -20,6 +20,7 @@ export type Route =
   | { name: 'week'; date?: string }
   | { name: 'overview' }
   | { name: 'absences' }
+  | { name: 'leave' }
   | { name: 'settings' }
   | { name: 'setup' };
 

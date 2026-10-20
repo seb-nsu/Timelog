@@ -62,6 +62,30 @@ import {
   teamSchema,
   teamsResponse,
 } from './org.js';
+import {
+  type LeaveRequestInput,
+  type OvertimeBookingInput,
+  type leaveAdjustmentInput,
+  type leaveProfileUpdate,
+  type leaveSettingsUpdate,
+  type payrollConfigUpdate,
+  type payrollMemberUpdate,
+  calendarResponse,
+  leaveAdjustmentSchema,
+  leaveOverviewResponse,
+  leaveRequestSchema,
+  leaveSettingsSchema,
+  memberLeaveResponse,
+  orgLeaveRequestsResponse,
+  overtimeBookingSchema,
+  overtimeResponse,
+  payrollConfigSchema,
+  payrollMemberSchema,
+  payrollMembersResponse,
+  personioStatusResponse,
+  transferSchema,
+  transfersResponse,
+} from './leave.js';
 
 export const API_PREFIX = '/api/v1';
 
@@ -220,6 +244,32 @@ export function createApiClient(options: ApiClientOptions) {
       list: () => call('GET', '/approvals', ownApprovalsResponse),
       submit: (month: string) => call('POST', `/approvals/${month}`, ownApprovalSchema, {}),
     },
+    /** Urlaubskonto und Anträge (Urlaub, Überstundenabbau). */
+    leave: {
+      get: (year: number) => call('GET', '/leave', leaveOverviewResponse, undefined, { year }),
+      request: (body: LeaveRequestInput) =>
+        call('POST', '/leave/requests', leaveRequestSchema, body),
+      cancel: (id: string, comment?: string) =>
+        call(
+          'POST',
+          `/leave/requests/${enc(id)}/cancel`,
+          leaveRequestSchema,
+          comment ? { comment } : {},
+        ),
+      /** Nur Privatkonto; in Firmen pflegt der Admin den Anspruch. */
+      setProfile: (body: z.input<typeof leaveProfileUpdate>) =>
+        call('PUT', '/leave/profile', okResponse, body),
+      setSettings: (body: z.input<typeof leaveSettingsUpdate>) =>
+        call('PUT', '/leave/settings', leaveSettingsSchema, body),
+      adjust: (body: z.input<typeof leaveAdjustmentInput>) =>
+        call('POST', '/leave/adjustments', leaveAdjustmentSchema, body),
+    },
+    overtime: {
+      get: (year: number) => call('GET', '/overtime', overtimeResponse, undefined, { year }),
+      /** Nur Privatkonto; in Firmen bucht der Admin. */
+      book: (body: OvertimeBookingInput) =>
+        call('POST', '/overtime/bookings', overtimeBookingSchema, body),
+    },
     invitations: {
       info: (token: string) =>
         call('GET', '/auth/invite', inviteInfoResponse, undefined, { token }),
@@ -308,6 +358,70 @@ export function createApiClient(options: ApiClientOptions) {
             ...(q.teamId ? { teamId: q.teamId } : {}),
           })
         ).blob(),
+      leave: {
+        requests: (q: { status?: string; from?: string; to?: string } = {}) =>
+          call('GET', '/org/leave/requests', orgLeaveRequestsResponse, undefined, {
+            ...(q.status ? { status: q.status } : {}),
+            ...(q.from ? { from: q.from } : {}),
+            ...(q.to ? { to: q.to } : {}),
+          }),
+        approve: (id: string, comment?: string) =>
+          call(
+            'POST',
+            `/org/leave/requests/${enc(id)}/approve`,
+            leaveRequestSchema,
+            comment ? { comment } : {},
+          ),
+        reject: (id: string, comment: string) =>
+          call('POST', `/org/leave/requests/${enc(id)}/reject`, leaveRequestSchema, { comment }),
+        cancel: (id: string, comment: string) =>
+          call('POST', `/org/leave/requests/${enc(id)}/cancel`, leaveRequestSchema, { comment }),
+        calendar: (q: { from: string; to: string; teamId?: string }) =>
+          call('GET', '/org/leave/calendar', calendarResponse, undefined, {
+            from: q.from,
+            to: q.to,
+            ...(q.teamId ? { teamId: q.teamId } : {}),
+          }),
+        settings: () => call('GET', '/org/leave/settings', leaveSettingsSchema),
+        setSettings: (body: z.input<typeof leaveSettingsUpdate>) =>
+          call('PUT', '/org/leave/settings', leaveSettingsSchema, body),
+        member: (id: string, year: number) =>
+          call('GET', `/org/members/${enc(id)}/leave`, memberLeaveResponse, undefined, { year }),
+        setProfile: (id: string, body: z.input<typeof leaveProfileUpdate>) =>
+          call('PUT', `/org/members/${enc(id)}/leave-profile`, okResponse, body),
+        adjust: (id: string, body: z.input<typeof leaveAdjustmentInput>) =>
+          call('POST', `/org/members/${enc(id)}/leave-adjustments`, leaveAdjustmentSchema, body),
+        overtime: (id: string, year: number) =>
+          call('GET', `/org/members/${enc(id)}/overtime`, overtimeResponse, undefined, { year }),
+        book: (id: string, body: OvertimeBookingInput) =>
+          call('POST', `/org/members/${enc(id)}/overtime-bookings`, overtimeBookingSchema, body),
+      },
+      payroll: {
+        config: () => call('GET', '/org/payroll/config', payrollConfigSchema),
+        setConfig: (body: z.input<typeof payrollConfigUpdate>) =>
+          call('PUT', '/org/payroll/config', payrollConfigSchema, body),
+        members: () => call('GET', '/org/payroll/members', payrollMembersResponse),
+        setMember: (id: string, body: z.input<typeof payrollMemberUpdate>) =>
+          call('PUT', `/org/payroll/members/${enc(id)}`, payrollMemberSchema, body),
+        /** Lohn-Export (nur freigegebene Monate) als Datei. */
+        export: async (q: { month: string; format: string; teamId?: string }) =>
+          (
+            await send('GET', '/org/payroll/export', undefined, {
+              month: q.month,
+              format: q.format,
+              ...(q.teamId ? { teamId: q.teamId } : {}),
+            })
+          ).blob(),
+        personio: {
+          status: () => call('GET', '/org/payroll/personio', personioStatusResponse),
+          set: (body: { clientId: string; clientSecret: string }) =>
+            call('PUT', '/org/payroll/personio', personioStatusResponse, body),
+          remove: () => call('DELETE', '/org/payroll/personio', okResponse),
+          transfer: (month: string) =>
+            call('POST', '/org/payroll/personio/transfer', transferSchema, { month }),
+          transfers: () => call('GET', '/org/payroll/transfers', transfersResponse),
+        },
+      },
       audit: (q: { limit?: number; before?: string } = {}) =>
         call('GET', '/org/audit', auditResponse, undefined, {
           limit: q.limit ?? 50,

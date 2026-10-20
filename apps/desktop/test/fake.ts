@@ -20,6 +20,81 @@ export interface Fake extends DesktopBackend {
   emit: () => void;
 }
 
+export const LEAVE_REQUEST = {
+  id: '22222222-2222-4222-8222-222222222222',
+  userId: '33333333-3333-4333-8333-333333333333',
+  kind: 'vacation',
+  from: '2026-11-02',
+  to: '2026-11-06',
+  halfDayStart: false,
+  halfDayEnd: false,
+  days: 5,
+  minutes: 2400,
+  status: 'approved',
+  createdAt: '2026-10-01T08:00:00Z',
+  decisionComment: 'Viel Erholung',
+  history: [],
+} as const;
+
+export const LEAVE_OVERVIEW = {
+  year: 2026,
+  account: {
+    year: 2026,
+    entitlement: 30,
+    correction: 0,
+    carryOver: 2,
+    carryOverManual: false,
+    carryOverUsed: 2,
+    carryOverForfeited: 0,
+    carryOverExpiry: '2026-03-31',
+    taken: 12.5,
+    planned: 5,
+    pending: 0,
+    remaining: 14.5,
+    remainingAfterPending: 14.5,
+  },
+  requests: [LEAVE_REQUEST],
+  profile: {},
+  adjustments: [],
+  settings: {
+    defaultAnnualDays: 30,
+    standardWorkdaysPerWeek: 5,
+    carryOverExpiry: '03-31',
+    carryOverExpires: true,
+    maxOvertimeMinutes: 600,
+  },
+  managed: true,
+};
+
+export const OVERTIME = {
+  year: 2026,
+  startBalanceMinutes: 120,
+  months: [
+    {
+      month: '2026-09',
+      workMinutes: 600,
+      bookedMinutes: 0,
+      reducedMinutes: 0,
+      balanceMinutes: 720,
+      overMax: true,
+      approved: true,
+    },
+    {
+      month: '2026-10',
+      workMinutes: -480,
+      bookedMinutes: 0,
+      reducedMinutes: 480,
+      balanceMinutes: 240,
+      overMax: false,
+      approved: false,
+    },
+  ],
+  balanceMinutes: 240,
+  maxBalanceMinutes: 600,
+  overMax: false,
+  bookings: [],
+};
+
 export function fakeBackend(
   overrides: Partial<AppState> = {},
   data: LocalData = { events: [], spans: [] },
@@ -58,6 +133,13 @@ export function fakeBackend(
     'GET /api/v1/absences': { absences: [] },
     'GET /api/v1/prompts': { prompts: [] },
     'POST /api/v1/prompts/dismiss': { ok: true },
+    'GET /api/v1/leave': LEAVE_OVERVIEW,
+    'GET /api/v1/overtime': OVERTIME,
+    'POST /api/v1/leave/requests': { ...LEAVE_REQUEST, status: 'pending' },
+    [`POST /api/v1/leave/requests/${LEAVE_REQUEST.id}/cancel`]: {
+      ...LEAVE_REQUEST,
+      status: 'cancelled',
+    },
   };
   responses['GET /api/v1/settings'] = responses['PUT /api/v1/settings'];
 

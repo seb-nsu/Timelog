@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { DesktopBackend } from './backend.js';
 import { BackendContext, TranslatorContext } from './context.js';
 import { DayLog } from './screens/DayLog.js';
+import { Leave } from './screens/Leave.js';
 import { LoginForm } from './screens/LoginForm.js';
 import { Prompts } from './screens/Prompts.js';
 import { Review } from './screens/Review.js';
@@ -15,8 +16,8 @@ import { useDesktop } from './useDesktop.js';
 import { usePrompts } from './usePrompts.js';
 import { useReminders } from './useReminders.js';
 
-type Page = 'status' | 'log' | 'review' | 'week' | 'settings';
-const PAGES: readonly Page[] = ['status', 'log', 'review', 'week', 'settings'];
+type Page = 'status' | 'log' | 'review' | 'week' | 'leave' | 'settings';
+const PAGES: readonly Page[] = ['status', 'log', 'review', 'week', 'leave', 'settings'];
 
 export function App({
   backend,
@@ -121,6 +122,7 @@ export function App({
             onChanged={changed}
           />
         )}
+        {page === 'leave' && <Leave today={today} />}
         {page === 'settings' && (
           <Settings state={state} profile={profile} onLogout={reload} onSaved={reload} />
         )}

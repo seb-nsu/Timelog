@@ -380,3 +380,10 @@ dd {
     animation: none !important;
   }
 }
+
+dl.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.25rem 1rem;
+  margin: 0;
+}

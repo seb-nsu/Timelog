@@ -180,14 +180,14 @@ describe('Freigaben', () => {
 });
 
 describe('Rollen', () => {
-  it('Manager sieht nur Freigaben, Mitglieder und Teams, ohne E-Mail und Rollen', async () => {
+  it('Manager sieht nur Freigaben, Urlaub, Mitglieder und Teams, ohne E-Mail und Rollen', async () => {
     renderApp(signedIn(fakeServer({ role: 'manager' })));
     await screen.findByRole('heading', { level: 1, name: 'Freigaben' });
     expect(
       nav()
         .getAllByRole('button')
         .map((b) => b.textContent),
-    ).toEqual(['Freigaben', 'Mitglieder', 'Teams']);
+    ).toEqual(['Freigaben', 'Urlaub', 'Mitglieder', 'Teams']);
     await userEvent.click(nav().getByRole('button', { name: 'Mitglieder' }));
     const table = await screen.findByRole('table');
     expect(
@@ -209,11 +209,13 @@ describe('Rollen', () => {
         .map((b) => b.textContent),
     ).toEqual([
       'Freigaben',
+      'Urlaub',
       'Mitglieder',
       'Teams',
       'Firmen-Netze',
       'Einstellungen',
       'Export',
+      'Lohn',
       'Audit-Log',
     ]);
     await userEvent.click(nav().getByRole('button', { name: 'Teams' }));
@@ -291,6 +293,98 @@ describe('Verwaltung (Admin)', () => {
       month: '2026-09',
       format: 'csv',
     });
+  });
+});
+
+describe('Urlaub', () => {
+  it('Manager entscheidet offene Anträge mit Kommentar und sieht Überschneidungen', async () => {
+    const server = fakeServer({ role: 'manager' });
+    renderApp(signedIn(server));
+    await userEvent.click(await screen.findByRole('button', { name: 'Urlaub' }));
+    const pending = within(await screen.findByRole('region', { name: 'Offene Anträge' }));
+    expect(await pending.findByText('Anna Arbeit')).toBeTruthy();
+    expect(pending.getByText(/Ben Büro/)).toBeTruthy();
+    expect(pending.getByText(/Familienbesuch/)).toBeTruthy();
+    // Teamkalender ohne Grund der Abwesenheit
+    const cal = within(screen.getByRole('region', { name: 'Teamkalender' }));
+    expect(await cal.findByText('abwesend')).toBeTruthy();
+    expect(nav().queryByRole('button', { name: 'Lohn' })).toBeNull();
+    await expectAccessible();
+
+    await userEvent.click(pending.getByRole('button', { name: 'Entscheiden: Anna Arbeit' }));
+    expect(pending.getByRole('button', { name: 'Ablehnen' })).toHaveProperty('disabled', true);
+    await userEvent.type(pending.getByLabelText(/Kommentar/), 'Viel Erholung');
+    await expectAccessible();
+    await userEvent.click(pending.getByRole('button', { name: 'Genehmigen' }));
+    expect(await screen.findByText('Antrag von Anna Arbeit genehmigt.')).toBeTruthy();
+    const call = server.calls.find((c) => c.path === `/org/leave/requests/${ID.request}/approve`);
+    expect(call?.body).toEqual({ comment: 'Viel Erholung' });
+    expect(await screen.findByText('Keine offenen Anträge.')).toBeTruthy();
+  });
+
+  it('Admin pflegt Konten: Überstunden-Auszahlung wird als Abzug gebucht', async () => {
+    const server = fakeServer();
+    renderApp(signedIn(server));
+    await userEvent.click(await screen.findByRole('button', { name: 'Urlaub' }));
+    const picker = within(await screen.findByRole('region', { name: 'Konten der Mitglieder' }));
+    await userEvent.selectOptions(await picker.findByLabelText('Person'), ID.anna);
+    await userEvent.click(picker.getByRole('button', { name: 'Konto öffnen' }));
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Urlaub: Anna Arbeit' }),
+    ).toBeTruthy();
+    expect(screen.getByText('13 Tage')).toBeTruthy();
+    await expectAccessible();
+    const form = within(screen.getByRole('form', { name: 'Manuelle Buchung' }));
+    await userEvent.type(form.getByLabelText('Stunden'), '2');
+    await userEvent.type(form.getByLabelText('Kommentar'), 'Auszahlung Oktober');
+    await userEvent.click(form.getByRole('button', { name: 'Buchen' }));
+    expect(await screen.findByText('Überstunden gebucht.')).toBeTruthy();
+    expect(
+      server.calls.find((c) => c.path === `/org/members/${ID.anna}/overtime-bookings`)?.body,
+    ).toEqual({ month: '2026-10', kind: 'payout', minutes: -120, comment: 'Auszahlung Oktober' });
+  });
+});
+
+describe('Lohn (Admin)', () => {
+  it('Export, Personalnummer, Personio-Zugang und Übertragung', async () => {
+    const server = fakeServer();
+    const { download } = renderApp(signedIn(server));
+    await userEvent.click(await screen.findByRole('button', { name: 'Lohn' }));
+    await screen.findByRole('heading', { level: 1, name: 'Lohn' });
+    await screen.findByLabelText('Personalnummer Anna Arbeit');
+    await expectAccessible();
+
+    await userEvent.click(screen.getByLabelText('Lexware lohn+gehalt (Import-ASCII)'));
+    await userEvent.click(screen.getByRole('button', { name: 'Lohndatei herunterladen' }));
+    await waitFor(() => {
+      expect(download).toHaveBeenCalled();
+    });
+    expect(download.mock.calls[0]?.[1]).toBe('lohn_lexware_2026-09.csv');
+    expect(server.calls.find((c) => c.path === '/org/payroll/export')?.query).toEqual({
+      month: '2026-09',
+      format: 'lexware',
+    });
+
+    await userEvent.type(screen.getByLabelText('Personalnummer Anna Arbeit'), '00042');
+    await userEvent.click(screen.getByRole('button', { name: 'Speichern: Anna Arbeit' }));
+    expect(await screen.findByText('Zuordnung gespeichert.')).toBeTruthy();
+    expect(server.calls.find((c) => c.path === `/org/payroll/members/${ID.anna}`)?.body).toEqual({
+      personnelNumber: '00042',
+      personioId: null,
+    });
+
+    expect(screen.getByRole('button', { name: 'Übertragen' })).toHaveProperty('disabled', true);
+    await userEvent.type(screen.getByLabelText('Client-ID'), 'papi-1');
+    await userEvent.type(screen.getByLabelText('Client-Secret'), 'geheim');
+    await userEvent.click(screen.getByRole('button', { name: 'Zugang speichern' }));
+    expect(await screen.findByText(/Zugang hinterlegt \(Client-ID papi-1/)).toBeTruthy();
+    expect(screen.getByLabelText('Client-Secret')).toHaveProperty('value', '');
+    await userEvent.click(screen.getByRole('button', { name: 'Übertragen' }));
+    expect(await screen.findByText('Übertragung 2026-09: teilweise erfolgreich.')).toBeTruthy();
+    expect(
+      await screen.findByText(/Alex Admin: übersprungen – Monat nicht freigegeben/),
+    ).toBeTruthy();
+    await expectAccessible();
   });
 });
 

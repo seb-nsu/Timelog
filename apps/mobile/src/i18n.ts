@@ -99,6 +99,10 @@ const de = {
   'absences.invalid': 'Bitte gültige Daten eingeben (Von ≤ Bis, höchstens 366 Tage).',
   'absences.saved': 'Gespeichert.',
   'absences.weekendSkipped': 'Tage ohne Sollzeit werden übersprungen.',
+  'absences.useLeave': 'Urlaub und Überstundenabbau bitte als Antrag stellen (Übersicht → Urlaub).',
+  'overview.leave': 'Urlaub und Überstunden',
+  'leave.needsAccount': 'Urlaubs- und Überstundenkonto gibt es mit Konto.',
+  'leave.dateHint': 'JJJJ-MM-TT',
 
   'settings.title': 'Einstellungen',
   'settings.account': 'Konto',
@@ -330,6 +334,10 @@ const en: Record<MobileKey, string> = {
   'absences.invalid': 'Please enter valid dates (from ≤ to, at most 366 days).',
   'absences.saved': 'Saved.',
   'absences.weekendSkipped': 'Days without target hours are skipped.',
+  'absences.useLeave': 'Please request vacation and time off in lieu (Overview → Leave).',
+  'overview.leave': 'Leave and overtime',
+  'leave.needsAccount': 'Leave and overtime accounts need an account.',
+  'leave.dateHint': 'YYYY-MM-DD',
 
   'settings.title': 'Settings',
   'settings.account': 'Account',
@@ -463,8 +471,20 @@ const en: Record<MobileKey, string> = {
 };
 
 const ABSENCE_LABELS: Record<Locale, Record<AbsenceKind, string>> = {
-  de: { vacation: 'Urlaub', sick: 'Krank', holiday: 'Feiertag', other: 'Sonstiges' },
-  en: { vacation: 'Vacation', sick: 'Sick', holiday: 'Holiday', other: 'Other' },
+  de: {
+    vacation: 'Urlaub',
+    sick: 'Krank',
+    holiday: 'Feiertag',
+    other: 'Sonstiges',
+    overtime: 'Überstundenabbau',
+  },
+  en: {
+    vacation: 'Vacation',
+    sick: 'Sick',
+    holiday: 'Holiday',
+    other: 'Other',
+    overtime: 'Time off in lieu',
+  },
 };
 
 const WEEKDAYS: Record<Locale, string[]> = {

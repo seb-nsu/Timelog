@@ -350,7 +350,8 @@ export function profileRoutes(app: App, ctx: AppContext): void {
       schema: {
         tags: ['absences'],
         security,
-        description: 'Ersetzt alle Abwesenheiten im Zeitraum.',
+        description:
+          'Ersetzt die frei erfassten Abwesenheiten im Zeitraum. Abwesenheiten aus genehmigten Anträgen bleiben bestehen. Firmenkonten: neuer Urlaub/Überstundenabbau nur per Antrag (409 leave_request_required).',
         body: absencesUpdate,
         response: { 200: okResponse },
       },
@@ -359,15 +360,36 @@ export function profileRoutes(app: App, ctx: AppContext): void {
       const claims = authOf(request);
       const { from, to, absences: list } = request.body;
       await withUser(ctx.db, scopeOf(claims), async (tx) => {
-        await tx
-          .delete(absences)
-          .where(
-            and(eq(absences.userId, claims.sub), gte(absences.date, from), lte(absences.date, to)),
-          );
-        if (list.length > 0) {
+        const inRange = and(
+          eq(absences.userId, claims.sub),
+          gte(absences.date, from),
+          lte(absences.date, to),
+        );
+        const existing = await tx
+          .select({ date: absences.date, kind: absences.kind, requestId: absences.requestId })
+          .from(absences)
+          .where(inRange);
+        // Abwesenheiten aus genehmigten Anträgen bleiben unberührt (nur über den Antrag änderbar);
+        // mitgeschickte Kopien davon werden ignoriert.
+        const key = (a: { date: string; kind: string }) => `${a.date}|${a.kind}`;
+        const fromRequests = new Set(existing.filter((a) => a.requestId).map(key));
+        const freeBefore = new Set(existing.filter((a) => !a.requestId).map(key));
+        const free = list.filter((a) => !fromRequests.has(key(a)));
+        const user = await loadUser(tx, claims.sub);
+        if (
+          user.orgId &&
+          free.some(
+            (a) => (a.kind === 'vacation' || a.kind === 'overtime') && !freeBefore.has(key(a)),
+          )
+        ) {
+          // Firmenkonto: Urlaub und Überstundenabbau nur per Antrag.
+          throw new HttpError(409, 'leave_request_required');
+        }
+        await tx.delete(absences).where(and(inRange, isNull(absences.requestId)));
+        if (free.length > 0) {
           await tx
             .insert(absences)
-            .values(list.map((a) => ({ userId: claims.sub, ...a, note: a.note ?? null })));
+            .values(free.map((a) => ({ userId: claims.sub, ...a, note: a.note ?? null })));
         }
       });
       return { ok: true as const };

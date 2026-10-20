@@ -6,15 +6,24 @@ Dieses Dokument beschreibt die Einrichtung der Firmenversion (Phase 6) und wie S
 
 | Rolle   | Darf                                                                                                                                  |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Mitglied | eigene Zeiten in Desktop- und Mobile-App, Monat einreichen                                                                           |
-| Manager | Freigaben und Mitglieder **seiner Teams** (Name, Team), Teamliste; je Tag nur Beginn, Ende, Pausensumme, Auffüllung, Netto, Status, Hinweise |
-| Admin   | alles in der Organisation: Mitglieder, Rollen, Teams, Einladungen, Sollzeiten, Firmen-Netze, Regelwerk-Parameter, SSO, Export, Audit-Log |
+| Mitglied | eigene Zeiten in Desktop- und Mobile-App, Monat einreichen, Urlaub und Überstundenabbau beantragen und vor Beginn stornieren          |
+| Manager | Freigaben und Mitglieder **seiner Teams** (Name, Team), Teamliste; je Tag nur Beginn, Ende, Pausensumme, Auffüllung, Netto, Status, Hinweise; Urlaubsanträge seiner Teams genehmigen/ablehnen, Teamkalender, Konten seiner Teams lesen |
+| Admin   | alles in der Organisation: Mitglieder, Rollen, Teams, Einladungen, Sollzeiten, Firmen-Netze, Regelwerk-Parameter, SSO, Export, Audit-Log; Urlaubsanspruch, Übertrag, Korrekturen, Überstunden-Buchungen, Stornierung begonnener Anträge, Lohn-Export und Personio |
 
 - Sitzungen, Quellen, Rohereignisse und Geräte sieht niemand außer der Person selbst. Die Prüfung sitzt zentral im Fastify-Hook `requireOrgRole` (`apps/backend/src/routes/org/access.ts`) und zusätzlich in PostgreSQL-RLS (`drizzle/0003_org_rls.sql`).
 - Manager und Admins brauchen Zwei-Faktor (TOTP); eine SSO-Anmeldung ersetzt ihn.
 - Den eigenen Monat kann niemand selbst freigeben.
 - Freigegebene Monate werden als Snapshot gespeichert und nie neu berechnet. Korrigiert ein Admin einen Tag in einem freigegebenen Monat, wird die Freigabe zurückgesetzt (Status „eingereicht“, Audit-Eintrag `approval.reopen`).
 - Alle Admin- und Freigabe-Aktionen stehen im Audit-Log (nur lesbar für Admins, nicht änderbar).
+
+## Urlaub, Überstunden und Lohn
+
+Details, Quellen und 👤-Prüfanleitung: [URLAUB_LOHN.md](URLAUB_LOHN.md).
+
+- **Urlaub** (Manager und Admin): offene Anträge mit Überschneidungen im Team genehmigen oder mit Kommentar ablehnen, Teamkalender (nur Name und Zeitraum, Krankheit als „abwesend“), eigener Antrag (entscheidet eine andere Person), Konten der Mitglieder. Admins pflegen dort Anspruch (Teilzeit, Ein-/Austritt), Übertrag, Korrekturen, Überstunden-Buchungen und die Urlaubseinstellungen der Organisation (Standardanspruch, Verfall mit Stichtag, Höchstsaldo).
+- **Lohn** (nur Admin): Lohnarten, DATEV-Berater-/Mandantennummer, LODAS-Ausfallschlüssel, Personalnummern und Personio-IDs, Lohndatei für DATEV LODAS, DATEV Lohn und Gehalt oder Lexware lohn+gehalt (nur freigegebene Monate), Personio-Zugang (verschlüsselt) mit „Übertragen“ und Ergebnisprotokoll.
+- Neue Audit-Einträge: `leave.request`, `leave.approve`, `leave.reject`, `leave.cancel`, `leave.settings`, `leave.profile`, `leave.adjust`, `overtime.book`, `payroll.config`, `payroll.member`, `payroll.export`, `payroll.credentials`, `payroll.credentials.delete`, `payroll.transfer`.
+- RLS für die neuen Tabellen steht in `drizzle/0006_leave_payroll.sql`: Anträge sieht die Person selbst und wer sie im Team sehen darf; entscheiden dürfen nur Manager/Admin über andere; Antragshistorie, Konto-Buchungen und Übertragungsprotokoll sind nur anhängbar; Lohn-Zuordnung, Zugangsdaten und Protokoll nur für Admins.
 
 ## Web-Admin starten
 

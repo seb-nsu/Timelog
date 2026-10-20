@@ -206,5 +206,15 @@ describe('Woche/Monat', () => {
     expect(week.absenceMinutes).toBe(480);
     // Mo ohne Erfassung zählt nicht, Di Urlaub ±0, Mi +20; Do/Fr liegen nach `until`
     expect(week.balanceMinutes).toBe(20);
+
+    // Überstundenabbau: Soll bleibt, Gutschrift 0 → Saldo sinkt
+    const withOvertime: Profile = {
+      ...profile,
+      absences: [{ date: '2026-10-13', kind: 'overtime', minutes: 480 }],
+    };
+    const otDays = computeLocalDays(data, withOvertime, '2026-10-15T07:00:00Z');
+    const otWeek = periodDays(otDays, withOvertime, '2026-10-12', '2026-10-18', '2026-10-14');
+    expect(otWeek.absenceMinutes).toBe(0);
+    expect(otWeek.balanceMinutes).toBe(20 - 480);
   });
 });

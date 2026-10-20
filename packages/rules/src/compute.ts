@@ -545,6 +545,11 @@ interface DayAcc {
   warnings: Set<Warning>;
 }
 
+/** Wie viele Minuten eine Abwesenheit dem Saldo gutschreibt. Überstundenabbau: 0 (Soll bleibt). */
+export function creditedAbsenceMinutes(a: Pick<Absence, 'kind' | 'minutes'>): number {
+  return a.kind === 'overtime' ? 0 : a.minutes;
+}
+
 export function targetMinutes(date: string, cfg: RulesConfig): number {
   if (isHoliday(date, cfg.state)) return 0;
   let entry: RulesConfig['targetSchedule'][number] | undefined;
@@ -825,7 +830,7 @@ export function computeDays(
   // 16. Abwesenheiten und Tageswarnungen
   const absenceByDate = new Map<string, number>();
   for (const a of absences) {
-    absenceByDate.set(a.date, (absenceByDate.get(a.date) ?? 0) + a.minutes);
+    absenceByDate.set(a.date, (absenceByDate.get(a.date) ?? 0) + creditedAbsenceMinutes(a));
     day(a.date);
   }
   for (const [date, ws] of dayWarnings) for (const w of ws) day(date).warnings.add(w);

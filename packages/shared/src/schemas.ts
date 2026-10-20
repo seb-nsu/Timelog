@@ -1,5 +1,6 @@
 // Zod-Schemas für alle API-Grenzen. Backend validiert damit Anfragen, Clients die Antworten.
 import {
+  ABSENCE_KINDS,
   type Break,
   EVENT_SOURCES,
   EVENT_TYPES,
@@ -439,7 +440,7 @@ export const targetHoursUpdate = targetHoursEntry;
 
 export const absenceSchema = z.object({
   date: isoDate,
-  kind: z.enum(['vacation', 'sick', 'holiday', 'other']),
+  kind: z.enum(ABSENCE_KINDS),
   minutes: z.number().int().min(0).max(1440),
   note: z.string().max(500).optional(),
 });

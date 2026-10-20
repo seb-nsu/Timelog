@@ -36,6 +36,13 @@
       "when": 1792526467593,
       "tag": "0004_push",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792536007006,
+      "tag": "0005_leave_payroll",
+      "breakpoints": true
     }
   ]
 }

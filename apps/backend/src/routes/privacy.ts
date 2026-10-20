@@ -12,7 +12,13 @@ import {
   corrections,
   devices,
   events,
+  leaveAdjustments,
+  leaveProfiles,
+  leaveRequestEvents,
+  leaveRequests,
+  memberPayroll,
   organizations,
+  overtimeBookings,
   presenceSpans,
   pushPrompts,
   refreshTokens,
@@ -88,6 +94,12 @@ export async function deleteUserData(tx: Tx, userId: string, includeUser: boolea
     absences,
     targetHours,
     pushPrompts,
+    leaveRequestEvents,
+    leaveRequests,
+    leaveAdjustments,
+    overtimeBookings,
+    leaveProfiles,
+    memberPayroll,
   ]) {
     await tx.delete(table).where(eq(table.userId, userId));
   }
@@ -210,6 +222,11 @@ export function privacyRoutes(app: App, ctx: AppContext): void {
             sentAt: p.sentAt?.toISOString() ?? null,
             dismissedAt: p.dismissedAt?.toISOString() ?? null,
           })),
+          leaveProfile: await tx.select().from(leaveProfiles),
+          leaveRequests: await tx.select().from(leaveRequests),
+          leaveRequestEvents: await tx.select().from(leaveRequestEvents),
+          leaveAdjustments: await tx.select().from(leaveAdjustments),
+          overtimeBookings: await tx.select().from(overtimeBookings),
         };
       });
       return reply

@@ -20,11 +20,11 @@ import {
   targetHoursResponse,
   targetHoursUpdate,
 } from '@timelog/shared';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, gte, lte } from 'drizzle-orm';
 import { z } from 'zod';
 import { type App, type AppContext, HttpError } from '../../app.js';
 import { type Tx, withMember, withUser } from '../../db/index.js';
-import { approvals, organizations, targetHours, users } from '../../db/schema.js';
+import { absences, approvals, organizations, targetHours, users } from '../../db/schema.js';
 import { renderPdf } from '../../export/pdf.js';
 import { applyCorrection } from '../corrections.js';
 import { computeUserDays, loadDays } from '../days.js';
@@ -238,6 +238,7 @@ export function orgApprovalRoutes(app: App, ctx: AppContext): void {
             .set({
               status: 'submitted',
               snapshot: null,
+              absencesSnapshot: null,
               rulesConfigVersion: null,
               approverId: null,
               decidedAt: null,
@@ -342,10 +343,19 @@ export function orgApprovalRoutes(app: App, ctx: AppContext): void {
           const row = await loadApproval(tx, userId, month);
           if (row?.status !== 'submitted') throw new HttpError(409, 'not_submitted');
           let snapshot: WorkDay[] | null = null;
+          let absencesSnapshot: { date: string; kind: string; minutes: number }[] | null = null;
           let version: number | null = null;
           if (action === 'approve') {
             const { from, to } = monthRange(month);
             snapshot = (await computeUserDays(tx, userId, from, to, ctx.now())).days;
+            // Abwesenheiten mit einfrieren: der Lohn-Export liest nur den Snapshot.
+            absencesSnapshot = await tx
+              .select({ date: absences.date, kind: absences.kind, minutes: absences.minutes })
+              .from(absences)
+              .where(
+                and(eq(absences.userId, userId), gte(absences.date, from), lte(absences.date, to)),
+              )
+              .orderBy(absences.date);
             const [org] = await tx
               .select({ v: organizations.rulesConfigVersion })
               .from(organizations)
@@ -357,6 +367,7 @@ export function orgApprovalRoutes(app: App, ctx: AppContext): void {
             .set({
               status: action === 'approve' ? 'approved' : 'rejected',
               snapshot,
+              absencesSnapshot,
               rulesConfigVersion: version,
               approverId: actor.id,
               comment,
