@@ -15,6 +15,7 @@ import {
   addDays,
   computeBalance,
   computeDays,
+  creditedAbsenceMinutes,
   localDate,
   resolveConfig,
   targetMinutes,
@@ -139,8 +140,9 @@ export function periodDays(
   const cfg = configOf(profile);
   const byDate = new Map(days.map((d) => [d.date, d]));
   const absence = new Map<string, number>();
+  // Überstundenabbau zählt als Abwesenheitstag, schreibt aber nichts gut (Regelwerk).
   for (const a of profile.absences ?? [])
-    absence.set(a.date, (absence.get(a.date) ?? 0) + a.minutes);
+    absence.set(a.date, (absence.get(a.date) ?? 0) + creditedAbsenceMinutes(a));
   const list: WorkDay[] = [];
   for (let date = from; date <= to; date = addDays(date, 1)) {
     list.push(

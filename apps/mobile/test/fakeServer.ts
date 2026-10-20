@@ -5,6 +5,7 @@ import {
   correctionRequest,
   deviceUpdate,
   eventBatchRequest,
+  leaveRequestInput,
   loginRequest,
   networkInput,
   presenceRequest,
@@ -29,6 +30,7 @@ export interface FakeServer {
   state: string;
   schedule: Json[];
   absences: Json[];
+  leaveRequests: (Json & { id: string; status: string })[];
   devices: Json[];
   corrections: Json[];
   pushTokens: string[];
@@ -69,6 +71,7 @@ export function fakeServer(clock: () => number = Date.now): FakeServer {
     state: 'BE',
     schedule: [],
     absences: [],
+    leaveRequests: [],
     devices: [
       { id: MOBILE_ID, kind: 'mobile', os: 'android 16', name: 'Pixel' },
       { id: LAPTOP_ID, kind: 'desktop', os: 'windows', name: 'Laptop' },
@@ -226,6 +229,8 @@ export function fakeServer(clock: () => number = Date.now): FakeServer {
           const parsed = absencesUpdate.safeParse(body);
           if (!parsed.success) return error(400, 'invalid_request');
           const { from, to, absences } = parsed.data;
+          if (server.orgAccount && absences.some((a) => a.kind === 'vacation'))
+            return error(409, 'leave_request_required');
           server.absences = [
             ...server.absences.filter((a) => String(a.date) < from || String(a.date) > to),
             ...absences,
@@ -236,6 +241,79 @@ export function fakeServer(clock: () => number = Date.now): FakeServer {
         const to = url.searchParams.get('to') ?? '';
         return json({
           absences: server.absences.filter((a) => String(a.date) >= from && String(a.date) <= to),
+        });
+      }
+      if (path === '/leave' && method === 'GET') {
+        return json({
+          year: Number(url.searchParams.get('year')),
+          account: {
+            year: Number(url.searchParams.get('year')),
+            entitlement: 30,
+            correction: 0,
+            carryOver: 0,
+            carryOverManual: false,
+            carryOverUsed: 0,
+            carryOverForfeited: 0,
+            carryOverExpiry: '2026-03-31',
+            taken: 10,
+            planned: 0,
+            pending: 0,
+            remaining: 20,
+            remainingAfterPending: 20,
+          },
+          requests: server.leaveRequests,
+          profile: {},
+          adjustments: [],
+          settings: {
+            defaultAnnualDays: 30,
+            standardWorkdaysPerWeek: 5,
+            carryOverExpiry: '03-31',
+            carryOverExpires: true,
+          },
+          managed: server.orgAccount,
+        });
+      }
+      if (path === '/leave/requests' && method === 'POST') {
+        const parsed = leaveRequestInput.safeParse(body);
+        if (!parsed.success) return error(400, 'invalid_request');
+        const r = {
+          id: `66666666-6666-4666-8666-${String(server.leaveRequests.length).padStart(12, '0')}`,
+          userId: '77777777-7777-4777-8777-777777777777',
+          ...parsed.data,
+          days: 1,
+          minutes: 480,
+          status: server.orgAccount ? 'pending' : 'approved',
+          createdAt: new Date(clock()).toISOString(),
+          history: [],
+        };
+        server.leaveRequests.push(r);
+        return json(r);
+      }
+      if (method === 'POST' && /^\/leave\/requests\/[\w-]+\/cancel$/.test(path)) {
+        const r = server.leaveRequests.find((x) => x.id === path.split('/')[3]);
+        if (!r) return error(404, 'not_found');
+        r.status = 'cancelled';
+        return json(r);
+      }
+      if (path === '/overtime' && method === 'GET') {
+        return json({
+          year: Number(url.searchParams.get('year')),
+          startBalanceMinutes: 0,
+          months: [
+            {
+              month: '2026-10',
+              workMinutes: 90,
+              bookedMinutes: 0,
+              reducedMinutes: 0,
+              balanceMinutes: 90,
+              overMax: true,
+              approved: false,
+            },
+          ],
+          balanceMinutes: 90,
+          maxBalanceMinutes: 60,
+          overMax: true,
+          bookings: [],
         });
       }
       if (method === 'PATCH' && path.startsWith('/days/')) {

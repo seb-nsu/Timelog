@@ -1,6 +1,7 @@
 // Abwesenheiten: Urlaub, Krank, Feiertag, Sonstiges. Ohne Minutenangabe zählt die Sollzeit des Tages.
 import { formatDate, formatMinutes, periodDays } from '@timelog/app-core';
 import type { Absence, AbsenceKind } from '@timelog/rules';
+import { ApiError } from '@timelog/shared';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { Body, Button, Choice, Field, Notice, Screen, Section } from '../ui/components';
@@ -58,8 +59,13 @@ export function AbsencesScreen() {
       setFrom('');
       setTo('');
       setMinutes('');
-    } catch {
-      setMessage({ tone: 'error', text: t.m('common.error') });
+    } catch (e) {
+      // Firmenkonto: Urlaub/Überstundenabbau nur per Antrag
+      const code = e instanceof ApiError ? e.code : '';
+      setMessage({
+        tone: 'error',
+        text: code === 'leave_request_required' ? t.m('absences.useLeave') : t.m('common.error'),
+      });
     }
   };
 

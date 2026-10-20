@@ -265,6 +265,43 @@ describe('Erinnerungen', () => {
   });
 });
 
+describe('Urlaub', () => {
+  it('zeigt Konto und Überstunden, stellt einen Antrag mit halbem Tag und storniert', async () => {
+    const backend = fakeBackend();
+    render(<App locale="de" backend={backend} clock={clock('2026-10-15T09:00:00Z')} />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Urlaub' }));
+    expect(await screen.findByText('Urlaubskonto 2026')).toBeTruthy();
+    expect(screen.getByText('14,5 Tage')).toBeTruthy();
+    expect(screen.getByText(/Rechtsprechung des BAG/)).toBeTruthy();
+    expect(screen.getByText('Anspruch und Buchungen pflegt deine Firma.')).toBeTruthy();
+    expect(screen.getByText(/Kommentar: Viel Erholung/)).toBeTruthy();
+    expect(screen.getByRole('table')).toBeTruthy();
+
+    await userEvent.selectOptions(screen.getByLabelText('Art'), 'overtime');
+    const from = screen.getByLabelText('Von');
+    await userEvent.clear(from);
+    await userEvent.type(from, '2026-11-09');
+    await userEvent.click(screen.getByLabelText('Letzter Tag nur halb'));
+    await userEvent.click(screen.getByRole('button', { name: 'Beantragen' }));
+    expect(await screen.findByText(/Antrag gestellt/)).toBeTruthy();
+    const sent = backend.calls.requests.find((r) => r.startsWith('POST /api/v1/leave/requests '));
+    expect(sent).toContain('"kind":"overtime"');
+    expect(sent).toContain('"from":"2026-11-09"');
+    expect(sent).toContain('"halfDayEnd":true');
+
+    await userEvent.click(screen.getByRole('button', { name: /^Stornieren: Urlaub/ }));
+    expect(await screen.findByText('Antrag storniert.')).toBeTruthy();
+  });
+
+  it('englische Texte', async () => {
+    const backend = fakeBackend();
+    render(<App locale="en" backend={backend} clock={clock('2026-10-15T09:00:00Z')} />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Leave' }));
+    expect(await screen.findByText('Leave account 2026')).toBeTruthy();
+    expect(screen.getByText('14.5 days')).toBeTruthy();
+  });
+});
+
 describe('Barrierefreiheit', () => {
   it('Status, Protokoll, Prüfliste und Einstellungen ohne kritische axe-Befunde', async () => {
     const axe = (await import('axe-core')).default;
@@ -281,7 +318,7 @@ describe('Barrierefreiheit', () => {
       <App locale="de" backend={backend} clock={clock('2026-10-15T09:00:00Z')} />,
     );
     await screen.findByText('Arbeitszeit läuft');
-    for (const page of ['Status', 'Tagesprotokoll', 'Zu prüfen', 'Einstellungen']) {
+    for (const page of ['Status', 'Tagesprotokoll', 'Zu prüfen', 'Urlaub', 'Einstellungen']) {
       await userEvent.click(screen.getByRole('button', { name: new RegExp(`^${page}`) }));
       // Farbkontrast lässt sich in jsdom nicht messen; dafür gilt styles.css (AA geprüft).
       const result = await axe.run(container, { rules: { 'color-contrast': { enabled: false } } });

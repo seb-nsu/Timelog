@@ -1,5 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { screen, userEvent } from '@testing-library/react-native';
+import { fireEvent, screen, userEvent } from '@testing-library/react-native';
 import { render } from '@testing-library/react-native';
 import { App } from '../src/App';
 import type { PlatformActions } from '../src/ui/context';
@@ -236,6 +236,53 @@ describe('Übersicht und Abwesenheiten', () => {
     await user.press(await button('CSV teilen'));
     await screen.findByRole('button', { name: 'CSV teilen' });
     expect(a.shared).toEqual(['timelog-2026-10-12-2026-10-18.csv']);
+  });
+});
+
+describe('Urlaub', () => {
+  it('Firmenkonto: Antrag stellen und vor Beginn stornieren; Abwesenheit Urlaub nur per Antrag', async () => {
+    const h = await loggedIn({ now: '2026-10-15T15:00:00Z' });
+    h.server.orgAccount = true;
+    await ready(h);
+    await show(h);
+    const user = userEvent.setup();
+    await user.press(await screen.findByRole('tab', { name: 'Übersicht' }));
+    await user.press(await button('Urlaub und Überstunden'));
+    expect(await screen.findByLabelText('Rest: 20 Tage')).toBeOnTheScreen();
+    expect(screen.getByText('Anspruch und Buchungen pflegt deine Firma.')).toBeOnTheScreen();
+    expect(screen.getByText(/über dem Höchstwert/)).toBeOnTheScreen();
+    await user.press(screen.getByRole('radio', { name: 'Überstundenabbau' }));
+    await user.type(screen.getByLabelText('Von'), '2026-11-02');
+    await fireEvent(screen.getByRole('switch', { name: 'Letzter Tag nur halb' }), 'valueChange', true);
+    await user.press(screen.getByRole('button', { name: 'Beantragen' }));
+    expect(await screen.findByText(/Antrag gestellt/)).toBeOnTheScreen();
+    expect(h.server.leaveRequests[0]).toMatchObject({
+      kind: 'overtime',
+      from: '2026-11-02',
+      to: '2026-11-02',
+      halfDayEnd: true,
+    });
+    await user.press(await button(/^Stornieren: Überstundenabbau/));
+    expect(await screen.findByText('Antrag storniert.')).toBeOnTheScreen();
+    expect(h.server.leaveRequests[0]?.status).toBe('cancelled');
+
+    await user.press(screen.getByRole('tab', { name: 'Übersicht' }));
+    await user.press(await button('Abwesenheiten'));
+    await user.type(await screen.findByLabelText('Von (JJJJ-MM-TT)'), '2026-11-09');
+    await user.press(screen.getByRole('button', { name: 'Speichern' }));
+    expect(await screen.findByText(/als Antrag stellen/)).toBeOnTheScreen();
+  });
+
+  it('ohne Konto nur ein Hinweis; englische Texte', async () => {
+    const h = await harness({ now: '2026-10-15T15:00:00Z' });
+    await ready(h, { local: true });
+    await show(h, 'en');
+    const user = userEvent.setup();
+    await user.press(await screen.findByRole('tab', { name: 'Overview' }));
+    await user.press(await button('Leave and overtime'));
+    expect(
+      await screen.findByText('Leave and overtime accounts need an account.'),
+    ).toBeOnTheScreen();
   });
 });
 

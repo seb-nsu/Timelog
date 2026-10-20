@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AbsencesScreen } from './screens/Absences';
 import { DayLogScreen } from './screens/DayLog';
+import { LeaveScreen } from './screens/Leave';
 import { OverviewScreen } from './screens/Overview';
 import { ReviewScreen } from './screens/Review';
 import { SettingsScreen } from './screens/Settings';
@@ -15,7 +16,7 @@ import { TOUCH, useTheme } from './ui/theme';
 type Tab = 'today' | 'log' | 'review' | 'overview' | 'settings';
 
 function tabOf(route: Route): Tab {
-  if (route.name === 'absences') return 'overview';
+  if (route.name === 'absences' || route.name === 'leave') return 'overview';
   if (route.name === 'setup') return 'settings';
   return route.name;
 }
@@ -36,6 +37,8 @@ function Content() {
       return <OverviewScreen />;
     case 'absences':
       return <AbsencesScreen />;
+    case 'leave':
+      return <LeaveScreen />;
     case 'settings':
       return <SettingsScreen />;
   }

@@ -19,6 +19,7 @@ export type Route =
   | { name: 'review' }
   | { name: 'overview' }
   | { name: 'absences' }
+  | { name: 'leave' }
   | { name: 'settings' }
   | { name: 'setup' };
 
