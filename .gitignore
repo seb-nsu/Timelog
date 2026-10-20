@@ -7,3 +7,5 @@ coverage/
 .env.*
 !.env.example
 .DS_Store
+# Rust
+apps/desktop/src-tauri/target/
