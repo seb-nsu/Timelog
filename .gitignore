@@ -10,3 +10,5 @@ coverage/
 # Rust
 apps/desktop/src-tauri/target/
 apps/desktop/src-tauri/gen/
+apps/desktop/src-tauri/release.conf.json
+deploy/.env
