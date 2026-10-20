@@ -1,0 +1,12 @@
+{
+  "name": "timelog-native",
+  "platforms": ["apple", "android"],
+  "coreFeatures": ["compose"],
+  "apple": {
+    "modules": ["TimelogNativeModule"],
+    "appDelegateSubscribers": ["TimelogAppDelegateSubscriber"]
+  },
+  "android": {
+    "modules": ["de.timelog.mobile.detect.TimelogNativeModule"]
+  }
+}

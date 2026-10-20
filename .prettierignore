@@ -7,3 +7,7 @@ docs/
 **/src-tauri/target
 **/src-tauri/gen
 **/src-tauri/icons
+apps/mobile/android
+apps/mobile/ios
+apps/mobile/.expo
+apps/mobile/targets/*/Assets.xcassets

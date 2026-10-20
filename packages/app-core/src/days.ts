@@ -12,10 +12,12 @@ import {
   type TimeEvent,
   type Warning,
   type WorkDay,
+  addDays,
   computeBalance,
   computeDays,
   localDate,
   resolveConfig,
+  targetMinutes,
 } from '@timelog/rules';
 import type { ReminderSettings } from './reminders.js';
 
@@ -76,13 +78,102 @@ export function computeLocalDays(
     end: s.end,
     open: s.open,
   }));
-  const config = resolveConfig({
+  return computeDays(events, spans, profile.absences ?? [], configOf(profile), now);
+}
+
+/** Ereignis mit Gerät, z. B. vom Server geladene Daten aller Geräte des Nutzers. */
+export interface DeviceEvent extends LocalEvent {
+  deviceId: string;
+}
+
+export interface DeviceSpan extends LocalSpan {
+  deviceId: string;
+  deviceKind: DeviceKind;
+}
+
+export interface DeviceData {
+  events: DeviceEvent[];
+  spans: DeviceSpan[];
+}
+
+/**
+ * Wie `computeLocalDays`, aber mit Daten mehrerer Geräte (Handy zeigt auch die Laptop-Zeiten).
+ * Gerätezuordnung bleibt erhalten, damit das Regelwerk Neustarts und Waisen je Gerät erkennt.
+ */
+export function computeDeviceDays(data: DeviceData, profile: Profile, now: string): WorkDay[] {
+  const events: TimeEvent[] = data.events.map((e) => ({ ...e, userId: LOCAL_USER }));
+  const spans = data.spans.map((s) => ({
+    deviceId: s.deviceId,
+    deviceKind: s.deviceKind,
+    start: s.start,
+    end: s.end,
+    open: s.open,
+  }));
+  return computeDays(events, spans, profile.absences ?? [], configOf(profile), now);
+}
+
+export interface PeriodSummary {
+  /** Jeder Kalendertag von `from` bis `to`, Tage ohne Daten mit Sollzeit des Regelwerks. */
+  days: WorkDay[];
+  netMinutes: number;
+  targetMinutes: number;
+  absenceMinutes: number;
+  /** Saldo bis einschließlich `until` (zukünftige Tage zählen nicht). */
+  balanceMinutes: number;
+}
+
+/**
+ * Woche/Monat für die Übersicht. Das Regelwerk liefert nur Tage mit Daten; Tage ohne Erfassung
+ * zählen hier mit ihrer Sollzeit (aus `targetMinutes` des Regelwerks), damit der Saldo stimmt.
+ */
+export function periodDays(
+  days: readonly WorkDay[],
+  profile: Profile,
+  from: string,
+  to: string,
+  until: string,
+): PeriodSummary {
+  const cfg = configOf(profile);
+  const byDate = new Map(days.map((d) => [d.date, d]));
+  const absence = new Map<string, number>();
+  for (const a of profile.absences ?? [])
+    absence.set(a.date, (absence.get(a.date) ?? 0) + a.minutes);
+  const list: WorkDay[] = [];
+  for (let date = from; date <= to; date = addDays(date, 1)) {
+    list.push(
+      byDate.get(date) ?? {
+        date,
+        sessions: [],
+        breakMinutes: 0,
+        workMinutes: 0,
+        breakTopUpMin: 0,
+        netMinutes: 0,
+        pendingMinutes: 0,
+        absenceMinutes: absence.get(date) ?? 0,
+        targetMinutes: targetMinutes(date, cfg),
+        status: 'auto',
+        corrected: false,
+        warnings: [],
+      },
+    );
+  }
+  const sum = (f: (d: WorkDay) => number) => list.reduce((s, d) => s + f(d), 0);
+  return {
+    days: list,
+    netMinutes: sum((d) => d.netMinutes),
+    targetMinutes: sum((d) => d.targetMinutes),
+    absenceMinutes: sum((d) => d.absenceMinutes),
+    balanceMinutes: computeBalance(list.filter((d) => d.date <= until)),
+  };
+}
+
+function configOf(profile: Profile) {
+  return resolveConfig({
     state: profile.state,
     ...(profile.targetSchedule && profile.targetSchedule.length > 0
       ? { targetSchedule: profile.targetSchedule }
       : {}),
   });
-  return computeDays(events, spans, profile.absences ?? [], config, now);
 }
 
 export interface TodaySummary {

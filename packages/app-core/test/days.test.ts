@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
   type LocalData,
   type Profile,
+  computeDeviceDays,
   computeLocalDays,
   detectedBreaks,
   eventsOfDay,
+  periodDays,
   reviewItems,
   todaySummary,
 } from '../src/index.js';
@@ -129,5 +131,80 @@ describe('Lokale Berechnung über das Regelwerk', () => {
       '2026-10-19T07:00:00Z',
     );
     expect(reviewItems(confirmed)).toEqual([]);
+  });
+});
+
+describe('Daten mehrerer Geräte', () => {
+  it('Handy-Netz und Laptop ergeben eine Sitzung (Fall 4)', () => {
+    type T = LocalData['events'][number]['type'];
+    const at = (id: string, deviceId: string, type: T, ts: string) => ({
+      ...ev(id, type, ts, type === 'boot' ? new Date(Date.parse(ts) + 300_000).toISOString() : ts),
+      deviceId,
+      source: deviceId === 'H' ? ('wifi' as const) : ('system' as const),
+    });
+    const days = computeDeviceDays(
+      {
+        events: [
+          at('n1', 'H', 'net_connected', '2026-10-14T05:50:00Z'),
+          at('b1', 'L', 'boot', '2026-10-14T06:10:00Z'),
+          at('s1', 'L', 'shutdown', '2026-10-14T14:30:00Z'),
+          at('n2', 'H', 'net_lost', '2026-10-14T14:32:00Z'),
+        ],
+        spans: [
+          {
+            id: 'p1',
+            deviceId: 'L',
+            deviceKind: 'desktop',
+            start: '2026-10-14T06:10:00Z',
+            end: '2026-10-14T14:30:00Z',
+            open: false,
+          },
+        ],
+      },
+      profile,
+      '2026-10-15T07:00:00Z',
+    );
+    expect(days[0]).toMatchObject({
+      date: '2026-10-14',
+      start: '2026-10-14T05:50:00.000Z',
+      end: '2026-10-14T14:35:00.000Z',
+      workMinutes: 525,
+      netMinutes: 495,
+    });
+  });
+});
+
+describe('Woche/Monat', () => {
+  it('Tage ohne Erfassung zählen mit Sollzeit, Zukunft nicht', () => {
+    const data: LocalData = {
+      events: [
+        ev('b1', 'boot', '2026-10-14T06:00:00Z', '2026-10-14T06:05:00Z'),
+        ev('s1', 'shutdown', '2026-10-14T15:00:00Z'),
+      ],
+      spans: [
+        { id: 'p1', start: '2026-10-14T06:00:00Z', end: '2026-10-14T10:00:00Z', open: false },
+        { id: 'p2', start: '2026-10-14T10:45:00Z', end: '2026-10-14T15:00:00Z', open: false },
+      ],
+    };
+    const withVacation: Profile = {
+      ...profile,
+      absences: [{ date: '2026-10-13', kind: 'vacation', minutes: 480 }],
+    };
+    const days = computeLocalDays(data, withVacation, '2026-10-15T07:00:00Z');
+    const week = periodDays(days, withVacation, '2026-10-12', '2026-10-18', '2026-10-14');
+    expect(week.days.map((d) => d.date)).toEqual([
+      '2026-10-12',
+      '2026-10-13',
+      '2026-10-14',
+      '2026-10-15',
+      '2026-10-16',
+      '2026-10-17',
+      '2026-10-18',
+    ]);
+    expect(week.days.map((d) => d.targetMinutes)).toEqual([480, 480, 480, 480, 480, 0, 0]);
+    expect(week.netMinutes).toBe(500);
+    expect(week.absenceMinutes).toBe(480);
+    // Mo −480, Di Urlaub ±0, Mi +20; Do/Fr liegen nach `until`
+    expect(week.balanceMinutes).toBe(-460);
   });
 });

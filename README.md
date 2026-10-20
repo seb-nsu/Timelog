@@ -8,21 +8,26 @@ Automatische Arbeitszeiterfassung für Laptop (Windows, macOS) und Handy (Androi
 | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
 | [docs/PRODUKTKONZEPT.md](docs/PRODUKTKONZEPT.md) | Produktkonzept: Erfassungslogik, Sonderfälle, Funktionsumfang, Datenschutz, Markt, Entscheidungen      |
 | [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md) | Implementierungskonzept: Tech-Stack, Regelwerk, Testfälle, API, Clients, Phasen mit Akzeptanzkriterien |
+| [docs/PLATFORM.md](docs/PLATFORM.md)             | Desktop: Systemereignisse je Plattform, Prüfanleitung                                                  |
+| [docs/MOBILE.md](docs/MOBILE.md)                 | Handy-App: Herstellerdoku-Prüfung, Netzwerk-Kennung, Entscheidungen, Prüfanleitungen, Store-Unterlagen |
 | [docs/ADMIN.md](docs/ADMIN.md)                   | Firmenversion: Rollen, Web-Admin, SSO-Einrichtung (Entra ID, Google, SAML) und Prüfanleitung           |
+| [docs/RELEASE.md](docs/RELEASE.md)               | Desktop-Release: Signierung Windows/macOS, Updater-Schlüssel                                           |
+| [docs/BETRIEB.md](docs/BETRIEB.md)               | Server-Betrieb: Container, Compose, Sicherung, Überwachung                                             |
 | [CLAUDE.md](CLAUDE.md)                           | Regeln für Claude Code                                                                                 |
 
 ## Stand
 
-| Phase              | Status                                                                                  |
-| ------------------ | --------------------------------------------------------------------------------------- |
-| 0 – Grundgerüst    | erledigt                                                                                |
-| 1 – Regelwerk      | erledigt                                                                                |
-| 2a – Backend-Kern  | erledigt                                                                                |
-| 2b – Backend-Fach  | erledigt                                                                                |
-| 3a – Desktop-Kern  | erledigt                                                                                |
-| 3b/3c – Win, macOS | gebaut, Gerätetest, Signierung und Updater offen                                        |
-| 4/5 – Android, iOS | offen                                                                                   |
-| 6 – Firmenversion  | gebaut, SSO mit echtem IdP 👤 offen; ArbZG-Hinweise und axe-Prüfung der Tray-UI separat |
+| Phase              | Status                                                 |
+| ------------------ | ------------------------------------------------------ |
+| 0 – Grundgerüst    | erledigt                                               |
+| 1 – Regelwerk      | erledigt                                               |
+| 2a – Backend-Kern  | erledigt                                               |
+| 2b – Backend-Fach  | erledigt                                               |
+| 3a – Desktop-Kern  | erledigt                                               |
+| 3b/3c – Win, macOS | gebaut; Gerätetest und Signierung 👤 offen             |
+| 4/5 – Android, iOS | gebaut; Gerätetest, Store-Tests und Push-Versand offen |
+| 6 – Firmenversion  | gebaut; SSO mit echtem IdP 👤 offen                    |
+| Betrieb            | Container, Compose, Sicherung, Release-Workflow        |
 
 ## Repo-Struktur
 
@@ -35,6 +40,7 @@ apps/
   backend/    REST-API (Fastify, PostgreSQL, Drizzle)
   desktop/    Tauri 2: React-Oberfläche (src/), Rust-App (src-tauri/), Rust-Kern (src-tauri/core/)
   admin/      Web-Admin der Firmenversion (React + Vite)
+  mobile/     Expo (Android, iOS): Oberfläche (src/), natives Modul (modules/timelog-native), iOS-Widget (targets/)
 docs/         Konzepte
 ```
 
@@ -58,7 +64,7 @@ Ohne SMTP_URL gibt das Backend Mails (Bestätigungslink) in der Konsole aus – 
 | Befehl           | Wirkung                                           |
 | ---------------- | ------------------------------------------------- |
 | `pnpm build`     | alle Pakete bauen (`dist/`)                       |
-| `pnpm test`      | Vitest in allen Paketen                           |
+| `pnpm test`      | Vitest in allen Paketen, Jest in der Handy-App    |
 | `pnpm lint`      | ESLint (typgeprüft, strikt)                       |
 | `pnpm typecheck` | TypeScript ohne Ausgabe                           |
 | `pnpm format`    | Prettier schreibt Formatierung                    |
@@ -82,6 +88,20 @@ cd apps/desktop/src-tauri && cargo test --workspace
 
 Der Rust-Kern (`src-tauri/core`) schreibt Ereignisse und Aktiv-Spannen sofort in SQLite und synchronisiert sie mit dem Backend; Tokens bleiben im Rust-Teil. Die Oberfläche berechnet Arbeitstage lokal mit `@timelog/rules`. Systemereignisse laufen über die Schnittstelle `SystemEvents` mit eigenen Modulen für Windows und macOS (Details und Prüfanleitung in [docs/PLATFORM.md](docs/PLATFORM.md)); für Tests gibt es die Attrappe `FakeSystem`. Optional setzt `VITE_DEFAULT_SERVER` beim Bauen die vorbelegte Server-Adresse.
 
+### Handy-App
+
+Expo SDK 58 mit eigenen nativen Modulen (Kotlin/Swift), daher ein Development-Build statt Expo Go. Expo verlangt Node.js ≥ 22.13. Für Android ist das Android SDK nötig, für iOS macOS mit Xcode.
+
+```sh
+pnpm build
+cd apps/mobile
+pnpm test              # Jest, ohne Gerät
+pnpm prebuild          # erzeugt android/ und ios/ (nicht eingecheckt)
+pnpm android           # bzw. pnpm ios
+```
+
+Android erkennt das Arbeitsnetz ohne Standortberechtigung über eine Netzwerk-Kennung aus `LinkProperties`, auch bei beendeter App. iOS bekommt den Beginn über den Kurzbefehl „Arbeitsnetz verbunden“ (Automation „WLAN“) und das Ende optional über einen Geofence. Die App läuft auch ohne Konto („Nur lokal“). Einstellungen beim Bauen stehen in `.env.example` (Abschnitt Handy-App). Details, ungeprüfte Punkte und 👤-Prüfanleitungen stehen in [docs/MOBILE.md](docs/MOBILE.md).
+
 ### Web-Admin (Firmenversion)
 
 ```sh
@@ -94,9 +114,12 @@ Manager geben Monate frei oder weisen sie mit Kommentar zurück und sehen je Tag
 
 ## Weiter mit Claude Code
 
-```
-Lies docs/IMPLEMENTATION.md. Setze Phase 4 um. Halte dich an CLAUDE.md.
-Stoppe, wenn alle Akzeptanzkriterien von Phase 4 erfüllt und die Tests grün sind.
-```
+Alle Phasen sind gebaut. Offen sind die 👤-Prüfungen auf echter Hardware und mit echten Konten:
+[docs/PLATFORM.md](docs/PLATFORM.md) (Desktop), [docs/MOBILE.md](docs/MOBILE.md) (Handy),
+[docs/ADMIN.md](docs/ADMIN.md) (SSO), [docs/RELEASE.md](docs/RELEASE.md) (Signierung, Updates) und
+[docs/BETRIEB.md](docs/BETRIEB.md) (Server). Gefundene Fehler einzeln beauftragen, z. B.:
 
-Jede Phase einzeln beauftragen. Punkte mit 👤 prüfst du selbst auf echter Hardware.
+```
+Lies CLAUDE.md und docs/PLATFORM.md. Beim Gerätetest unter Windows 11 passiert <Beobachtung>.
+Finde die Ursache, schreibe einen Test und behebe sie.
+```

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="timelog_widget_label">TimeLog</string>
+  <string name="timelog_widget_description">Working time status with start and stop</string>
+  <string name="timelog_widget_start">Start work</string>
+  <string name="timelog_widget_stop">Stop work</string>
+  <string name="timelog_widget_started">Started – open the app for details</string>
+  <string name="timelog_widget_stopped">Stopped – open the app for details</string>
+  <string name="timelog_widget_in_network">In work network</string>
+</resources>

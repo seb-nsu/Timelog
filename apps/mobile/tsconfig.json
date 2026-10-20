@@ -1,0 +1,12 @@
+{
+  "extends": ["../../tsconfig.base.json", "expo/tsconfig.base"],
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM"],
+    "types": ["node"],
+    "noEmit": true,
+    "declaration": false,
+    "sourceMap": false,
+    "allowJs": false
+  },
+  "include": ["index.ts", "app.config.ts", "src", "test", "modules/*/index.ts", "modules/*/src"]
+}

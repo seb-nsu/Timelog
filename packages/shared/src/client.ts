@@ -19,6 +19,7 @@ import {
   daysResponse,
   deleteAccountResponse,
   deviceResponse,
+  devicesResponse,
   errorResponse,
   eventBatchResponse,
   eventPage,
@@ -149,6 +150,7 @@ export function createApiClient(options: ApiClientOptions) {
       totpVerify: (code: string) => call('POST', '/auth/totp/verify', okResponse, { code }),
     },
     devices: {
+      list: () => call('GET', '/devices', devicesResponse),
       update: (body: Partial<Omit<DeviceInfo, 'kind'>> & { pushToken?: string }) =>
         call('POST', '/devices', deviceResponse, body),
       revoke: (id: string) => call('DELETE', `/devices/${encodeURIComponent(id)}`, okResponse),

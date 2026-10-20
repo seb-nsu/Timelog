@@ -1,0 +1,36 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- Netz-Erkennung ohne Standort: nur Zustand der Verbindungen lesen -->
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+  <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+  <!-- Netzwerk-Callback nach Neustart des Handys wieder anmelden -->
+  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+  <!-- ACCESS_FINE_LOCATION / ACCESS_BACKGROUND_LOCATION fügt app.config.ts nur hinzu, wenn
+       der WLAN-Name per TIMELOG_ANDROID_WIFI_NAME=1 im Build aktiviert ist. -->
+
+  <application>
+    <receiver
+      android:name="de.timelog.mobile.detect.NetworkReceiver"
+      android:exported="false" />
+
+    <receiver
+      android:name="de.timelog.mobile.detect.BootReceiver"
+      android:exported="true">
+      <intent-filter>
+        <action android:name="android.intent.action.BOOT_COMPLETED" />
+        <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+      </intent-filter>
+    </receiver>
+
+    <receiver
+      android:name="de.timelog.mobile.detect.widget.TimelogWidgetReceiver"
+      android:exported="true"
+      android:label="@string/timelog_widget_label">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+      </intent-filter>
+      <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/timelog_widget_info" />
+    </receiver>
+  </application>
+</manifest>
