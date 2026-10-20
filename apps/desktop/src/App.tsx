@@ -5,6 +5,7 @@ import type { DesktopBackend } from './backend.js';
 import { BackendContext, TranslatorContext } from './context.js';
 import { DayLog } from './screens/DayLog.js';
 import { LoginForm } from './screens/LoginForm.js';
+import { Reports } from './screens/Reports.js';
 import { Review } from './screens/Review.js';
 import { Settings } from './screens/Settings.js';
 import { Setup } from './screens/Setup.js';
@@ -12,8 +13,8 @@ import { Status } from './screens/Status.js';
 import { useDesktop } from './useDesktop.js';
 import { useReminders } from './useReminders.js';
 
-type Page = 'status' | 'log' | 'review' | 'settings';
-const PAGES: readonly Page[] = ['status', 'log', 'review', 'settings'];
+type Page = 'status' | 'log' | 'review' | 'reports' | 'settings';
+const PAGES: readonly Page[] = ['status', 'log', 'review', 'reports', 'settings'];
 
 export function App({
   backend,
@@ -69,7 +70,8 @@ export function App({
         )}
         {page === 'status' && <Status state={state} days={days} now={now} />}
         {page === 'log' && <DayLog days={days} events={data.events} today={today} tz={tz} />}
-        {page === 'review' && <Review days={days} />}
+        {page === 'review' && <Review days={days} today={today} tz={tz} onChanged={reload} />}
+        {page === 'reports' && <Reports today={today} />}
         {page === 'settings' && (
           <Settings state={state} profile={profile} onLogout={reload} onSaved={reload} />
         )}
