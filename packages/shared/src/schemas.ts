@@ -193,6 +193,8 @@ export const deviceUpdate = z.object({
   os: z.string().min(1).max(50).optional(),
   name: z.string().min(1).max(100).optional(),
   pushToken: z.string().min(1).max(4096).optional(),
+  /** Sprache der Push-Texte für dieses Gerät. */
+  locale: z.enum(['de', 'en']).optional(),
 });
 export const deviceResponse = z.object({
   id: z.uuid(),
@@ -331,6 +333,16 @@ export const settingsSchema = z.object({
       over10h: z.boolean().default(true),
       breakViolation: z.boolean().default(true),
       confirmDay: z.boolean().default(true),
+      /** Rückfrage „Feierabend um … erkannt, stimmt das?“ nach automatisch erkanntem Ende. */
+      confirmEnd: z.boolean().default(true),
+      /** Wochenrückblick: Wochentag (0 = Sonntag) und Uhrzeit in der Zeitzone des Kontos. */
+      weekReview: z
+        .object({
+          enabled: z.boolean().default(true),
+          weekday: z.number().int().min(0).max(6).default(5),
+          time: clock.default('15:00'),
+        })
+        .prefault({}),
       quietHours: z
         .object({ from: clock.default('20:00'), to: clock.default('07:00') })
         .prefault({}),
@@ -445,6 +457,77 @@ export const holidaysResponse = z.object({
   state: z.enum(GERMAN_STATES),
   holidays: z.array(z.object({ date: isoDate, name: z.string() })),
 });
+
+// ── Rückfragen und Wochenrückblick (Push) ─────────────────────────────────────
+
+export const PROMPT_KINDS = ['end_confirm', 'end_missing', 'week_review'] as const;
+export type PromptKind = (typeof PROMPT_KINDS)[number];
+
+const weekId = z.string().regex(/^\d{4}-W\d{2}$/);
+
+/** Daten einer Rückfrage zum Arbeitsende. Keine Namen oder E-Mails, nur Zeiten. */
+export const endPromptPayload = z.object({
+  sessionId: z.string().min(1).max(200),
+  /** Tag (Zeitzone der Sitzung), an dem die Sitzung endet bzw. zuletzt aktiv war */
+  date: isoDate,
+  /** Erkanntes Ende bzw. letzte Aktivität (UTC); fehlt, wenn unbekannt */
+  end: isoDateTime.optional(),
+  tz: z.string(),
+  endSource: z.string().max(40).optional(),
+});
+export type EndPromptPayload = z.infer<typeof endPromptPayload>;
+
+export const weekPromptPayload = z.object({
+  week: weekId,
+  from: isoDate,
+  to: isoDate,
+  netMinutes: z.number().int(),
+  balanceMinutes: z.number().int(),
+  openDays: z.number().int().min(0),
+  legalHints: z.number().int().min(0),
+});
+export type WeekPromptPayload = z.infer<typeof weekPromptPayload>;
+
+const promptBase = { ref: z.string(), createdAt: isoDateTime };
+export const promptSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('end_confirm'), ...promptBase, payload: endPromptPayload }),
+  z.object({ kind: z.literal('end_missing'), ...promptBase, payload: endPromptPayload }),
+  z.object({ kind: z.literal('week_review'), ...promptBase, payload: weekPromptPayload }),
+]);
+export type Prompt = z.infer<typeof promptSchema>;
+export const promptsResponse = z.object({ prompts: z.array(promptSchema) });
+export const promptDismissRequest = z.object({
+  kind: z.enum(PROMPT_KINDS),
+  ref: z.string().min(1).max(200),
+});
+
+/**
+ * Daten, die mit der Push-Nachricht auf das Gerät gehen (Android: `data.body`, iOS: `body`).
+ * Nur Kennungen, Datum und Uhrzeit – die App prüft sie mit diesem Schema.
+ */
+export const pushData = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('end_confirm'),
+    sessionId: z.string().min(1).max(200),
+    date: isoDate,
+  }),
+  z.object({
+    kind: z.literal('end_missing'),
+    sessionId: z.string().min(1).max(200),
+    date: isoDate,
+    end: isoDateTime.optional(),
+  }),
+  z.object({ kind: z.literal('week_review'), week: weekId, date: isoDate }),
+]);
+export type PushData = z.infer<typeof pushData>;
+
+/** Benachrichtigungskategorien (iOS UNNotificationCategory, Android-Aktionen) und ihre Aktionen. */
+export const PUSH_CATEGORIES = {
+  end_confirm: 'timelog.end_confirm',
+  end_missing: 'timelog.end_missing',
+  week_review: 'timelog.week_review',
+} as const satisfies Record<PromptKind, string>;
+export const PUSH_ACTIONS = { confirm: 'confirm', correct: 'correct', open: 'open' } as const;
 
 // ── Export, Datenauskunft, Löschung ───────────────────────────────────────────
 

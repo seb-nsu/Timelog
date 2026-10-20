@@ -27,6 +27,7 @@ import {
   networkResponse,
   networksResponse,
   okResponse,
+  promptsResponse,
   presencePage,
   settingsResponse,
   statusResponse,
@@ -151,8 +152,9 @@ export function createApiClient(options: ApiClientOptions) {
     },
     devices: {
       list: () => call('GET', '/devices', devicesResponse),
-      update: (body: Partial<Omit<DeviceInfo, 'kind'>> & { pushToken?: string }) =>
-        call('POST', '/devices', deviceResponse, body),
+      update: (
+        body: Partial<Omit<DeviceInfo, 'kind'>> & { pushToken?: string; locale?: 'de' | 'en' },
+      ) => call('POST', '/devices', deviceResponse, body),
       revoke: (id: string) => call('DELETE', `/devices/${encodeURIComponent(id)}`, okResponse),
     },
     events: {
@@ -177,6 +179,12 @@ export function createApiClient(options: ApiClientOptions) {
         call('POST', `/sessions/${encodeURIComponent(id)}/confirm`, confirmResponse, {}),
       rejectSession: (id: string) =>
         call('POST', `/sessions/${encodeURIComponent(id)}/reject`, confirmResponse, {}),
+    },
+    /** Offene Rückfragen (Arbeitsende, Wochenrückblick) für Geräte ohne Push, z. B. den Desktop. */
+    prompts: {
+      list: () => call('GET', '/prompts', promptsResponse),
+      dismiss: (kind: 'end_confirm' | 'end_missing' | 'week_review', ref: string) =>
+        call('POST', '/prompts/dismiss', okResponse, { kind, ref }),
     },
     settings: {
       get: () => call('GET', '/settings', settingsResponse),
