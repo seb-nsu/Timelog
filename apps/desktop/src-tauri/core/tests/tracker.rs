@@ -396,3 +396,83 @@ fn attrappe_liefert_signale_ueber_watch() {
     assert_eq!(sys.timezone(), "America/New_York");
     assert_eq!(sys.boot_time(), at(7, 0));
 }
+
+/// Datei-Datenbank, damit ein zweiter Tracker-Start dieselben Daten sieht.
+fn temp_db(name: &str) -> std::path::PathBuf {
+    let path = std::env::temp_dir().join(format!(
+        "timelog-{name}-{}-{}.sqlite",
+        std::process::id(),
+        Utc::now().timestamp_nanos_opt().unwrap_or_default()
+    ));
+    let _ = std::fs::remove_file(&path);
+    path
+}
+
+fn restart_tracker(path: &std::path::Path, boot: DateTime<Utc>, now: DateTime<Utc>) -> Tracker {
+    let (sys, _) = FakeSystem::new(boot, TZ);
+    Tracker::start(
+        Store::open(path).unwrap(),
+        Box::new(sys),
+        TrackerConfig::default(),
+        now,
+    )
+    .unwrap()
+}
+
+#[test]
+fn angekuendigtes_herunterfahren_wird_beim_naechsten_start_entschieden() {
+    // Neue Einschaltzeit beim nächsten Start: es war ein Herunterfahren
+    let path = temp_db("poweroff");
+    let mut t = restart_tracker(&path, at(6, 0), at(6, 10));
+    t.handle(&Signal::PowerOffPending, at(17, 0)).unwrap();
+    assert_eq!(kinds(&t), vec![EventType::Boot]);
+    drop(t);
+    let t = restart_tracker(&path, at(19, 0), at(19, 1));
+    let (from, to) = day();
+    let events = t.local_data(from, to).unwrap().0;
+    let shutdown = events.iter().find(|e| e.kind == EventType::Shutdown);
+    assert_eq!(shutdown.map(|e| e.ts), Some(at(17, 0)));
+    drop(t);
+
+    // Gleiche Einschaltzeit: es war ein Abmelden, kein Ereignis
+    let mut t = restart_tracker(&path, at(19, 0), at(19, 10));
+    t.handle(&Signal::PowerOffPending, at(20, 0)).unwrap();
+    drop(t);
+    let t = restart_tracker(&path, at(19, 0), at(20, 5));
+    assert_eq!(
+        kinds(&t),
+        vec![EventType::Boot, EventType::Shutdown, EventType::Boot]
+    );
+    drop(t);
+    let _ = std::fs::remove_file(&path);
+}
+
+#[test]
+fn abgebrochenes_herunterfahren_wird_verworfen() {
+    let path = temp_db("abandoned");
+    let mut t = restart_tracker(&path, at(6, 0), at(6, 10));
+    t.handle(&Signal::PowerOffPending, at(17, 0)).unwrap();
+    t.tick(at(17, 2)).unwrap();
+    t.tick(at(17, 4)).unwrap();
+    t.tick(at(17, 6)).unwrap();
+    drop(t);
+    // Später echtes Herunterfahren ohne Ankündigung, z. B. Absturz: kein `shutdown` um 17:00
+    let t = restart_tracker(&path, at(19, 0), at(19, 1));
+    assert_eq!(kinds(&t), vec![EventType::Boot]);
+    drop(t);
+    let _ = std::fs::remove_file(&path);
+}
+
+#[test]
+fn bestaetigtes_herunterfahren_ersetzt_die_ankuendigung() {
+    let path = temp_db("confirmed");
+    let mut t = restart_tracker(&path, at(6, 0), at(6, 10));
+    t.handle(&Signal::PowerOffPending, at(17, 0)).unwrap();
+    t.handle(&Signal::PowerOff(PowerOff::Restart), at(17, 0))
+        .unwrap();
+    drop(t);
+    let t = restart_tracker(&path, at(17, 1), at(17, 2));
+    assert_eq!(kinds(&t), vec![EventType::Boot, EventType::Restart]);
+    drop(t);
+    let _ = std::fs::remove_file(&path);
+}

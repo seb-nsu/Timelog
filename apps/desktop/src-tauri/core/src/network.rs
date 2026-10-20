@@ -42,6 +42,19 @@ pub fn gateway_fingerprint(mac: &[u8]) -> Option<String> {
     Some(format!("gw={}", hex.join(":")))
 }
 
+/// MAC-Adresse aus der Ausgabe von `arp -n <IP>` (macOS schreibt Bytes ohne führende Null,
+/// z. B. `? (192.168.1.1) at 0:1a:2b:3c:4d:5e on en0 ifscope [ethernet]`).
+pub fn parse_arp_mac(output: &str) -> Option<Vec<u8>> {
+    let rest = output.split(" at ").nth(1)?;
+    let token = rest.split_whitespace().next()?;
+    let bytes: Vec<u8> = token
+        .split(':')
+        .map(|part| u8::from_str_radix(part, 16))
+        .collect::<std::result::Result<_, _>>()
+        .ok()?;
+    (bytes.len() == 6).then_some(bytes)
+}
+
 /// Treffer: ID des Arbeitsnetzes und Quelle für das Ereignis.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NetworkMatch {
@@ -129,6 +142,22 @@ mod tests {
         assert_eq!(gateway_fingerprint(&[0; 6]), None);
         assert_eq!(gateway_fingerprint(&[0xff; 6]), None);
         assert_eq!(gateway_fingerprint(&[1, 2, 3]), None);
+    }
+
+    #[test]
+    fn mac_aus_arp_ausgabe() {
+        let out = "? (192.168.1.1) at 0:1a:2b:3c:4d:5e on en0 ifscope [ethernet]\n";
+        assert_eq!(
+            parse_arp_mac(out)
+                .and_then(|m| gateway_fingerprint(&m))
+                .as_deref(),
+            Some("gw=00:1a:2b:3c:4d:5e")
+        );
+        assert_eq!(
+            parse_arp_mac("? (192.168.1.1) at (incomplete) on en0 ifscope [ethernet]"),
+            None
+        );
+        assert_eq!(parse_arp_mac("192.168.1.1 (192.168.1.1) -- no entry"), None);
     }
 
     #[test]

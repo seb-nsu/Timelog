@@ -20,6 +20,10 @@ pub enum Signal {
     Unlock,
     /// Echtes Herunterfahren bzw. Neustart. Logout erzeugt kein Signal.
     PowerOff(PowerOff),
+    /// Herunterfahren oder Abmelden angekündigt, ohne dass das System sagt, was davon (macOS
+    /// `willPowerOffNotification`). Entschieden wird beim nächsten Start über die Einschaltzeit:
+    /// neue Einschaltzeit = Herunterfahren, gleiche = Abmelden (kein Ereignis).
+    PowerOffPending,
     /// Netzwerk hat gewechselt; der Tracker fragt [`SystemEvents::current_network`] ab.
     NetworkChanged,
 }

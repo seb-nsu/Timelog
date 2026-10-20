@@ -12,6 +12,7 @@ use crate::system::{PowerOff, Signal, SystemEvents};
 const KEY_BOOT_REPORTED: &str = "boot.reported";
 const KEY_NETWORK: &str = "network.current";
 const KEY_NETWORKS: &str = "network.config";
+const KEY_POWER_OFF_PENDING: &str = "poweroff.pending";
 
 #[derive(Debug, Clone, Copy)]
 pub struct TrackerConfig {
@@ -23,6 +24,9 @@ pub struct TrackerConfig {
     pub missed_tick_gap: Duration,
     /// Zwei Einschaltzeiten mit kleinerem Abstand gelten als derselbe Start.
     pub boot_tolerance: Duration,
+    /// Läuft das Gerät nach einem angekündigten Herunterfahren so lange weiter, wurde es
+    /// abgebrochen.
+    pub power_off_abandoned: Duration,
 }
 
 impl Default for TrackerConfig {
@@ -32,6 +36,7 @@ impl Default for TrackerConfig {
             tick: Duration::minutes(2),
             missed_tick_gap: Duration::minutes(5),
             boot_tolerance: Duration::minutes(2),
+            power_off_abandoned: Duration::minutes(5),
         }
     }
 }
@@ -41,6 +46,15 @@ impl Default for TrackerConfig {
 struct StoredNetwork {
     network_id: String,
     source: Source,
+}
+
+/// Angekündigtes Herunterfahren oder Abmelden, entschieden beim nächsten Start.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct PendingPowerOff {
+    ts: DateTime<Utc>,
+    tz: String,
+    boot_time: DateTime<Utc>,
 }
 
 /// Zustand für Tray und Oberfläche.
@@ -108,6 +122,7 @@ impl Tracker {
             let ts = last_activity.unwrap_or(now).min(now);
             tracker.write_net_lost(&prev, ts, now)?;
         }
+        tracker.resolve_pending_power_off(now)?;
 
         tracker.open_span_at(now)?;
         tracker.report_boot_if_due(now)?;
@@ -156,6 +171,7 @@ impl Tracker {
             }
         }
         self.last_tick = now;
+        self.drop_abandoned_power_off(now)?;
         self.report_boot_if_due(now)?;
         self.check_network(now)
     }
@@ -187,6 +203,14 @@ impl Tracker {
             }
             Signal::NetworkChanged => self.check_network(now)?,
             Signal::PowerOff(kind) => self.power_off(*kind, now)?,
+            Signal::PowerOffPending => self.store.set(
+                KEY_POWER_OFF_PENDING,
+                &PendingPowerOff {
+                    ts: now,
+                    tz: self.sys.timezone(),
+                    boot_time: self.boot_time,
+                },
+            )?,
         }
         self.last_tick = now;
         Ok(())
@@ -327,7 +351,37 @@ impl Tracker {
         }
         // Synchron schreiben, bevor das System die App beendet.
         self.insert(e)?;
+        self.store.remove(KEY_POWER_OFF_PENDING)?;
         self.powered_off = true;
+        Ok(())
+    }
+
+    /// Angekündigtes Herunterfahren aus dem letzten Lauf: Ist das Gerät seitdem neu gestartet,
+    /// war es ein Herunterfahren (`shutdown` zum angekündigten Zeitpunkt; ob es ein Neustart
+    /// war, entscheidet das Regelwerk über `restartWindowMin`). Sonst war es ein Abmelden.
+    fn resolve_pending_power_off(&mut self, now: DateTime<Utc>) -> Result<()> {
+        let Some(pending) = self.store.get::<PendingPowerOff>(KEY_POWER_OFF_PENDING)? else {
+            return Ok(());
+        };
+        if (self.boot_time - pending.boot_time).abs() >= self.cfg.boot_tolerance {
+            let ts = pending.ts.min(now);
+            self.insert(Event::new(
+                EventType::Shutdown,
+                Source::System,
+                ts,
+                &pending.tz,
+                now,
+            ))?;
+        }
+        self.store.remove(KEY_POWER_OFF_PENDING)
+    }
+
+    /// Läuft das Gerät nach der Ankündigung weiter, wurde das Herunterfahren abgebrochen.
+    fn drop_abandoned_power_off(&mut self, now: DateTime<Utc>) -> Result<()> {
+        let pending = self.store.get::<PendingPowerOff>(KEY_POWER_OFF_PENDING)?;
+        if pending.is_some_and(|p| now - p.ts > self.cfg.power_off_abandoned) {
+            self.store.remove(KEY_POWER_OFF_PENDING)?;
+        }
         Ok(())
     }
 
