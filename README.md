@@ -18,7 +18,8 @@ Automatische Arbeitszeiterfassung für Laptop (Windows, macOS) und Handy (Androi
 | 1 – Regelwerk      | erledigt |
 | 2a – Backend-Kern  | erledigt |
 | 2b – Backend-Fach  | erledigt |
-| 3a–3c – Desktop    | offen    |
+| 3a – Desktop-Kern  | erledigt |
+| 3b/3c – Win, macOS | offen    |
 | 4/5 – Android, iOS | offen    |
 | 6 – Firmenversion  | offen    |
 
@@ -30,7 +31,8 @@ packages/
   shared/     Typen, Zod-Schemas, API-Client
   app-core/   geteilte Logik für Desktop- und Mobile-UI
 apps/
-  backend/    REST-API (Fastify, PostgreSQL, Drizzle); Desktop, Mobile, Admin folgen
+  backend/    REST-API (Fastify, PostgreSQL, Drizzle)
+  desktop/    Tauri 2: React-Oberfläche (src/), Rust-App (src-tauri/), Rust-Kern (src-tauri/core/)
 docs/         Konzepte
 ```
 
@@ -64,13 +66,25 @@ Einzelnes Paket: `pnpm --filter @timelog/rules test`.
 
 Die Backend-Tests laufen gegen eine echte PostgreSQL: per Testcontainers (Docker nötig) oder gegen eine vorhandene Instanz über `TEST_DATABASE_URL`. Schemaänderungen: `src/db/schema.ts` anpassen, dann `pnpm --filter @timelog/backend db:generate`. Die OpenAPI-Spezifikation liegt in `packages/shared/openapi.json` und wird mit `pnpm --filter @timelog/backend openapi` neu erzeugt; ein Test prüft, dass sie aktuell ist.
 
-Die GitHub Action `.github/workflows/ci.yml` prüft bei jedem Push und Pull Request Formatierung, Lint, Typecheck und Tests.
+Die GitHub Action `.github/workflows/ci.yml` prüft bei jedem Push und Pull Request Formatierung, Lint, Typecheck und Tests, dazu `cargo fmt`, `clippy` und `cargo test` für die Desktop-App.
+
+### Desktop-App
+
+Zusätzlich nötig: Rust (stable) und die [Tauri-Voraussetzungen](https://v2.tauri.app/start/prerequisites/) des Systems (unter Linux u. a. `libwebkit2gtk-4.1-dev`).
+
+```sh
+pnpm build
+pnpm --filter @timelog/desktop tauri dev     # App mit Tray starten
+cd apps/desktop/src-tauri && cargo test --workspace
+```
+
+Der Rust-Kern (`src-tauri/core`) schreibt Ereignisse und Aktiv-Spannen sofort in SQLite und synchronisiert sie mit dem Backend; Tokens bleiben im Rust-Teil. Die Oberfläche berechnet Arbeitstage lokal mit `@timelog/rules`. Systemereignisse laufen über die Schnittstelle `SystemEvents`; bis Phase 3b/3c gibt es nur eine plattformunabhängige Grundversion (Startzeit, Zeitzone) und für Tests die Attrappe `FakeSystem`. Optional setzt `VITE_DEFAULT_SERVER` beim Bauen die vorbelegte Server-Adresse.
 
 ## Weiter mit Claude Code
 
 ```
-Lies docs/IMPLEMENTATION.md. Setze Phase 3a um. Halte dich an CLAUDE.md.
-Stoppe, wenn alle Akzeptanzkriterien von Phase 3a erfüllt und die Tests grün sind.
+Lies docs/IMPLEMENTATION.md. Setze Phase 3b um. Halte dich an CLAUDE.md.
+Stoppe, wenn alle Akzeptanzkriterien von Phase 3b erfüllt und die Tests grün sind.
 ```
 
 Jede Phase einzeln beauftragen. Punkte mit 👤 prüfst du selbst auf echter Hardware.
