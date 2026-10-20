@@ -15,8 +15,9 @@ Automatische Arbeitszeiterfassung für Laptop (Windows, macOS) und Handy (Androi
 | Phase              | Status   |
 | ------------------ | -------- |
 | 0 – Grundgerüst    | erledigt |
-| 1 – Regelwerk      | offen    |
-| 2a/2b – Backend    | offen    |
+| 1 – Regelwerk      | erledigt |
+| 2a – Backend-Kern  | erledigt |
+| 2b – Backend-Fach  | offen    |
 | 3a–3c – Desktop    | offen    |
 | 4/5 – Android, iOS | offen    |
 | 6 – Firmenversion  | offen    |
@@ -28,7 +29,8 @@ packages/
   rules/      Regelwerk: Ereignisse → Arbeitstage (ohne Laufzeit-Abhängigkeiten)
   shared/     Typen, Zod-Schemas, API-Client
   app-core/   geteilte Logik für Desktop- und Mobile-UI
-apps/         Backend, Desktop, Mobile, Admin (ab Phase 2)
+apps/
+  backend/    REST-API (Fastify, PostgreSQL, Drizzle); Desktop, Mobile, Admin folgen
 docs/         Konzepte
 ```
 
@@ -39,8 +41,13 @@ Voraussetzungen: Node.js 22 (≥ 22.12, siehe `.nvmrc`) und pnpm 10 (am einfachs
 ```sh
 corepack enable
 pnpm install
-cp .env.example .env   # erst ab Phase 2a nötig
+cp .env.example .env   # JWT_SECRET und TOTP_ENCRYPTION_KEY eintragen
+docker compose up -d   # PostgreSQL 16
+pnpm build
+pnpm --filter @timelog/backend dev   # API auf http://localhost:3000, Migrationen laufen beim Start
 ```
+
+Ohne SMTP_URL gibt das Backend Mails (Bestätigungslink) in der Konsole aus – nur in der Entwicklung.
 
 | Befehl           | Wirkung                                           |
 | ---------------- | ------------------------------------------------- |
@@ -53,13 +60,15 @@ cp .env.example .env   # erst ab Phase 2a nötig
 
 Einzelnes Paket: `pnpm --filter @timelog/rules test`.
 
+Die Backend-Tests laufen gegen eine echte PostgreSQL: per Testcontainers (Docker nötig) oder gegen eine vorhandene Instanz über `TEST_DATABASE_URL`. Schemaänderungen: `src/db/schema.ts` anpassen, dann `pnpm --filter @timelog/backend db:generate`. Die OpenAPI-Spezifikation liegt in `packages/shared/openapi.json` und wird mit `pnpm --filter @timelog/backend openapi` neu erzeugt; ein Test prüft, dass sie aktuell ist.
+
 Die GitHub Action `.github/workflows/ci.yml` prüft bei jedem Push und Pull Request Formatierung, Lint, Typecheck und Tests.
 
 ## Weiter mit Claude Code
 
 ```
-Lies docs/IMPLEMENTATION.md. Setze Phase 1 um. Halte dich an CLAUDE.md.
-Stoppe, wenn alle Akzeptanzkriterien von Phase 1 erfüllt und die Tests grün sind.
+Lies docs/IMPLEMENTATION.md. Setze Phase 2b um. Halte dich an CLAUDE.md.
+Stoppe, wenn alle Akzeptanzkriterien von Phase 2b erfüllt und die Tests grün sind.
 ```
 
 Jede Phase einzeln beauftragen. Punkte mit 👤 prüfst du selbst auf echter Hardware.
