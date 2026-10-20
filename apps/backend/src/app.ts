@@ -28,7 +28,11 @@ import { authRoutes } from './routes/auth.js';
 import { correctionRoutes } from './routes/corrections.js';
 import { privacyRoutes } from './routes/privacy.js';
 import { profileRoutes } from './routes/profile.js';
+import { type PushHook, noPush } from './leave/notify.js';
 import { daysRoutes } from './routes/days.js';
+import { leaveRoutes } from './routes/leave.js';
+import { orgLeaveRoutes } from './routes/org/leave.js';
+import { orgPayrollRoutes } from './routes/org/payroll.js';
 import { deviceRoutes } from './routes/devices.js';
 import { eventRoutes } from './routes/events.js';
 import { requireAuth } from './routes/guard.js';
@@ -77,6 +81,15 @@ export interface AppOptions {
   now?: () => number;
   /** Anfragen je Minute: /auth/* je IP und Konto (10), /events und /presence je Gerät (60). */
   limits?: { auth: number; device: number };
+  /** Hook-Stelle für Push zu Anträgen (Urlaub, Überstundenabbau); Standard: kein Push. */
+  push?: PushHook;
+  /** Personio-API (Tests: Attrappe). */
+  personio?: Partial<PersonioOptions>;
+}
+
+export interface PersonioOptions {
+  baseUrl: string;
+  fetch: typeof fetch;
 }
 
 export interface AppContext {
@@ -92,6 +105,8 @@ export interface AppContext {
   now: () => number;
   limiter: RateLimiter;
   limits: { auth: number; device: number };
+  push: PushHook;
+  personio: PersonioOptions;
 }
 
 declare module 'fastify' {
@@ -158,6 +173,11 @@ export async function buildApp(options: AppOptions): Promise<App> {
     now,
     limiter: new RateLimiter(now),
     limits: options.limits ?? { auth: 10, device: 60 },
+    push: options.push ?? noPush,
+    personio: {
+      baseUrl: (options.personio?.baseUrl ?? 'https://api.personio.de').replace(/\/$/, ''),
+      fetch: options.personio?.fetch ?? ((input, init) => fetch(input, init)),
+    },
   };
 
   app.setErrorHandler((err: unknown, request: FastifyRequest, reply: FastifyReply) => {
@@ -231,12 +251,15 @@ export async function buildApp(options: AppOptions): Promise<App> {
         profileRoutes(scope, ctx);
         privacyRoutes(scope, ctx);
         membershipRoutes(scope, ctx);
+        leaveRoutes(scope, ctx);
         void scope.register(
           (org, _o, next) => {
             org.decorateRequest('actor', null);
             org.addHook('onRequest', requireOrgRole(ctx));
             orgManageRoutes(org, ctx);
             orgApprovalRoutes(org, ctx);
+            orgLeaveRoutes(org, ctx);
+            orgPayrollRoutes(org, ctx);
             next();
           },
           { prefix: '/org' },
