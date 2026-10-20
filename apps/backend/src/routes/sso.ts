@@ -30,7 +30,6 @@ const REQUEST_TTL_MS = 10 * 60_000;
 const CODE_TTL_MS = 2 * 60_000;
 const OIDC_CACHE_MS = 60 * 60_000;
 
-
 type OrgRow = typeof organizations.$inferSelect;
 
 /** Fehler, die zum Client zurückgeleitet werden (Code im Parameter sso_error). */
