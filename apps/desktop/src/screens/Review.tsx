@@ -1,8 +1,19 @@
 import { formatClock, formatDate, reviewItems } from '@timelog/app-core';
 import type { WorkDay } from '@timelog/rules';
 import { useBackend, useT } from '../context.js';
+import { CalendarSuggestions } from './CalendarSuggestions.js';
 
-export function Review({ days }: { days: WorkDay[] }) {
+export function Review({
+  days,
+  today,
+  tz,
+  onChanged,
+}: {
+  days: WorkDay[];
+  today: string;
+  tz: string;
+  onChanged: () => void;
+}) {
   const backend = useBackend();
   const tr = useT();
   const { t } = tr;
@@ -12,6 +23,7 @@ export function Review({ days }: { days: WorkDay[] }) {
   return (
     <main className="screen">
       <h1>{t('nav.review')}</h1>
+      <CalendarSuggestions days={days} today={today} tz={tz} onChanged={onChanged} />
       {items.length === 0 ? (
         <p>{t('review.empty')}</p>
       ) : (

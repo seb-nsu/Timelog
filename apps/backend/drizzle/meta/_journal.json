@@ -43,6 +43,13 @@
       "when": 1792536007006,
       "tag": "0005_leave_payroll",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792536355783,
+      "tag": "0006_projects_calendar",
+      "breakpoints": true
     }
   ]
 }

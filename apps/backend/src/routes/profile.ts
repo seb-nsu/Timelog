@@ -11,6 +11,7 @@ import {
   networkParams,
   networkResponse,
   networksResponse,
+  networkUpdate,
   networksUpdate,
   okResponse,
   settingsResponse,
@@ -25,6 +26,7 @@ import type { z } from 'zod';
 import { type App, type AppContext, HttpError } from '../app.js';
 import { type Tx, withUser } from '../db/index.js';
 import { absences, organizations, targetHours, users, workNetworks } from '../db/schema.js';
+import { visibleProjects } from '../extras.js';
 import { authOf, scopeOf } from './guard.js';
 
 const security = [{ bearer: [] }];
@@ -64,13 +66,15 @@ async function keysFor(ctx: AppContext, tx: Tx, user: typeof users.$inferSelect)
 
 type NetworkRow = typeof workNetworks.$inferSelect;
 
-function toNetworkResponse(r: NetworkRow): z.infer<typeof networkResponse> {
+export function toNetworkResponse(r: NetworkRow): z.infer<typeof networkResponse> {
   const n: z.infer<typeof networkResponse> = {
     id: r.id,
     scope: r.orgId ? 'org' : 'user',
     kind: r.kind,
     label: r.label,
+    location: r.location,
   };
+  if (r.defaultProjectId) n.defaultProjectId = r.defaultProjectId;
   if (r.ssid) n.ssid = r.ssid;
   if (r.bssidHmac) n.bssidHmac = r.bssidHmac;
   if (r.fingerprintHmac) n.fingerprintHmac = r.fingerprintHmac;
@@ -91,7 +95,22 @@ function toNetworkRow(userId: string, userKey: Buffer, n: z.infer<typeof network
     lat: n.kind === 'geofence' ? n.lat : null,
     lng: n.kind === 'geofence' ? n.lng : null,
     radius: n.kind === 'geofence' ? n.radius : null,
+    location: n.location,
+    defaultProjectId: n.defaultProjectId ?? null,
   };
+}
+
+/** Standardprojekt eines Netzes muss für den Nutzer sichtbar und aktiv sein. */
+export async function assertUsableProject(
+  tx: Tx,
+  user: typeof users.$inferSelect,
+  projectId: string | null | undefined,
+): Promise<void> {
+  if (!projectId) return;
+  const ok = (await visibleProjects(tx, user)).some(
+    (p) => p.id === projectId && p.archivedAt === null,
+  );
+  if (!ok) throw new HttpError(400, 'invalid_project');
 }
 
 const ownNetworks = (userId: string) =>
@@ -193,6 +212,8 @@ export function profileRoutes(app: App, ctx: AppContext): void {
       await withUser(ctx.db, scopeOf(claims), async (tx) => {
         const user = await loadUser(tx, claims.sub);
         const { userKey } = await keysFor(ctx, tx, user);
+        for (const n of request.body.networks)
+          await assertUsableProject(tx, user, n.defaultProjectId);
         await tx.delete(workNetworks).where(ownNetworks(user.id));
         if (request.body.networks.length === 0) return;
         await tx
@@ -224,12 +245,47 @@ export function profileRoutes(app: App, ctx: AppContext): void {
           .from(workNetworks)
           .where(ownNetworks(user.id));
         if (existing.length >= MAX_USER_NETWORKS) throw new HttpError(409, 'too_many_networks');
+        await assertUsableProject(tx, user, request.body.defaultProjectId);
         const { userKey } = await keysFor(ctx, tx, user);
         const [row] = await tx
           .insert(workNetworks)
           .values(toNetworkRow(user.id, userKey, request.body))
           .returning();
         if (!row) throw new HttpError(500, 'insert_failed');
+        return toNetworkResponse(row);
+      });
+    },
+  );
+
+  app.patch(
+    '/networks/:id',
+    {
+      schema: {
+        tags: ['networks'],
+        security,
+        description:
+          'Ändert Bezeichnung, Ort (Büro/Homeoffice/sonstiges) und Standardprojekt eines eigenen Arbeitsnetzes.',
+        params: networkParams,
+        body: networkUpdate,
+        response: { 200: networkResponse },
+      },
+    },
+    async (request) => {
+      const claims = authOf(request);
+      const { label, location, defaultProjectId } = request.body;
+      return withUser(ctx.db, scopeOf(claims), async (tx) => {
+        const user = await loadUser(tx, claims.sub);
+        await assertUsableProject(tx, user, defaultProjectId);
+        const [row] = await tx
+          .update(workNetworks)
+          .set({
+            ...(label !== undefined ? { label } : {}),
+            ...(location !== undefined ? { location } : {}),
+            ...(defaultProjectId !== undefined ? { defaultProjectId } : {}),
+          })
+          .where(and(ownNetworks(user.id), eq(workNetworks.id, request.params.id)))
+          .returning();
+        if (!row) throw new HttpError(404, 'not_found');
         return toNetworkResponse(row);
       });
     },

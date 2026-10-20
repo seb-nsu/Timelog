@@ -7,6 +7,7 @@ import { DayLog } from './screens/DayLog.js';
 import { Leave } from './screens/Leave.js';
 import { LoginForm } from './screens/LoginForm.js';
 import { Prompts } from './screens/Prompts.js';
+import { Reports } from './screens/Reports.js';
 import { Review } from './screens/Review.js';
 import { Settings } from './screens/Settings.js';
 import { Setup } from './screens/Setup.js';
@@ -16,8 +17,8 @@ import { useDesktop } from './useDesktop.js';
 import { usePrompts } from './usePrompts.js';
 import { useReminders } from './useReminders.js';
 
-type Page = 'status' | 'log' | 'review' | 'week' | 'leave' | 'settings';
-const PAGES: readonly Page[] = ['status', 'log', 'review', 'week', 'leave', 'settings'];
+type Page = 'status' | 'log' | 'review' | 'week' | 'leave' | 'reports' | 'settings';
+const PAGES: readonly Page[] = ['status', 'log', 'review', 'week', 'leave', 'reports', 'settings'];
 
 export function App({
   backend,
@@ -107,7 +108,7 @@ export function App({
             initialDate={target?.date}
           />
         )}
-        {page === 'review' && <Review days={days} />}
+        {page === 'review' && <Review days={days} today={today} tz={zone} onChanged={changed} />}
         {page === 'week' && (
           <Week
             key={target ? `w${String(target.n)}` : 'week'}
@@ -123,6 +124,7 @@ export function App({
           />
         )}
         {page === 'leave' && <Leave today={today} />}
+        {page === 'reports' && <Reports today={today} />}
         {page === 'settings' && (
           <Settings state={state} profile={profile} onLogout={reload} onSaved={reload} />
         )}

@@ -187,7 +187,7 @@ describe('Rollen', () => {
       nav()
         .getAllByRole('button')
         .map((b) => b.textContent),
-    ).toEqual(['Freigaben', 'Urlaub', 'Mitglieder', 'Teams']);
+    ).toEqual(['Freigaben', 'Urlaub', 'Mitglieder', 'Teams', 'Mein Kalender']);
     await userEvent.click(nav().getByRole('button', { name: 'Mitglieder' }));
     const table = await screen.findByRole('table');
     expect(
@@ -212,11 +212,14 @@ describe('Rollen', () => {
       'Urlaub',
       'Mitglieder',
       'Teams',
+      'Projekte',
       'Firmen-Netze',
+      'Homeoffice',
       'Einstellungen',
       'Export',
       'Lohn',
       'Audit-Log',
+      'Mein Kalender',
     ]);
     await userEvent.click(nav().getByRole('button', { name: 'Teams' }));
     const h1 = await screen.findByRole('heading', { level: 1, name: 'Teams' });

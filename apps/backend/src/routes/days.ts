@@ -13,6 +13,10 @@ import {
   resolveConfig,
 } from '@timelog/rules';
 import {
+  type DayLocationView,
+  type DayProjectsView,
+  dayLocationSchema,
+  dayProjectsSchema,
   daysQuery,
   daysResponse,
   orgRulesConfig,
@@ -54,11 +58,14 @@ function buildSchedule(rows: (typeof targetHours.$inferSelect)[]): TargetSchedul
   return [...byDate.values()];
 }
 
-interface Computed {
+export interface Computed {
   days: WorkDay[];
   timezone: string;
   /** Wirksames Regelwerk des Nutzers (Organisation, Bundesland, Sollzeiten) */
   config: RulesConfig;
+  /** Eingaben des Regelwerks (für Projektaufteilung und Tagesort) */
+  events: TimeEvent[];
+  spans: PresenceSpan[];
 }
 
 type UserRow = typeof users.$inferSelect;
@@ -100,7 +107,8 @@ export async function computeUserDays(
   nowMs: number,
 ): Promise<Computed> {
   const loaded = await loadRulesConfig(tx, userId);
-  if (!loaded) return { days: [], timezone: 'Europe/Berlin', config: resolveConfig() };
+  if (!loaded)
+    return { days: [], timezone: 'Europe/Berlin', config: resolveConfig(), events: [], spans: [] };
   const { user, config } = loaded;
 
   const loadFrom = new Date(Date.parse(`${addDays(from, -LOOKBACK_DAYS)}T00:00:00Z`));
@@ -146,6 +154,8 @@ export async function computeUserDays(
     days: days.filter((d) => d.date >= from && d.date <= to),
     timezone: user.timezone,
     config,
+    events: ruleEvents,
+    spans: ruleSpans,
   };
 }
 
@@ -167,7 +177,25 @@ export function monthsBetween(from: string, to: string): string[] {
   return out;
 }
 
-const snapshotSchema = z.array(workDaySchema);
+/**
+ * Snapshot einer Freigabe: früher nur die Arbeitstage, seit Version 2 zusätzlich Projektaufteilung
+ * und Tagesorte (beides wird bei freigegebenen Monaten ebenfalls nie neu berechnet).
+ */
+export const snapshotSchema = z.union([
+  z.array(workDaySchema),
+  z.object({
+    version: z.literal(2),
+    days: z.array(workDaySchema),
+    projects: z.array(dayProjectsSchema),
+    locations: z.array(dayLocationSchema),
+  }),
+]);
+export type Snapshot = z.infer<typeof snapshotSchema>;
+
+export interface FrozenExtras {
+  projects: DayProjectsView[];
+  locations: DayLocationView[];
+}
 
 /**
  * Arbeitstage wie computeUserDays, aber freigegebene Monate kommen unverändert aus dem Snapshot
@@ -179,7 +207,7 @@ export async function loadDays(
   from: string,
   to: string,
   nowMs: number,
-): Promise<Computed & { approvedMonths: string[] }> {
+): Promise<Computed & { approvedMonths: string[]; frozen: Map<string, FrozenExtras | undefined> }> {
   const months = monthsBetween(from, to);
   const rows = await tx
     .select({ month: approvals.month, snapshot: approvals.snapshot })
@@ -193,16 +221,29 @@ export async function loadDays(
       ),
     );
   const frozen = new Map<string, WorkDay[]>();
+  const extras = new Map<string, FrozenExtras | undefined>();
   for (const r of rows) {
     const parsed = snapshotSchema.safeParse(r.snapshot);
-    if (parsed.success) frozen.set(r.month, parsed.data);
+    if (!parsed.success) continue;
+    if (Array.isArray(parsed.data)) {
+      frozen.set(r.month, parsed.data);
+      extras.set(r.month, undefined);
+    } else {
+      frozen.set(r.month, parsed.data.days);
+      extras.set(r.month, { projects: parsed.data.projects, locations: parsed.data.locations });
+    }
   }
   const computed = await computeUserDays(tx, userId, from, to, nowMs);
-  if (frozen.size === 0) return { ...computed, approvedMonths: [] };
+  if (frozen.size === 0) return { ...computed, approvedMonths: [], frozen: extras };
   const live = computed.days.filter((d) => !frozen.has(d.date.slice(0, 7)));
   const fromSnapshots = [...frozen.values()].flat().filter((d) => d.date >= from && d.date <= to);
   const days = [...live, ...fromSnapshots].sort((a, b) => a.date.localeCompare(b.date));
-  return { ...computed, days, approvedMonths: [...frozen.keys()].sort() };
+  return {
+    ...computed,
+    days,
+    approvedMonths: [...frozen.keys()].sort(),
+    frozen: extras,
+  };
 }
 
 export function daysRoutes(app: App, ctx: AppContext): void {

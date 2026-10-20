@@ -15,7 +15,7 @@ export interface Fake extends DesktopBackend {
   };
   data: LocalData;
   state: AppState;
-  /** Antworten der Server-Attrappe je `METHODE /pfad` (ohne Abfrage) */
+  /** Antworten des gefakten Servers je „METHODE /pfad“ (ohne Query); Funktion = dynamisch */
   responses: Record<string, unknown>;
   emit: () => void;
 }
@@ -147,7 +147,13 @@ export function fakeBackend(
     const url = new URL(input instanceof Request ? input.url : String(input));
     const key = `${init?.method ?? 'GET'} ${url.pathname}`;
     calls.requests.push(`${key}${typeof init?.body === 'string' ? ` ${init.body}` : ''}`);
-    const body = responses[key];
+    const entry = responses[key];
+    const body: unknown =
+      typeof entry === 'function'
+        ? (entry as (b: unknown) => unknown)(
+            typeof init?.body === 'string' ? JSON.parse(init.body) : undefined,
+          )
+        : entry;
     return Promise.resolve(
       body === undefined
         ? new Response('{"error":"not_found"}', { status: 404 })

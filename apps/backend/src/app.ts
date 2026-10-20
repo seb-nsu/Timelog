@@ -20,12 +20,17 @@ import {
 } from 'fastify-type-provider-zod';
 import { API_PREFIX } from '@timelog/shared';
 import { sql } from 'drizzle-orm';
+import { type CalendarOptions, CalendarService } from './calendar/service.js';
 import type { Db } from './db/index.js';
 import { logSerializers } from './log.js';
 import type { Mailer } from './mailer.js';
 import { RateLimiter } from './rate-limit.js';
 import { authRoutes } from './routes/auth.js';
+import { calendarCallbackRoutes, calendarRoutes } from './routes/calendar.js';
 import { correctionRoutes } from './routes/corrections.js';
+import { locationRoutes } from './routes/locations.js';
+import { orgExtrasRoutes } from './routes/org/extras.js';
+import { projectRoutes } from './routes/projects.js';
 import { privacyRoutes } from './routes/privacy.js';
 import { profileRoutes } from './routes/profile.js';
 import { promptRoutes } from './routes/prompts.js';
@@ -86,6 +91,12 @@ export interface AppOptions {
   push?: PushHook;
   /** Personio-API (Tests: Attrappe). */
   personio?: Partial<PersonioOptions>;
+  /** Kalender-Anbindung: Client-IDs/Secrets aus der Umgebung; fehlt ein Anbieter, ist er aus. */
+  calendar?: CalendarOptions;
+  /** Vorhandener Dienst (Server teilt ihn mit dem periodischen Abruf); sonst aus `calendar` gebaut. */
+  calendarService?: CalendarService;
+  /** Homeoffice-Tagespauschale in Cent (Konfiguration, Standard 600 je Tag, höchstens 126000). */
+  homeOffice?: { perDayCents: number; maxPerYearCents: number };
 }
 
 export interface PersonioOptions {
@@ -108,6 +119,8 @@ export interface AppContext {
   limits: { auth: number; device: number };
   push: PushHook;
   personio: PersonioOptions;
+  calendar: CalendarService;
+  homeOffice: { perDayCents: number; maxPerYearCents: number };
 }
 
 declare module 'fastify' {
@@ -179,6 +192,10 @@ export async function buildApp(options: AppOptions): Promise<App> {
       baseUrl: (options.personio?.baseUrl ?? 'https://api.personio.de').replace(/\/$/, ''),
       fetch: options.personio?.fetch ?? ((input, init) => fetch(input, init)),
     },
+    calendar:
+      options.calendarService ??
+      new CalendarService(options.db, options.totpKey, options.calendar ?? {}),
+    homeOffice: options.homeOffice ?? { perDayCents: 600, maxPerYearCents: 126_000 },
   };
 
   app.setErrorHandler((err: unknown, request: FastifyRequest, reply: FastifyReply) => {
@@ -241,6 +258,7 @@ export async function buildApp(options: AppOptions): Promise<App> {
         authRoutes(scope, ctx);
         invitationRoutes(scope, ctx);
         ssoRoutes(scope, ctx);
+        calendarCallbackRoutes(scope, ctx);
         done();
       });
       await api.register((scope, _opts, done) => {
@@ -254,6 +272,9 @@ export async function buildApp(options: AppOptions): Promise<App> {
         promptRoutes(scope, ctx);
         membershipRoutes(scope, ctx);
         leaveRoutes(scope, ctx);
+        projectRoutes(scope, ctx);
+        locationRoutes(scope, ctx);
+        calendarRoutes(scope, ctx);
         void scope.register(
           (org, _o, next) => {
             org.decorateRequest('actor', null);
@@ -262,6 +283,7 @@ export async function buildApp(options: AppOptions): Promise<App> {
             orgApprovalRoutes(org, ctx);
             orgLeaveRoutes(org, ctx);
             orgPayrollRoutes(org, ctx);
+            orgExtrasRoutes(org, ctx);
             next();
           },
           { prefix: '/org' },

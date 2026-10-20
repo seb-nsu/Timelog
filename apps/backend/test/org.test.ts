@@ -431,7 +431,9 @@ describe('Monatsfreigabe', () => {
         .from(approvals)
         .where(and(eq(approvals.userId, m.userId), eq(approvals.month, '2026-10'))),
     );
-    expect(Array.isArray(row?.snapshot)).toBe(true);
+    // Snapshot Version 2: Tage samt Projektaufteilung und Tagesorten
+    expect(row?.snapshot).toMatchObject({ version: 2, projects: [] });
+    expect(Array.isArray((row?.snapshot as { days?: unknown }).days)).toBe(true);
     expect(row?.rulesConfigVersion).toBeGreaterThan(0);
   });
 

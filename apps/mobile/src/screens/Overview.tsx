@@ -120,6 +120,13 @@ export function OverviewScreen() {
           go({ name: 'leave' });
         }}
       />
+      <Button
+        variant="secondary"
+        label={t.t('nav.reports')}
+        onPress={() => {
+          go({ name: 'reports' });
+        }}
+      />
       <Section title={t.m('overview.export')}>
         {state.account === 'loggedIn' ? (
           <>

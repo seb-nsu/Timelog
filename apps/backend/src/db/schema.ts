@@ -44,6 +44,8 @@ export const organizations = pgTable('organizations', {
   leaveConfig: jsonb('leave_config').notNull().default({}),
   /** Lohn-Export: Berater-/Mandantennummer, Lohnarten, Ausfallschlüssel, Personio-Optionen. */
   payrollConfig: jsonb('payroll_config').notNull().default({}),
+  /** Schalter der Organisation: Projekte, Kalender, Homeoffice-Monatszahlen (orgFeatures). */
+  features: jsonb('features').notNull().default({}),
   createdAt: createdAt(),
 });
 
@@ -160,6 +162,12 @@ export const workNetworks = pgTable('work_networks', {
   lat: doublePrecision('lat'),
   lng: doublePrecision('lng'),
   radius: integer('radius'),
+  /** Ort für den Homeoffice-Nachweis: office, home oder other. */
+  location: text('location', { enum: ['office', 'home', 'other'] })
+    .notNull()
+    .default('office'),
+  /** Standardprojekt für Arbeitszeit in diesem Netz. */
+  defaultProjectId: uuid('default_project_id'),
 });
 
 export const events = pgTable(
@@ -382,7 +390,7 @@ export const pushPrompts = pgTable(
     index('push_prompts_user_created').on(t.userId, t.createdAt),
   ],
 );
-// ── Urlaubs- und Überstundenkonto, Lohn-Export (Migration 0006) ───────────────
+// ── Urlaubs- und Überstundenkonto, Lohn-Export (Migration 0005) ───────────────
 
 /** Anspruch je Person; Firma: pflegt der Admin, privat: die Person selbst. */
 export const leaveProfiles = pgTable('leave_profiles', {
@@ -528,3 +536,118 @@ export const payrollTransfers = pgTable(
   },
   (t) => [index('payroll_transfers_org').on(t.orgId, t.month)],
 );
+
+// ── Projekte, Kalender, Homeoffice (Paket B) ─────────────────────────────────
+
+/** Projekte/Kunden: privat (user_id) oder der Organisation (org_id, optional nur für ein Team). */
+export const projects = pgTable(
+  'projects',
+  {
+    id: id(),
+    userId: uuid('user_id').references(() => users.id),
+    orgId: uuid('org_id').references(() => organizations.id),
+    teamId: uuid('team_id').references(() => teams.id, { onDelete: 'set null' }),
+    name: text('name').notNull(),
+    customer: text('customer'),
+    color: text('color').notNull().default('#1d4ed8'),
+    keywords: text('keywords')
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    archivedAt: tstz('archived_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('projects_user').on(t.userId), index('projects_org').on(t.orgId)],
+);
+
+/**
+ * Manuelle Projektzuordnungen: nur Insert (wie Ereignisse). Die jüngste gewinnt; jede Zuordnung
+ * erzeugt zusätzlich eine corrections-Zeile (field = 'project').
+ */
+export const projectAssignments = pgTable(
+  'project_assignments',
+  {
+    id: id(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    date: date('date').notNull(),
+    fromTs: tstz('from_ts').notNull(),
+    toTs: tstz('to_ts').notNull(),
+    projectId: uuid('project_id'),
+    authorId: uuid('author_id').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('project_assignments_user_date').on(t.userId, t.date)],
+);
+
+/** Manuelle Tagesorte (Homeoffice-Nachweis): nur Insert, die jüngste gewinnt; null = Automatik. */
+export const dayLocations = pgTable(
+  'day_locations',
+  {
+    id: id(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    date: date('date').notNull(),
+    location: text('location', { enum: ['office', 'home', 'other'] }),
+    authorId: uuid('author_id').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('day_locations_user_date').on(t.userId, t.date)],
+);
+
+/** Kalender-Verbindung (nur lesend). Refresh-Token AES-256-GCM-verschlüsselt wie TOTP-Geheimnisse. */
+export const calendarConnections = pgTable(
+  'calendar_connections',
+  {
+    id: id(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    provider: text('provider', { enum: ['google', 'microsoft'] }).notNull(),
+    refreshToken: text('refresh_token').notNull(),
+    status: text('status', { enum: ['active', 'error'] })
+      .notNull()
+      .default('active'),
+    lastSyncAt: tstz('last_sync_at'),
+    lastError: text('last_error'),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('calendar_connections_user_provider').on(t.userId, t.provider)],
+);
+
+/** Termine: nur Beginn, Ende, Art und ggf. erkanntes Projekt – keine Titel, Teilnehmer oder Orte. */
+export const calendarEntries = pgTable(
+  'calendar_entries',
+  {
+    id: id(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    connectionId: uuid('connection_id')
+      .notNull()
+      .references(() => calendarConnections.id, { onDelete: 'cascade' }),
+    startAt: tstz('start_at').notNull(),
+    endAt: tstz('end_at').notNull(),
+    allDay: boolean('all_day').notNull(),
+    startDate: date('start_date'),
+    endDate: date('end_date'),
+    kind: text('kind', { enum: ['busy', 'absence'] }).notNull(),
+    projectId: uuid('project_id'),
+  },
+  (t) => [index('calendar_entries_user_start').on(t.userId, t.startAt)],
+);
+
+/** Offene OAuth-Anfragen (state, PKCE-Verifier verschlüsselt), 10 Minuten gültig. */
+export const calendarOauthStates = pgTable('calendar_oauth_states', {
+  id: text('id').primaryKey(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id),
+  provider: text('provider', { enum: ['google', 'microsoft'] }).notNull(),
+  codeVerifier: text('code_verifier').notNull(),
+  redirect: text('redirect'),
+  expiresAt: tstz('expires_at').notNull(),
+  createdAt: createdAt(),
+});

@@ -9,9 +9,32 @@ const KIND_LABELS = {
 } as const;
 
 /** Firmen-Arbeitsnetze: gelten automatisch für alle Mitglieder. */
+const LOCATION_LABELS = {
+  office: 'Büro',
+  home: 'Homeoffice',
+  other: 'unterwegs/sonstiges',
+} as const;
+
 export function Networks() {
   const { api, notify } = useAdmin();
   const list = useLoad(() => api.org.networks.list(), [api]);
+  const projects = useLoad(() => api.org.projects.list(), [api]);
+
+  const update = (
+    id: string,
+    label: string,
+    body: { location?: 'office' | 'home' | 'other'; defaultProjectId?: string | null },
+  ) => {
+    api.org.updateNetwork(id, body).then(
+      () => {
+        notify(`Netz ${label} geändert.`);
+        list.reload();
+      },
+      (err: unknown) => {
+        setError(errorText(err));
+      },
+    );
+  };
   const [label, setLabel] = useState('');
   const [kind, setKind] = useState<'fingerprint' | 'ssid'>('fingerprint');
   const [value, setValue] = useState('');
@@ -57,6 +80,43 @@ export function Networks() {
                 <strong>{n.label}</strong> · {KIND_LABELS[n.kind]}
                 {n.ssid ? ` „${n.ssid}“` : ''}
               </span>
+              <label>
+                Ort<span className="visually-hidden"> von {n.label}</span>
+                <select
+                  value={n.location}
+                  onChange={(e) => {
+                    update(n.id, n.label, {
+                      location: e.target.value as 'office' | 'home' | 'other',
+                    });
+                  }}
+                >
+                  {(['office', 'home', 'other'] as const).map((l) => (
+                    <option key={l} value={l}>
+                      {LOCATION_LABELS[l]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {projects.data?.enabled && (
+                <label>
+                  Standardprojekt<span className="visually-hidden"> von {n.label}</span>
+                  <select
+                    value={n.defaultProjectId ?? ''}
+                    onChange={(e) => {
+                      update(n.id, n.label, { defaultProjectId: e.target.value || null });
+                    }}
+                  >
+                    <option value="">keins</option>
+                    {projects.data.projects
+                      .filter((p) => !p.archived || p.id === n.defaultProjectId)
+                      .map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+              )}
               <button
                 type="button"
                 className="danger"

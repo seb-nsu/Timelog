@@ -52,6 +52,11 @@ export const AUDIT_LABELS: Record<string, string> = {
   'payroll.credentials': 'Personio-Zugang gespeichert',
   'payroll.credentials.delete': 'Personio-Zugang entfernt',
   'payroll.transfer': 'An Personio übertragen',
+  'features.update': 'Funktionen geändert',
+  'project.create': 'Projekt angelegt',
+  'project.update': 'Projekt geändert',
+  'network.update': 'Firmen-Netz geändert',
+  'home_office.view': 'Homeoffice-Zahlen abgerufen',
 };
 
 export const LEAVE_KIND_LABELS = { vacation: 'Urlaub', overtime: 'Überstundenabbau' } as const;
@@ -135,6 +140,13 @@ const ERRORS: Record<string, string> = {
   payroll_config_incomplete:
     'Lohn-Einstellungen unvollständig (Lohnart bzw. Berater-/Mandantennummer).',
   personio_not_configured: 'Bitte zuerst den Personio-Zugang hinterlegen.',
+  feature_disabled: 'Diese Funktion ist in der Organisation ausgeschaltet.',
+  projects_disabled: 'Projekte sind ausgeschaltet.',
+  calendar_disabled: 'Die Kalender-Anbindung ist ausgeschaltet.',
+  invalid_team: 'Dieses Team gibt es nicht.',
+  invalid_project: 'Dieses Projekt gibt es nicht oder es ist archiviert.',
+  provider_not_configured: 'Dieser Kalender-Anbieter ist auf dem Server nicht eingerichtet.',
+  invalid_redirect: 'Ungültige Rücksprung-Adresse.',
 };
 
 export function errorText(err: unknown): string {
