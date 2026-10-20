@@ -6,6 +6,7 @@
 pub mod http;
 pub mod model;
 pub mod network;
+pub mod shutdown;
 pub mod store;
 pub mod sync;
 pub mod system;

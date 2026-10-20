@@ -31,6 +31,17 @@ pub fn hmac_hex(key: &[u8], value: &str) -> String {
         })
 }
 
+/// Netzwerk-Kennung aus der MAC-Adresse des Standard-Gateways (`gw=aa:bb:cc:dd:ee:ff`).
+/// Gleich für LAN und WLAN desselben Routers und auf allen Plattformen; braucht keine
+/// Standortberechtigung. `None` bei fehlender oder ungültiger Adresse.
+pub fn gateway_fingerprint(mac: &[u8]) -> Option<String> {
+    if mac.len() != 6 || mac.iter().all(|b| *b == 0) || mac.iter().all(|b| *b == 0xff) {
+        return None;
+    }
+    let hex: Vec<String> = mac.iter().map(|b| format!("{b:02x}")).collect();
+    Some(format!("gw={}", hex.join(":")))
+}
+
 /// Treffer: ID des Arbeitsnetzes und Quelle für das Ereignis.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NetworkMatch {
@@ -107,6 +118,17 @@ mod tests {
             bssid_hmac: None,
             fingerprint_hmac: None,
         }
+    }
+
+    #[test]
+    fn kennung_aus_gateway_mac() {
+        assert_eq!(
+            gateway_fingerprint(&[0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff]).as_deref(),
+            Some("gw=aa:bb:cc:dd:ee:ff")
+        );
+        assert_eq!(gateway_fingerprint(&[0; 6]), None);
+        assert_eq!(gateway_fingerprint(&[0xff; 6]), None);
+        assert_eq!(gateway_fingerprint(&[1, 2, 3]), None);
     }
 
     #[test]

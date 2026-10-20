@@ -36,7 +36,8 @@ pub enum PowerOff {
 /// hinterlegten Arbeitsnetzes.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct NetworkInfo {
-    /// Netzwerk-Kennung (z. B. `gw=<MAC>;dns=<Suffix>;net=<Subnetz>`), ohne Standortberechtigung.
+    /// Netzwerk-Kennung (`gw=<MAC des Gateways>`, siehe [`crate::network::gateway_fingerprint`]),
+    /// ohne Standortberechtigung.
     pub fingerprint: Option<String>,
     /// WLAN-Name, nur mit Freigabe des Nutzers.
     pub ssid: Option<String>,
