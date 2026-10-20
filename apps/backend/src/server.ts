@@ -1,6 +1,7 @@
 import { buildApp } from './app.js';
 import { createDatabase, runMigrations } from './db/index.js';
 import { loadEnv } from './env.js';
+import { schedulePurge } from './jobs/purge.js';
 import { ConsoleMailer, type Mailer, SmtpMailer } from './mailer.js';
 
 const env = loadEnv();
@@ -17,12 +18,18 @@ const app = await buildApp({
   mailer,
   jwtSecret: env.JWT_SECRET,
   totpKey: Buffer.from(env.TOTP_ENCRYPTION_KEY, 'base64'),
+  networkSecret: env.NETWORK_HMAC_SECRET,
   appUrl: env.APP_URL,
   logLevel: env.LOG_LEVEL,
   trustProxy: env.TRUST_PROXY,
 });
 
+const stopPurge = schedulePurge(db, (msg) => {
+  app.log.info(msg);
+});
+
 const shutdown = async (): Promise<void> => {
+  stopPurge();
   await app.close();
   await pool.end();
 };

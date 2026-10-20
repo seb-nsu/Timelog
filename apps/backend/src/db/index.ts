@@ -50,3 +50,14 @@ export function asSystem<T>(db: Db, fn: (tx: Tx) => Promise<T>): Promise<T> {
 }
 
 export { schema };
+
+/**
+ * Transaktion als Tabellen-Eigentümer (ohne API-Rolle). Nur für Löschkonzept und Lösch-Job,
+ * weil die API-Rolle Ereignisse nicht löschen darf.
+ */
+export function asOwner<T>(db: Db, fn: (tx: Tx) => Promise<T>): Promise<T> {
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`select set_config('app.bypass_rls', 'on', true)`);
+    return fn(tx);
+  });
+}

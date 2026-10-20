@@ -13,7 +13,8 @@
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file-if-exists=../../.env src/db/migrate-cli.ts",
-    "openapi": "tsx src/openapi-cli.ts"
+    "openapi": "tsx src/openapi-cli.ts",
+    "purge": "tsx --env-file-if-exists=../../.env src/jobs/purge-cli.ts"
   },
   "dependencies": {
     "@fastify/swagger": "^9.9.2",
