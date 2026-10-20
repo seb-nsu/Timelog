@@ -20,6 +20,10 @@ const app = await buildApp({
   totpKey: Buffer.from(env.TOTP_ENCRYPTION_KEY, 'base64'),
   networkSecret: env.NETWORK_HMAC_SECRET,
   appUrl: env.APP_URL,
+  ...(env.ADMIN_URL ? { adminUrl: env.ADMIN_URL } : {}),
+  apiUrl: env.API_URL,
+  corsOrigins: env.CORS_ORIGINS,
+  sso: { redirectOrigins: env.SSO_REDIRECT_ORIGINS },
   logLevel: env.LOG_LEVEL,
   trustProxy: env.TRUST_PROXY,
 });

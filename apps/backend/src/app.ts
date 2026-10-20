@@ -1,4 +1,5 @@
 import cors from '@fastify/cors';
+import formbody from '@fastify/formbody';
 import swagger from '@fastify/swagger';
 import Fastify, {
   type FastifyBaseLogger,
@@ -34,6 +35,7 @@ import { invitationRoutes, membershipRoutes } from './routes/membership.js';
 import { requireOrgRole } from './routes/org/access.js';
 import { orgApprovalRoutes } from './routes/org/approvals.js';
 import { orgManageRoutes } from './routes/org/manage.js';
+import { ssoRoutes } from './routes/sso.js';
 import type { AccessClaims } from './security/jwt.js';
 import { TokenSigner } from './security/jwt.js';
 
@@ -184,6 +186,8 @@ export async function buildApp(options: AppOptions): Promise<App> {
     return reply.code(500).send({ error: 'internal_error' });
   });
 
+  // SAML-IdPs senden die Antwort als Formular (HTTP-POST-Binding).
+  await app.register(formbody, { bodyLimit: 512 * 1024 });
   if (options.corsOrigins && options.corsOrigins.length > 0) {
     await app.register(cors, { origin: options.corsOrigins, maxAge: 600 });
   }
@@ -213,6 +217,7 @@ export async function buildApp(options: AppOptions): Promise<App> {
       await api.register((scope, _opts, done) => {
         authRoutes(scope, ctx);
         invitationRoutes(scope, ctx);
+        ssoRoutes(scope, ctx);
         done();
       });
       await api.register((scope, _opts, done) => {
