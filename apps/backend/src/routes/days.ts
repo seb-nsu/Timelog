@@ -83,22 +83,21 @@ export async function computeUserDays(
   const loadFrom = new Date(Date.parse(`${addDays(from, -LOOKBACK_DAYS)}T00:00:00Z`));
   const loadTo = new Date(Date.parse(`${addDays(to, 2)}T00:00:00Z`));
 
-  const [eventRows, spanRows, targetRows, absenceRows] = await Promise.all([
-    tx
-      .select()
-      .from(events)
-      .where(and(gte(events.ts, loadFrom), lte(events.ts, loadTo))),
-    tx
-      .select({ span: presenceSpans, kind: devices.kind })
-      .from(presenceSpans)
-      .innerJoin(devices, eq(devices.id, presenceSpans.deviceId))
-      .where(and(gte(presenceSpans.end, loadFrom), lte(presenceSpans.start, loadTo))),
-    tx.select().from(targetHours),
-    tx
-      .select()
-      .from(absences)
-      .where(and(gte(absences.date, from), lte(absences.date, to))),
-  ]);
+  // Nacheinander: eine Transaktion hat nur eine Verbindung
+  const eventRows = await tx
+    .select()
+    .from(events)
+    .where(and(gte(events.ts, loadFrom), lte(events.ts, loadTo)));
+  const spanRows = await tx
+    .select({ span: presenceSpans, kind: devices.kind })
+    .from(presenceSpans)
+    .innerJoin(devices, eq(devices.id, presenceSpans.deviceId))
+    .where(and(gte(presenceSpans.end, loadFrom), lte(presenceSpans.start, loadTo)));
+  const targetRows = await tx.select().from(targetHours);
+  const absenceRows = await tx
+    .select()
+    .from(absences)
+    .where(and(gte(absences.date, from), lte(absences.date, to)));
 
   const ruleEvents: TimeEvent[] = eventRows.map((r) => ({ ...toStoredEvent(r), userId }));
   const ruleSpans: PresenceSpan[] = spanRows.map(({ span, kind }) => ({
