@@ -12,16 +12,16 @@ Automatische Arbeitszeiterfassung für Laptop (Windows, macOS) und Handy (Androi
 
 ## Stand
 
-| Phase              | Status   |
-| ------------------ | -------- |
-| 0 – Grundgerüst    | erledigt |
-| 1 – Regelwerk      | erledigt |
-| 2a – Backend-Kern  | erledigt |
-| 2b – Backend-Fach  | erledigt |
-| 3a – Desktop-Kern  | erledigt |
-| 3b/3c – Win, macOS | offen    |
-| 4/5 – Android, iOS | offen    |
-| 6 – Firmenversion  | offen    |
+| Phase              | Status                                           |
+| ------------------ | ------------------------------------------------ |
+| 0 – Grundgerüst    | erledigt                                         |
+| 1 – Regelwerk      | erledigt                                         |
+| 2a – Backend-Kern  | erledigt                                         |
+| 2b – Backend-Fach  | erledigt                                         |
+| 3a – Desktop-Kern  | erledigt                                         |
+| 3b/3c – Win, macOS | gebaut, Gerätetest, Signierung und Updater offen |
+| 4/5 – Android, iOS | offen                                            |
+| 6 – Firmenversion  | offen                                            |
 
 ## Repo-Struktur
 
@@ -78,13 +78,13 @@ pnpm --filter @timelog/desktop tauri dev     # App mit Tray starten
 cd apps/desktop/src-tauri && cargo test --workspace
 ```
 
-Der Rust-Kern (`src-tauri/core`) schreibt Ereignisse und Aktiv-Spannen sofort in SQLite und synchronisiert sie mit dem Backend; Tokens bleiben im Rust-Teil. Die Oberfläche berechnet Arbeitstage lokal mit `@timelog/rules`. Systemereignisse laufen über die Schnittstelle `SystemEvents`; bis Phase 3b/3c gibt es nur eine plattformunabhängige Grundversion (Startzeit, Zeitzone) und für Tests die Attrappe `FakeSystem`. Optional setzt `VITE_DEFAULT_SERVER` beim Bauen die vorbelegte Server-Adresse.
+Der Rust-Kern (`src-tauri/core`) schreibt Ereignisse und Aktiv-Spannen sofort in SQLite und synchronisiert sie mit dem Backend; Tokens bleiben im Rust-Teil. Die Oberfläche berechnet Arbeitstage lokal mit `@timelog/rules`. Systemereignisse laufen über die Schnittstelle `SystemEvents` mit eigenen Modulen für Windows und macOS (Details und Prüfanleitung in [docs/PLATFORM.md](docs/PLATFORM.md)); für Tests gibt es die Attrappe `FakeSystem`. Optional setzt `VITE_DEFAULT_SERVER` beim Bauen die vorbelegte Server-Adresse.
 
 ## Weiter mit Claude Code
 
 ```
-Lies docs/IMPLEMENTATION.md. Setze Phase 3b um. Halte dich an CLAUDE.md.
-Stoppe, wenn alle Akzeptanzkriterien von Phase 3b erfüllt und die Tests grün sind.
+Lies docs/IMPLEMENTATION.md. Setze Phase 4 um. Halte dich an CLAUDE.md.
+Stoppe, wenn alle Akzeptanzkriterien von Phase 4 erfüllt und die Tests grün sind.
 ```
 
 Jede Phase einzeln beauftragen. Punkte mit 👤 prüfst du selbst auf echter Hardware.

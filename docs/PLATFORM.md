@@ -72,3 +72,37 @@ Tagesprotokoll prüfen.
     Ende bei der letzten Aktivität.
 
 Abweichungen bitte mit Windows-Version (`winver`) und den notierten Ereigniswerten melden.
+
+## macOS (`apps/desktop/src-tauri/src/platform/macos.rs`)
+
+| Signal | Umsetzung | Quelle / Status |
+| --- | --- | --- |
+| Einschaltzeit | `sysctl kern.boottime` | Laut Apple bezogen auf die aktuelle Uhr, verschiebt sich bei Uhrkorrekturen um Sekunden; der Tracker vergleicht mit 2 min Toleranz |
+| Herunterfahren / Neustart | Eigener Handler für das Quit-AppleEvent (`aevt`/`quit`), eingesetzt nach dem Start von AppKit. Grund `kAEQuitReason` (`why?`): `shut` → `shutdown`, `rest` → `restart`, Abmelden oder Beenden durch den Nutzer → kein Ereignis. Danach beendet sich die App normal | Konstanten nur in den SDK-Headern dokumentiert. **Apple-Entwickler berichten, dass Apps ohne Dock-Symbol (`accessory`) seit macOS 12 beim Herunterfahren ohne Nachricht beendet werden.** TimeLog behält daher vorerst das Dock-Symbol |
+| Rückfall | `NSWorkspace.willPowerOffNotification` merkt Zeitpunkt und Einschaltzeit lokal vor. Beim nächsten Start: neue Einschaltzeit → `shutdown` zum gemerkten Zeitpunkt (Neustart erkennt das Regelwerk über `restartWindowMin`); gleiche Einschaltzeit → war Abmelden, kein Ereignis. Läuft das Gerät nach der Ankündigung 5 min weiter, wird sie verworfen | Benachrichtigung dokumentiert, unterscheidet aber nicht zwischen Abmelden und Herunterfahren |
+| Absturz | Kein `shutdown` vor dem neuen `boot`; offene Spannen enden bei der letzten Verlängerung | – |
+| Sperren | `com.apple.screenIsLocked` / `screenIsUnlocked` über `NSDistributedNotificationCenter` | **Nicht dokumentiert** (Apple: „not something that we consider API“), aber verbreitet; am Gerät prüfen |
+| Standby | `NSWorkspace.willSleepNotification` / `didWakeNotification` am Center von `NSWorkspace` | dokumentiert |
+| Netzwechsel | Alle 10 s Router und primäre Schnittstelle aus `State:/Network/Global/IPv4` (`SCDynamicStore`) vergleichen; liest nur den lokalen Zustand | `NWPathMonitor` hat in Rust keine Anbindung für macOS 13; Abfragen ist einfacher als ein Run-Loop-Rückruf |
+| Netzwerk-Kennung | `gw=<MAC des Routers>` wie unter Windows: Router-IP aus `SCDynamicStore`, MAC aus dem ARP-Cache (`/usr/sbin/arp -n`, sendet nichts). WLAN/LAN über `SCNetworkInterfaceGetInterfaceType` | Ob das Lesen des ARP-Caches den Dialog „Lokales Netzwerk“ (neu in macOS 15) auslöst, ist laut Apple-Forum unklar; `NSLocalNetworkUsageDescription` steht vorsorglich in `Info.plist` |
+| WLAN-Name | Nicht umgesetzt | Seit macOS 14 liefert CoreWLAN SSID/BSSID nur mit Ortungsdiensten (Entitlement `com.apple.security.personal-information.location`, `NSLocationUsageDescription`, signierte App); BSSID auch dann nicht immer. Optional für später |
+
+### Installer
+
+`pnpm tauri build` erzeugt unter macOS `.app` und `.dmg`. Signierung, Notarisierung und
+Tauri-Updater brauchen das Apple-Developer-Konto bzw. Schlüssel des Betreibers und sind noch offen.
+Ohne Signierung verhalten sich Datenschutz-Dialoge unzuverlässig.
+
+### 👤 Prüfanleitung am echten Mac
+
+Wie unter Windows (Schritte 1, 4, 5, 7, 8, 9, 10, 11, 12), dazu:
+
+- **Neustart und Herunterfahren aus dem Apple-Menü:** in der Konsole (Prozess TimeLog) bzw. im
+  Tagesprotokoll prüfen, ob „Neustart“ bzw. „Heruntergefahren“ zur richtigen Zeit erscheint.
+  Falls nicht: kommt das Ereignis nach dem nächsten Start nach (Rückfall)?
+- **Abmelden** mit „Fenster beim erneuten Anmelden wieder öffnen“ an und aus: kein Ereignis.
+- **Sperren** mit Ctrl+Cmd+Q und über den Bildschirmschoner: Pause beginnt mit der Sperre.
+- **Erster Start unter macOS 15:** Erscheint der Dialog „Lokales Netzwerk“? Was passiert bei
+  „Nicht erlauben“?
+
+Abweichungen bitte mit macOS-Version und Mac-Modell melden.
