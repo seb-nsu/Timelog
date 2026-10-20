@@ -1,6 +1,7 @@
 import { buildApp } from './app.js';
 import { createDatabase, runMigrations } from './db/index.js';
-import { loadEnv } from './env.js';
+import { CalendarService, scheduleCalendarSync } from './calendar/service.js';
+import { calendarOptionsFrom, loadEnv } from './env.js';
 import { schedulePurge } from './jobs/purge.js';
 import { ConsoleMailer, type Mailer, SmtpMailer } from './mailer.js';
 
@@ -13,11 +14,19 @@ if (env.SMTP_URL) mailer = new SmtpMailer(env.SMTP_URL, env.MAIL_FROM);
 else if (env.NODE_ENV === 'production') throw new Error('SMTP_URL fehlt');
 else mailer = new ConsoleMailer();
 
+const totpKey = Buffer.from(env.TOTP_ENCRYPTION_KEY, 'base64');
+const calendarService = new CalendarService(db, totpKey, calendarOptionsFrom(env));
+
 const app = await buildApp({
   db,
   mailer,
   jwtSecret: env.JWT_SECRET,
-  totpKey: Buffer.from(env.TOTP_ENCRYPTION_KEY, 'base64'),
+  totpKey,
+  calendarService,
+  homeOffice: {
+    perDayCents: env.HOME_OFFICE_DAY_CENTS,
+    maxPerYearCents: env.HOME_OFFICE_MAX_CENTS,
+  },
   networkSecret: env.NETWORK_HMAC_SECRET,
   appUrl: env.APP_URL,
   ...(env.ADMIN_URL ? { adminUrl: env.ADMIN_URL } : {}),
@@ -32,8 +41,17 @@ const stopPurge = schedulePurge(db, (msg) => {
   app.log.info(msg);
 });
 
+const stopCalendar = scheduleCalendarSync(
+  calendarService,
+  env.CALENDAR_SYNC_INTERVAL_MIN,
+  (msg) => {
+    app.log.info(msg);
+  },
+);
+
 const shutdown = async (): Promise<void> => {
   stopPurge();
+  stopCalendar();
   await app.close();
   await pool.end();
 };

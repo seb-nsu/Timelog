@@ -27,7 +27,8 @@ import { type Tx, withMember, withUser } from '../../db/index.js';
 import { approvals, organizations, targetHours, users } from '../../db/schema.js';
 import { renderPdf } from '../../export/pdf.js';
 import { applyCorrection } from '../corrections.js';
-import { computeUserDays, loadDays } from '../days.js';
+import { loadDayExtras, snapshotOf } from '../../extras.js';
+import { loadDays } from '../days.js';
 import { CSV_HEADER, csvCell, exportRows } from '../privacy.js';
 import { ADMINS, type Actor, actorOf, actorScope, audit, loadMember } from './access.js';
 import { visibleMembers } from './manage.js';
@@ -341,11 +342,11 @@ export function orgApprovalRoutes(app: App, ctx: AppContext): void {
         return withMember(ctx.db, actorScope(actor), userId, async (tx) => {
           const row = await loadApproval(tx, userId, month);
           if (row?.status !== 'submitted') throw new HttpError(409, 'not_submitted');
-          let snapshot: WorkDay[] | null = null;
+          let snapshot: ReturnType<typeof snapshotOf> | null = null;
           let version: number | null = null;
           if (action === 'approve') {
             const { from, to } = monthRange(month);
-            snapshot = (await computeUserDays(tx, userId, from, to, ctx.now())).days;
+            snapshot = snapshotOf(await loadDayExtras(tx, userId, from, to, ctx.now()));
             const [org] = await tx
               .select({ v: organizations.rulesConfigVersion })
               .from(organizations)

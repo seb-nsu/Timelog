@@ -13,6 +13,10 @@ import {
   resolveConfig,
 } from '@timelog/rules';
 import {
+  type DayLocationView,
+  type DayProjectsView,
+  dayLocationSchema,
+  dayProjectsSchema,
   daysQuery,
   daysResponse,
   orgRulesConfig,
@@ -54,9 +58,12 @@ function buildSchedule(rows: (typeof targetHours.$inferSelect)[]): TargetSchedul
   return [...byDate.values()];
 }
 
-interface Computed {
+export interface Computed {
   days: WorkDay[];
   timezone: string;
+  /** Eingaben des Regelwerks (für Projektaufteilung und Tagesort) */
+  events: TimeEvent[];
+  spans: PresenceSpan[];
 }
 
 /** Lädt alle Eingaben des Nutzers und berechnet die Arbeitstage mit dem Regelwerk. */
@@ -68,7 +75,7 @@ export async function computeUserDays(
   nowMs: number,
 ): Promise<Computed> {
   const [user] = await tx.select().from(users).where(eq(users.id, userId));
-  if (!user) return { days: [], timezone: 'Europe/Berlin' };
+  if (!user) return { days: [], timezone: 'Europe/Berlin', events: [], spans: [] };
   const org = user.orgId
     ? (await tx.select().from(organizations).where(eq(organizations.id, user.orgId)))[0]
     : undefined;
@@ -124,7 +131,12 @@ export async function computeUserDays(
     config,
     new Date(nowMs).toISOString(),
   );
-  return { days: days.filter((d) => d.date >= from && d.date <= to), timezone: user.timezone };
+  return {
+    days: days.filter((d) => d.date >= from && d.date <= to),
+    timezone: user.timezone,
+    events: ruleEvents,
+    spans: ruleSpans,
+  };
 }
 
 /** Monate (JJJJ-MM) zwischen zwei Daten, jeweils einschließlich. */
@@ -145,7 +157,25 @@ export function monthsBetween(from: string, to: string): string[] {
   return out;
 }
 
-const snapshotSchema = z.array(workDaySchema);
+/**
+ * Snapshot einer Freigabe: früher nur die Arbeitstage, seit Version 2 zusätzlich Projektaufteilung
+ * und Tagesorte (beides wird bei freigegebenen Monaten ebenfalls nie neu berechnet).
+ */
+export const snapshotSchema = z.union([
+  z.array(workDaySchema),
+  z.object({
+    version: z.literal(2),
+    days: z.array(workDaySchema),
+    projects: z.array(dayProjectsSchema),
+    locations: z.array(dayLocationSchema),
+  }),
+]);
+export type Snapshot = z.infer<typeof snapshotSchema>;
+
+export interface FrozenExtras {
+  projects: DayProjectsView[];
+  locations: DayLocationView[];
+}
 
 /**
  * Arbeitstage wie computeUserDays, aber freigegebene Monate kommen unverändert aus dem Snapshot
@@ -157,7 +187,7 @@ export async function loadDays(
   from: string,
   to: string,
   nowMs: number,
-): Promise<Computed & { approvedMonths: string[] }> {
+): Promise<Computed & { approvedMonths: string[]; frozen: Map<string, FrozenExtras | undefined> }> {
   const months = monthsBetween(from, to);
   const rows = await tx
     .select({ month: approvals.month, snapshot: approvals.snapshot })
@@ -171,16 +201,29 @@ export async function loadDays(
       ),
     );
   const frozen = new Map<string, WorkDay[]>();
+  const extras = new Map<string, FrozenExtras | undefined>();
   for (const r of rows) {
     const parsed = snapshotSchema.safeParse(r.snapshot);
-    if (parsed.success) frozen.set(r.month, parsed.data);
+    if (!parsed.success) continue;
+    if (Array.isArray(parsed.data)) {
+      frozen.set(r.month, parsed.data);
+      extras.set(r.month, undefined);
+    } else {
+      frozen.set(r.month, parsed.data.days);
+      extras.set(r.month, { projects: parsed.data.projects, locations: parsed.data.locations });
+    }
   }
   const computed = await computeUserDays(tx, userId, from, to, nowMs);
-  if (frozen.size === 0) return { ...computed, approvedMonths: [] };
+  if (frozen.size === 0) return { ...computed, approvedMonths: [], frozen: extras };
   const live = computed.days.filter((d) => !frozen.has(d.date.slice(0, 7)));
   const fromSnapshots = [...frozen.values()].flat().filter((d) => d.date >= from && d.date <= to);
   const days = [...live, ...fromSnapshots].sort((a, b) => a.date.localeCompare(b.date));
-  return { days, timezone: computed.timezone, approvedMonths: [...frozen.keys()].sort() };
+  return {
+    ...computed,
+    days,
+    approvedMonths: [...frozen.keys()].sort(),
+    frozen: extras,
+  };
 }
 
 export function daysRoutes(app: App, ctx: AppContext): void {

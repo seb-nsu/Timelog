@@ -43,6 +43,7 @@ import {
 } from '../../db/schema.js';
 import { randomToken, sha256 } from '../../security/crypto.js';
 import { networkHmac, networkKey } from '../profile.js';
+import { assertOrgProject } from './extras.js';
 import {
   ADMINS,
   type Actor,
@@ -619,6 +620,8 @@ export function orgManageRoutes(app: App, ctx: AppContext): void {
     scope: 'org',
     kind: r.kind,
     label: r.label,
+    location: r.location,
+    ...(r.defaultProjectId ? { defaultProjectId: r.defaultProjectId } : {}),
     ...(r.ssid ? { ssid: r.ssid } : {}),
     ...(r.bssidHmac ? { bssidHmac: r.bssidHmac } : {}),
     ...(r.fingerprintHmac ? { fingerprintHmac: r.fingerprintHmac } : {}),
@@ -676,6 +679,7 @@ export function orgManageRoutes(app: App, ctx: AppContext): void {
       const n = request.body;
       return withUser(ctx.db, actorScope(actor), async (tx) => {
         const org = await loadOrg(tx, actor.orgId);
+        await assertOrgProject(tx, actor.orgId, n.defaultProjectId);
         const key = orgNetworkKey(ctx, org);
         const [row] = await tx
           .insert(workNetworks)
@@ -690,6 +694,8 @@ export function orgManageRoutes(app: App, ctx: AppContext): void {
             lat: n.kind === 'geofence' ? n.lat : null,
             lng: n.kind === 'geofence' ? n.lng : null,
             radius: n.kind === 'geofence' ? n.radius : null,
+            location: n.location,
+            defaultProjectId: n.defaultProjectId ?? null,
           })
           .returning();
         if (!row) throw new HttpError(500, 'insert_failed');

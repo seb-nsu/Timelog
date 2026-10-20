@@ -33,6 +33,16 @@ const envSchema = z.object({
   SMTP_URL: z.string().optional(),
   MAIL_FROM: z.string().default('TimeLog <no-reply@localhost>'),
   TRUST_PROXY: z.stringbool().default(false),
+  // Kalender-Anbindung (nur lesend); ohne Client-ID ist der Anbieter abgeschaltet
+  GOOGLE_CALENDAR_CLIENT_ID: z.string().optional(),
+  GOOGLE_CALENDAR_CLIENT_SECRET: z.string().optional(),
+  MICROSOFT_CALENDAR_CLIENT_ID: z.string().optional(),
+  MICROSOFT_CALENDAR_CLIENT_SECRET: z.string().optional(),
+  MICROSOFT_CALENDAR_TENANT: z.string().default('common'),
+  CALENDAR_SYNC_INTERVAL_MIN: z.coerce.number().int().min(5).max(1440).default(60),
+  // Homeoffice-Tagespauschale (§ 4 Abs. 5 Satz 1 Nr. 6c EStG) in Cent: je Tag und Jahreshöchstbetrag
+  HOME_OFFICE_DAY_CENTS: z.coerce.number().int().min(0).default(600),
+  HOME_OFFICE_MAX_CENTS: z.coerce.number().int().min(0).default(126_000),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -43,4 +53,27 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     throw new Error(`Ungültige Umgebungsvariablen: ${z.prettifyError(parsed.error)}`);
   }
   return parsed.data;
+}
+
+/** Kalender-Anbieter aus der Umgebung (nur wenn Client-ID und Secret gesetzt sind). */
+export function calendarOptionsFrom(env: Env) {
+  return {
+    ...(env.GOOGLE_CALENDAR_CLIENT_ID && env.GOOGLE_CALENDAR_CLIENT_SECRET
+      ? {
+          google: {
+            clientId: env.GOOGLE_CALENDAR_CLIENT_ID,
+            clientSecret: env.GOOGLE_CALENDAR_CLIENT_SECRET,
+          },
+        }
+      : {}),
+    ...(env.MICROSOFT_CALENDAR_CLIENT_ID && env.MICROSOFT_CALENDAR_CLIENT_SECRET
+      ? {
+          microsoft: {
+            clientId: env.MICROSOFT_CALENDAR_CLIENT_ID,
+            clientSecret: env.MICROSOFT_CALENDAR_CLIENT_SECRET,
+            tenant: env.MICROSOFT_CALENDAR_TENANT,
+          },
+        }
+      : {}),
+  };
 }

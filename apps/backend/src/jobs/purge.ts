@@ -5,10 +5,14 @@ import {
   absences,
   approvals,
   authTokens,
+  calendarEntries,
+  calendarOauthStates,
   corrections,
+  dayLocations,
   events,
   organizations,
   presenceSpans,
+  projectAssignments,
   refreshTokens,
   users,
   workDays,
@@ -65,6 +69,14 @@ export async function purgeExpired(db: Db, nowMs: number): Promise<PurgeResult> 
       await tx
         .delete(approvals)
         .where(and(inArray(approvals.userId, ids), lt(approvals.month, cutoffDate.slice(0, 7))));
+      await tx
+        .delete(projectAssignments)
+        .where(
+          and(inArray(projectAssignments.userId, ids), lt(projectAssignments.date, cutoffDate)),
+        );
+      await tx
+        .delete(dayLocations)
+        .where(and(inArray(dayLocations.userId, ids), lt(dayLocations.date, cutoffDate)));
 
       // Anonymisierte Konten nach Ablauf der Frist vollständig löschen
       for (const m of members) {
@@ -101,7 +113,17 @@ export async function purgeExpired(db: Db, nowMs: number): Promise<PurgeResult> 
       .delete(authTokens)
       .where(lt(authTokens.expiresAt, old))
       .returning({ id: authTokens.id });
-    result.deletedTokens = rt.length + at.length;
+    // Kalendertermine nur so lange wie nötig (offene Monate, Projektzuordnung): 13 Monate
+    await tx
+      .delete(calendarEntries)
+      .where(lt(calendarEntries.endAt, yearsBefore(nowMs - 31 * DAY_MS, 1)));
+
+    // Nicht abgeschlossene Kalender-Anmeldungen (Zustand + PKCE-Verifier)
+    const st = await tx
+      .delete(calendarOauthStates)
+      .where(lt(calendarOauthStates.expiresAt, new Date(nowMs)))
+      .returning({ id: calendarOauthStates.id });
+    result.deletedTokens = rt.length + at.length + st.length;
     return result;
   });
 }

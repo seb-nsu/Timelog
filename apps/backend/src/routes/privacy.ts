@@ -9,11 +9,17 @@ import {
   absences,
   approvals,
   authTokens,
+  calendarConnections,
+  calendarEntries,
+  calendarOauthStates,
   corrections,
+  dayLocations,
   devices,
   events,
   organizations,
   presenceSpans,
+  projectAssignments,
+  projects,
   refreshTokens,
   targetHours,
   users,
@@ -21,8 +27,9 @@ import {
   workNetworks,
 } from '../db/schema.js';
 import { renderPdf } from '../export/pdf.js';
+import { loadDayExtras, visibleProjects } from '../extras.js';
 import { verifyPassword } from '../security/password.js';
-import { loadDays } from './days.js';
+import { projectCell } from './projects.js';
 import { toStoredEvent } from './events.js';
 import { authOf, scopeOf } from './guard.js';
 
@@ -86,10 +93,16 @@ export async function deleteUserData(tx: Tx, userId: string, includeUser: boolea
     approvals,
     absences,
     targetHours,
+    calendarEntries,
+    calendarConnections,
+    calendarOauthStates,
+    projectAssignments,
+    dayLocations,
   ]) {
     await tx.delete(table).where(eq(table.userId, userId));
   }
   await tx.delete(workNetworks).where(eq(workNetworks.userId, userId));
+  await tx.delete(projects).where(eq(projects.userId, userId));
   if (includeUser) {
     await tx.delete(devices).where(eq(devices.userId, userId));
     await tx.delete(users).where(eq(users.id, userId));
@@ -111,25 +124,34 @@ export function privacyRoutes(app: App, ctx: AppContext): void {
     async (request, reply) => {
       const claims = authOf(request);
       const { from, to, format } = request.query;
-      const { days, timezone, user } = await withUser(ctx.db, scopeOf(claims), async (tx) => {
+      const { extras, user, names } = await withUser(ctx.db, scopeOf(claims), async (tx) => {
         const [u] = await tx.select().from(users).where(eq(users.id, claims.sub));
         if (!u) throw new HttpError(401, 'unauthorized');
-        return { ...(await loadDays(tx, claims.sub, from, to, ctx.now())), user: u };
+        const loaded = await loadDayExtras(tx, claims.sub, from, to, ctx.now());
+        const list = loaded.features.projects ? await visibleProjects(tx, u) : [];
+        return { extras: loaded, user: u, names: new Map(list.map((p) => [p.id, p.name])) };
       });
+      const { days, timezone } = extras;
       const settings = z
         .object({ personnelNumber: z.string().optional() })
         .safeParse(user.settings);
       const personnelNumber = (settings.success ? settings.data.personnelNumber : undefined) ?? '';
-      const rows = exportRows(days, timezone, personnelNumber);
+      // Mit eingeschalteten Projekten: zusätzliche Spalte „Projekte“ (Netto je Projekt).
+      const withProjects = extras.features.projects;
+      const byDate = new Map(extras.projects.map((p) => [p.date, p]));
+      const header = withProjects ? [...CSV_HEADER, 'Projekte'] : CSV_HEADER;
+      const rows = exportRows(days, timezone, personnelNumber).map((r, i) =>
+        withProjects ? [...r, projectCell(byDate.get(days[i]?.date ?? ''), names)] : r,
+      );
       const filename = `arbeitszeit_${from}_${to}`;
       if (format === 'pdf') {
+        const widths = withProjects
+          ? [62, 48, 38, 38, 45, 60, 45, 55, 55, 45, 120, 159]
+          : [70, 65, 45, 45, 55, 75, 55, 70, 70, 55, 165];
         const pdf = renderPdf({
           title: `Arbeitszeit ${from} bis ${to}`,
           subtitle: `${user.name}${personnelNumber ? ` · ${personnelNumber}` : ''} · Zeitzone ${timezone}`,
-          columns: [70, 65, 45, 45, 55, 75, 55, 70, 70, 55, 165].map((width, i) => ({
-            label: CSV_HEADER[i] ?? '',
-            width,
-          })),
+          columns: widths.map((width, i) => ({ label: header[i] ?? '', width })),
           rows,
         });
         return reply
@@ -138,7 +160,7 @@ export function privacyRoutes(app: App, ctx: AppContext): void {
           .send(pdf);
       }
       const csv =
-        '﻿' + [CSV_HEADER, ...rows].map((r) => r.map(csvCell).join(';')).join('\r\n') + '\r\n';
+        '﻿' + [header, ...rows].map((r) => r.map(csvCell).join(';')).join('\r\n') + '\r\n';
       return reply
         .header('content-type', 'text/csv; charset=utf-8')
         .header('content-disposition', `attachment; filename="${filename}.csv"`)
@@ -199,6 +221,32 @@ export function privacyRoutes(app: App, ctx: AppContext): void {
             .where(eq(workNetworks.userId, claims.sub)),
           corrections: await tx.select().from(corrections),
           approvals: await tx.select().from(approvals),
+          projects: await tx.select().from(projects).where(eq(projects.userId, claims.sub)),
+          projectAssignments: await tx
+            .select()
+            .from(projectAssignments)
+            .where(eq(projectAssignments.userId, claims.sub)),
+          dayLocations: await tx
+            .select()
+            .from(dayLocations)
+            .where(eq(dayLocations.userId, claims.sub)),
+          // ohne Tokens
+          calendarConnections: (
+            await tx
+              .select()
+              .from(calendarConnections)
+              .where(eq(calendarConnections.userId, claims.sub))
+          ).map((c) => ({
+            id: c.id,
+            provider: c.provider,
+            status: c.status,
+            createdAt: c.createdAt.toISOString(),
+            lastSyncAt: c.lastSyncAt?.toISOString() ?? null,
+          })),
+          calendarEntries: await tx
+            .select()
+            .from(calendarEntries)
+            .where(eq(calendarEntries.userId, claims.sub)),
         };
       });
       return reply
