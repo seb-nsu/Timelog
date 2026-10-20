@@ -1,0 +1,8 @@
+# von expo prebuild erzeugt
+/android/
+/ios/
+.expo/
+*.jks
+*.keystore
+google-services.json
+GoogleService-Info.plist
