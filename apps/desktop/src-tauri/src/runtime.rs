@@ -12,6 +12,8 @@ use timelog_core::{
     Envelope, Signal, SignalSink, Store, SyncState, Syncer, Tracker, TrackerConfig,
 };
 
+use crate::secrets::Loaded;
+
 const KEY_AUTH: &str = "auth";
 /// Zeitgrenze für normale Anfragen und für den Sende-Versuch beim Herunterfahren.
 pub const REQUEST_TIMEOUT: Duration = Duration::from_secs(15);
@@ -24,6 +26,31 @@ pub const TICK: Duration = Duration::from_mins(2);
 struct StoredAuth {
     base_url: String,
     tokens: Tokens,
+}
+
+/// Anmeldedaten aus dem Schlüsselbund, sonst aus der Datenbank. Ältere Einträge in der
+/// Datenbank wandern beim ersten Lesen in den Schlüsselbund.
+fn load_auth(store: &Store) -> Option<StoredAuth> {
+    let from_db: Option<StoredAuth> = store.get(KEY_AUTH).ok().flatten();
+    match crate::secrets::load() {
+        Loaded::Found(json) => serde_json::from_str(&json).ok(),
+        Loaded::Empty => {
+            if let Some(auth) = &from_db {
+                let _ = save_auth(store, auth);
+            }
+            from_db
+        }
+        Loaded::Unavailable => from_db,
+    }
+}
+
+fn save_auth(store: &Store, auth: &StoredAuth) -> Result<(), String> {
+    let json = serde_json::to_string(auth).map_err(|e| e.to_string())?;
+    if crate::secrets::save(&json) {
+        store.remove(KEY_AUTH).map_err(|e| e.to_string())
+    } else {
+        store.set(KEY_AUTH, auth).map_err(|e| e.to_string())
+    }
 }
 
 pub struct Runtime {
@@ -41,7 +68,7 @@ fn lock<T>(m: &Mutex<T>) -> MutexGuard<'_, T> {
 impl Runtime {
     pub fn open(db: &Path, signals: SignalSink) -> Result<Self, String> {
         let store = Store::open(db).map_err(|e| e.to_string())?;
-        let auth: Option<StoredAuth> = store.get(KEY_AUTH).map_err(|e| e.to_string())?;
+        let auth = load_auth(&store);
         let api = auth.map(|a| HttpApi::new(&a.base_url, a.tokens, REQUEST_TIMEOUT));
         let mut system = crate::platform::system();
         system.watch(signals);
@@ -69,17 +96,17 @@ impl Runtime {
 
     pub fn set_api(&self, api: Option<HttpApi>) -> Result<(), String> {
         let store = lock(&self.sync_store);
-        match &api {
-            Some(a) => store
-                .set(
-                    KEY_AUTH,
-                    &StoredAuth {
-                        base_url: a.base_url().to_owned(),
-                        tokens: a.tokens(),
-                    },
-                )
-                .map_err(|e| e.to_string())?,
-            None => store.remove(KEY_AUTH).map_err(|e| e.to_string())?,
+        if let Some(a) = &api {
+            save_auth(
+                &store,
+                &StoredAuth {
+                    base_url: a.base_url().to_owned(),
+                    tokens: a.tokens(),
+                },
+            )?;
+        } else {
+            crate::secrets::delete();
+            store.remove(KEY_AUTH).map_err(|e| e.to_string())?;
         }
         drop(store);
         *lock(&self.api) = api;
@@ -91,10 +118,10 @@ impl Runtime {
     pub fn persist_tokens(&self) {
         if let Some(api) = self.api() {
             let store = lock(&self.sync_store);
-            let stored: Option<StoredAuth> = store.get(KEY_AUTH).ok().flatten();
+            let stored = load_auth(&store);
             if stored.as_ref().map(|s| &s.tokens) != Some(&api.tokens()) {
-                let _ = store.set(
-                    KEY_AUTH,
+                let _ = save_auth(
+                    &store,
                     &StoredAuth {
                         base_url: api.base_url().to_owned(),
                         tokens: api.tokens(),

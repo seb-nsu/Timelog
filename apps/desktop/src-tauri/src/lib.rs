@@ -4,7 +4,9 @@
 mod commands;
 mod platform;
 mod runtime;
+mod secrets;
 mod tray;
+mod updates;
 
 use std::sync::Arc;
 
@@ -24,7 +26,14 @@ pub(crate) fn notify_changed(app: &AppHandle) {
 ///
 /// Wenn Tauri nicht starten kann (z. B. fehlende Webview).
 pub fn run() {
-    tauri::Builder::default()
+    let context = tauri::generate_context!();
+    let with_updater = updates::configured(context.config());
+    let mut builder = tauri::Builder::default();
+    if with_updater {
+        builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
+    }
+    builder
+        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             tray::show_main(app);
         }))
@@ -32,7 +41,7 @@ pub fn run() {
             MacosLauncher::LaunchAgent,
             Some(vec!["--autostart"]),
         ))
-        .setup(|app| {
+        .setup(move |app| {
             let dir = app.path().app_data_dir()?;
             std::fs::create_dir_all(&dir)?;
             let (tx, rx) = timelog_core::SignalSink::channel();
@@ -59,10 +68,16 @@ pub fn run() {
             let handle = app.handle().clone();
             std::thread::Builder::new()
                 .name("timelog-runtime".into())
-                .spawn(move || {
-                    rt.sync(true, None);
-                    rt.run(&rx, &|| notify_changed(&handle));
+                .spawn({
+                    let rt = Arc::clone(&rt);
+                    move || {
+                        rt.sync(true, None);
+                        rt.run(&rx, &|| notify_changed(&handle));
+                    }
                 })?;
+            if with_updater {
+                updates::spawn(app.handle().clone(), rt);
+            }
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -88,6 +103,6 @@ pub fn run() {
             commands::sync_now,
             commands::set_tray_status,
         ])
-        .run(tauri::generate_context!())
+        .run(context)
         .expect("TimeLog konnte nicht gestartet werden");
 }
