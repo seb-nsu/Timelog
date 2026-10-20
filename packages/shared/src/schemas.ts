@@ -281,3 +281,175 @@ export const statusResponse = z.object({
   toReview: z.array(isoDate),
 });
 export type StatusResponse = z.infer<typeof statusResponse>;
+
+// ── Korrekturen und Bestätigungen (Phase 2b) ──────────────────────────────────
+
+const reason = z.string().trim().min(1).max(500);
+
+export const correctionRequest = z.discriminatedUnion('field', [
+  z.object({ field: z.literal('start'), time: isoDateTime, reason: reason.optional() }),
+  z.object({ field: z.literal('end'), time: isoDateTime, reason: reason.optional() }),
+  z.object({
+    field: z.literal('break'),
+    from: isoDateTime,
+    to: isoDateTime,
+    reason: reason.optional(),
+  }),
+  z.object({
+    field: z.literal('work'),
+    from: isoDateTime,
+    to: isoDateTime,
+    reason: reason.optional(),
+  }),
+]);
+export type CorrectionRequest = z.infer<typeof correctionRequest>;
+
+export const dateParams = z.object({ date: isoDate });
+export const sessionParams = z.object({ id: z.string().min(1).max(200) });
+
+export const correctionResponse = z.object({ eventId: z.uuid(), day: workDaySchema.optional() });
+export const confirmResponse = z.object({ confirmed: z.number().int() });
+
+// ── Einstellungen ─────────────────────────────────────────────────────────────
+
+const clock = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
+
+export const settingsSchema = z.object({
+  triggers: z
+    .object({
+      boot: z.boolean().default(true),
+      shutdown: z.boolean().default(true),
+      network: z.boolean().default(true),
+      geofence: z.boolean().default(false),
+      standbyBreaks: z.boolean().default(true),
+    })
+    .prefault({}),
+  notifications: z
+    .object({
+      forgotEnd: z.boolean().default(true),
+      over10h: z.boolean().default(true),
+      breakViolation: z.boolean().default(true),
+      confirmDay: z.boolean().default(true),
+      quietHours: z
+        .object({ from: clock.default('20:00'), to: clock.default('07:00') })
+        .prefault({}),
+    })
+    .prefault({}),
+  /** Abweichende Arbeitstage (0 = Sonntag); leer = Sollzeiten bestimmen die Arbeitstage. */
+  workdays: z.array(z.number().int().min(0).max(6)).max(7).default([]),
+  /** Privatversion ohne Synchronisation. */
+  localOnly: z.boolean().default(false),
+  personnelNumber: z.string().max(50).optional(),
+});
+export type Settings = z.infer<typeof settingsSchema>;
+
+export const settingsResponse = z.object({
+  name: z.string(),
+  email: z.string(),
+  timezone: z.string(),
+  state: z.enum(GERMAN_STATES),
+  settings: settingsSchema,
+});
+export const settingsUpdate = z.object({
+  name: z.string().min(1).max(100).optional(),
+  timezone: timeZone.optional(),
+  state: z.enum(GERMAN_STATES).optional(),
+  settings: settingsSchema.optional(),
+});
+
+// ── Arbeitsnetze ──────────────────────────────────────────────────────────────
+
+/** Klartext-Kennungen gehen nur beim Hinterlegen an den Server und werden dort als HMAC gespeichert. */
+export const networkInput = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('ssid'),
+    label: z.string().min(1).max(100),
+    ssid: z.string().min(1).max(64),
+    bssid: z
+      .string()
+      .regex(/^([0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2}$/)
+      .optional(),
+  }),
+  z.object({
+    kind: z.literal('fingerprint'),
+    label: z.string().min(1).max(100),
+    fingerprint: z.string().min(8).max(512),
+  }),
+  z.object({
+    kind: z.literal('geofence'),
+    label: z.string().min(1).max(100),
+    lat: z.number().min(-90).max(90),
+    lng: z.number().min(-180).max(180),
+    radius: z.number().int().min(50).max(1000),
+  }),
+]);
+export const networksUpdate = z.object({ networks: z.array(networkInput).max(20) });
+
+export const networkResponse = z.object({
+  id: z.uuid(),
+  scope: z.enum(['user', 'org']),
+  kind: z.enum(['ssid', 'fingerprint', 'geofence']),
+  label: z.string(),
+  ssid: z.string().optional(),
+  bssidHmac: z.string().optional(),
+  fingerprintHmac: z.string().optional(),
+  lat: z.number().optional(),
+  lng: z.number().optional(),
+  radius: z.number().optional(),
+});
+export const networksResponse = z.object({
+  networks: z.array(networkResponse),
+  /** HMAC-Schlüssel (Base64), mit denen Geräte die aktuelle Kennung vergleichen. */
+  keys: z.object({ user: z.string(), org: z.string().optional() }),
+});
+export type NetworksResponse = z.infer<typeof networksResponse>;
+
+// ── Sollzeiten und Abwesenheiten ──────────────────────────────────────────────
+
+const weekMinutes = z.tuple([
+  z.number().int().min(0).max(1440),
+  z.number().int().min(0).max(1440),
+  z.number().int().min(0).max(1440),
+  z.number().int().min(0).max(1440),
+  z.number().int().min(0).max(1440),
+  z.number().int().min(0).max(1440),
+  z.number().int().min(0).max(1440),
+]);
+
+export const targetHoursEntry = z.object({ validFrom: isoDate, minutesByWeekday: weekMinutes });
+export const targetHoursResponse = z.object({ schedule: z.array(targetHoursEntry) });
+export const targetHoursUpdate = targetHoursEntry;
+
+export const absenceSchema = z.object({
+  date: isoDate,
+  kind: z.enum(['vacation', 'sick', 'holiday', 'other']),
+  minutes: z.number().int().min(0).max(1440),
+  note: z.string().max(500).optional(),
+});
+export const absencesQuery = z.object({ from: isoDate, to: isoDate });
+export const absencesResponse = z.object({ absences: z.array(absenceSchema) });
+export const absencesUpdate = z
+  .object({ from: isoDate, to: isoDate, absences: z.array(absenceSchema).max(400) })
+  .refine((b) => b.absences.every((a) => a.date >= b.from && a.date <= b.to), {
+    message: 'Abwesenheiten müssen im Zeitraum liegen',
+    path: ['absences'],
+  });
+
+export const holidaysQuery = z.object({ year: z.coerce.number().int().min(1990).max(2100) });
+export const holidaysResponse = z.object({
+  state: z.enum(GERMAN_STATES),
+  holidays: z.array(z.object({ date: isoDate, name: z.string() })),
+});
+
+// ── Export, Datenauskunft, Löschung ───────────────────────────────────────────
+
+export const exportQuery = z
+  .object({ from: isoDate, to: isoDate, format: z.enum(['csv', 'pdf']).default('csv') })
+  .refine((q) => q.from <= q.to, { message: 'from muss vor to liegen', path: ['to'] })
+  .refine((q) => (Date.parse(q.to) - Date.parse(q.from)) / 86_400_000 < 400, {
+    message: 'Höchstens 400 Tage',
+    path: ['to'],
+  });
+
+export const deleteAccountRequest = z.object({ password: z.string().min(1).max(200) });
+export const deleteAccountResponse = z.object({ mode: z.enum(['deleted', 'anonymized']) });
