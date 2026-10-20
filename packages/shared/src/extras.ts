@@ -238,7 +238,12 @@ export const orgFeatures = z.object({
   homeOfficeReport: z.boolean().default(false),
 });
 export type OrgFeatures = z.infer<typeof orgFeatures>;
-export const orgFeaturesUpdate = orgFeatures.partial();
+/** Teil-Update ohne Standardwerte (sonst würden nicht genannte Schalter zurückgesetzt). */
+export const orgFeaturesUpdate = z.object({
+  projects: z.boolean().optional(),
+  calendar: z.boolean().optional(),
+  homeOfficeReport: z.boolean().optional(),
+});
 export const orgHomeOfficeQuery = locationsQuery;
 export const orgHomeOfficeResponse = z.object({
   year: z.number().int(),
