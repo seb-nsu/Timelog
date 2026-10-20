@@ -37,6 +37,11 @@
       "icons/icon.ico"
     ],
     "shortDescription": "Automatische Arbeitszeiterfassung",
-    "category": "Productivity"
+    "category": "Productivity",
+    "windows": {
+      "wix": {
+        "language": "de-DE"
+      }
+    }
   }
 }
