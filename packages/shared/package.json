@@ -18,5 +18,9 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "@timelog/rules": "workspace:*",
+    "zod": "^4.6.7"
   }
 }
