@@ -12,6 +12,10 @@ export default tseslint.config(
       '**/.turbo/**',
       '**/src-tauri/target/**',
       '**/src-tauri/gen/**',
+      // Expo: von `expo prebuild` erzeugte native Projekte und Metro-Cache
+      'apps/mobile/android/**',
+      'apps/mobile/ios/**',
+      'apps/mobile/.expo/**',
     ],
   },
   js.configs.recommended,
@@ -31,6 +35,12 @@ export default tseslint.config(
   {
     files: ['**/*.js'],
     ...tseslint.configs.disableTypeChecked,
+  },
+  {
+    // Metro, Babel, Jest und Expo-Plugins erwarten CommonJS.
+    files: ['apps/mobile/**/*.js'],
+    languageOptions: { sourceType: 'commonjs', globals: globals.node },
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
   },
   prettier,
 );
