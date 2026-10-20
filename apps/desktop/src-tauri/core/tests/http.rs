@@ -18,7 +18,9 @@ fn server(responses: Vec<(u16, &'static str)>) -> (String, Log) {
     let seen = Arc::clone(&log);
     std::thread::spawn(move || {
         for (status, body) in responses {
-            let Ok((mut stream, _)) = listener.accept() else { return };
+            let Ok((mut stream, _)) = listener.accept() else {
+                return;
+            };
             let mut reader = BufReader::new(stream.try_clone().unwrap());
             let mut line = String::new();
             reader.read_line(&mut line).unwrap();
@@ -41,8 +43,14 @@ fn server(responses: Vec<(u16, &'static str)>) -> (String, Log) {
             }
             let mut buf = vec![0; len];
             reader.read_exact(&mut buf).unwrap();
-            let path = line.split_whitespace().take(2).collect::<Vec<_>>().join(" ");
-            seen.lock().unwrap().push((path, auth, String::from_utf8(buf).unwrap()));
+            let path = line
+                .split_whitespace()
+                .take(2)
+                .collect::<Vec<_>>()
+                .join(" ");
+            seen.lock()
+                .unwrap()
+                .push((path, auth, String::from_utf8(buf).unwrap()));
             let resp = format!(
                 "HTTP/1.1 {status} X\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{body}",
                 body.len()
@@ -56,7 +64,11 @@ fn server(responses: Vec<(u16, &'static str)>) -> (String, Log) {
 const TOKENS: &str = r#"{"accessToken":"neu","refreshToken":"r2","expiresIn":900,"deviceId":"d1","totpSetupRequired":false}"#;
 
 fn tokens() -> Tokens {
-    Tokens { access_token: "alt".into(), refresh_token: "r1".into(), device_id: "d1".into() }
+    Tokens {
+        access_token: "alt".into(),
+        refresh_token: "r1".into(),
+        device_id: "d1".into(),
+    }
 }
 
 #[test]
@@ -88,10 +100,46 @@ fn abgelaufene_familie_ergibt_unauthorized() {
 fn fehler_werden_zugeordnet() {
     let (url, _) = server(vec![(400, r#"{"error":"invalid_request"}"#), (503, "")]);
     let api = HttpApi::new(&url, tokens(), Duration::from_secs(5));
-    assert_eq!(api.post_events(&[]), Err(ApiError::Rejected { status: 400, code: "invalid_request".into() }));
-    assert!(matches!(api.post_events(&[]), Err(ApiError::Unavailable(_))));
+    assert_eq!(
+        api.post_events(&[]),
+        Err(ApiError::Rejected {
+            status: 400,
+            code: "invalid_request".into()
+        })
+    );
+    assert!(matches!(
+        api.post_events(&[]),
+        Err(ApiError::Unavailable(_))
+    ));
     let unreachable = HttpApi::new("http://127.0.0.1:9", tokens(), Duration::from_millis(500));
-    assert!(matches!(unreachable.get_networks(), Err(ApiError::Unavailable(_))));
+    assert!(matches!(
+        unreachable.get_networks(),
+        Err(ApiError::Unavailable(_))
+    ));
+}
+
+#[test]
+fn anmeldung_meldet_den_grund() {
+    let (url, _) = server(vec![(401, r#"{"error":"totp_required"}"#)]);
+    let req = LoginRequest {
+        email: "a@b.de".into(),
+        password: "geheim".into(),
+        totp: None,
+        device_id: None,
+        device: DeviceInfo {
+            kind: "desktop",
+            os: "test".into(),
+            name: "Laptop".into(),
+        },
+    };
+    let err = HttpApi::login(&url, &req, Duration::from_secs(5)).err();
+    assert_eq!(
+        err,
+        Some(ApiError::Rejected {
+            status: 401,
+            code: "totp_required".into()
+        })
+    );
 }
 
 #[test]
@@ -102,7 +150,11 @@ fn anmeldung_liefert_tokens() {
         password: "geheim".into(),
         totp: None,
         device_id: None,
-        device: DeviceInfo { kind: "desktop", os: "test".into(), name: "Laptop".into() },
+        device: DeviceInfo {
+            kind: "desktop",
+            os: "test".into(),
+            name: "Laptop".into(),
+        },
     };
     let (api, totp_required) = HttpApi::login(&url, &req, Duration::from_secs(5)).unwrap();
     assert!(!totp_required);

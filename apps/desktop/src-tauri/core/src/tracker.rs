@@ -76,7 +76,12 @@ pub enum TrackerError {
 
 impl Tracker {
     /// Startet die Erfassung beim Programmstart (nach Anmeldung am System).
-    pub fn start(store: Store, sys: Box<dyn SystemEvents>, cfg: TrackerConfig, now: DateTime<Utc>) -> Result<Self> {
+    pub fn start(
+        store: Store,
+        sys: Box<dyn SystemEvents>,
+        cfg: TrackerConfig,
+        now: DateTime<Utc>,
+    ) -> Result<Self> {
         let now = now.trunc_subsecs(3);
         let boot_time = sys.boot_time().trunc_subsecs(3);
         let mut tracker = Self {
@@ -123,7 +128,10 @@ impl Tracker {
             boot_time: self.boot_time,
             boot_reported: self.boot_reported()?,
             active: self.open_span.is_some(),
-            network_id: self.store.get::<StoredNetwork>(KEY_NETWORK)?.map(|n| n.network_id),
+            network_id: self
+                .store
+                .get::<StoredNetwork>(KEY_NETWORK)?
+                .map(|n| n.network_id),
             timezone: self.sys.timezone(),
         })
     }
@@ -184,10 +192,22 @@ impl Tracker {
         Ok(())
     }
 
+    /// Programm wird vom Nutzer beendet (kein Herunterfahren): offene Spanne abschließen,
+    /// aber kein Ereignis schreiben.
+    pub fn stop(&mut self, now: DateTime<Utc>) -> Result<()> {
+        self.close_span(now.trunc_subsecs(3))
+    }
+
     // ── Manuelle Ereignisse aus der Oberfläche ──────────────────────────────
 
     pub fn manual(&mut self, kind: EventType, now: DateTime<Utc>) -> Result<Event> {
-        self.insert(Event::new(kind, Source::User, now, &self.sys.timezone(), now))
+        self.insert(Event::new(
+            kind,
+            Source::User,
+            now,
+            &self.sys.timezone(),
+            now,
+        ))
     }
 
     /// `manual_work` („War Arbeit“) oder `manual_break` mit Zeitraum.
@@ -207,8 +227,17 @@ impl Tracker {
     }
 
     /// `session_confirm` bzw. `session_reject` für die Sitzung mit Start-Ereignis `session_id`.
-    pub fn decide_session(&mut self, session_id: &str, confirm: bool, now: DateTime<Utc>) -> Result<Event> {
-        let kind = if confirm { EventType::SessionConfirm } else { EventType::SessionReject };
+    pub fn decide_session(
+        &mut self,
+        session_id: &str,
+        confirm: bool,
+        now: DateTime<Utc>,
+    ) -> Result<Event> {
+        let kind = if confirm {
+            EventType::SessionConfirm
+        } else {
+            EventType::SessionReject
+        };
         let mut e = Event::new(kind, Source::User, now, &self.sys.timezone(), now);
         e.ref_event_id = Some(session_id.to_owned());
         self.insert(e)
@@ -221,8 +250,15 @@ impl Tracker {
     }
 
     /// Lokale Daten für die Berechnung mit `@timelog/rules` in der Oberfläche.
-    pub fn local_data(&self, from: DateTime<Utc>, to: DateTime<Utc>) -> Result<(Vec<Event>, Vec<Span>)> {
-        Ok((self.store.events_between(from, to)?, self.store.spans_between(from, to)?))
+    pub fn local_data(
+        &self,
+        from: DateTime<Utc>,
+        to: DateTime<Utc>,
+    ) -> Result<(Vec<Event>, Vec<Span>)> {
+        Ok((
+            self.store.events_between(from, to)?,
+            self.store.spans_between(from, to)?,
+        ))
     }
 
     // ── intern ──────────────────────────────────────────────────────────────
@@ -242,7 +278,13 @@ impl Tracker {
         if self.boot_reported()? || now - self.boot_time < self.cfg.boot_confirm {
             return Ok(());
         }
-        self.insert(Event::new(EventType::Boot, Source::System, self.boot_time, &self.sys.timezone(), now))?;
+        self.insert(Event::new(
+            EventType::Boot,
+            Source::System,
+            self.boot_time,
+            &self.sys.timezone(),
+            now,
+        ))?;
         self.store.set(KEY_BOOT_REPORTED, &self.boot_time)
     }
 
@@ -298,7 +340,8 @@ impl Tracker {
                 .and_then(|config| match_network(&config, &self.sys.current_network()))
         };
         let previous = self.store.get::<StoredNetwork>(KEY_NETWORK)?;
-        let same = matches!((&previous, &current), (Some(p), Some(c)) if p.network_id == c.network_id);
+        let same =
+            matches!((&previous, &current), (Some(p), Some(c)) if p.network_id == c.network_id);
         if same {
             return Ok(());
         }
@@ -306,10 +349,17 @@ impl Tracker {
             self.write_net_lost(&prev, now, now)?;
         }
         if let Some(NetworkMatch { network_id, source }) = current {
-            let mut e = Event::new(EventType::NetConnected, source, now, &self.sys.timezone(), now);
+            let mut e = Event::new(
+                EventType::NetConnected,
+                source,
+                now,
+                &self.sys.timezone(),
+                now,
+            );
             e.network_id = Some(network_id.clone());
             self.insert(e)?;
-            self.store.set(KEY_NETWORK, &StoredNetwork { network_id, source })?;
+            self.store
+                .set(KEY_NETWORK, &StoredNetwork { network_id, source })?;
         }
         Ok(())
     }
@@ -321,8 +371,19 @@ impl Tracker {
         Ok(())
     }
 
-    fn write_net_lost(&self, prev: &StoredNetwork, ts: DateTime<Utc>, now: DateTime<Utc>) -> Result<()> {
-        let mut e = Event::new(EventType::NetLost, prev.source, ts, &self.sys.timezone(), now);
+    fn write_net_lost(
+        &self,
+        prev: &StoredNetwork,
+        ts: DateTime<Utc>,
+        now: DateTime<Utc>,
+    ) -> Result<()> {
+        let mut e = Event::new(
+            EventType::NetLost,
+            prev.source,
+            ts,
+            &self.sys.timezone(),
+            now,
+        );
         e.network_id = Some(prev.network_id.clone());
         self.insert(e)?;
         self.store.remove(KEY_NETWORK)

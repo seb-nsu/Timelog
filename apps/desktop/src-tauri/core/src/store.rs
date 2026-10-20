@@ -89,14 +89,18 @@ impl Store {
         let mut stmt = self
             .conn
             .prepare("SELECT body FROM events WHERE sync = ?1 ORDER BY seq LIMIT ?2")?;
-        let rows = stmt.query_map(params![PENDING, limit_i64(limit)], |r| r.get::<_, String>(0))?;
+        let rows = stmt.query_map(params![PENDING, limit_i64(limit)], |r| {
+            r.get::<_, String>(0)
+        })?;
         rows.map(|r| Ok(serde_json::from_str(&r?)?)).collect()
     }
 
     pub fn pending_event_count(&self) -> Result<u64> {
-        let n: i64 = self
-            .conn
-            .query_row("SELECT count(*) FROM events WHERE sync = ?1", [PENDING], |r| r.get(0))?;
+        let n: i64 = self.conn.query_row(
+            "SELECT count(*) FROM events WHERE sync = ?1",
+            [PENDING],
+            |r| r.get(0),
+        )?;
         Ok(u64::try_from(n).unwrap_or(0))
     }
 
@@ -111,7 +115,10 @@ impl Store {
     fn set_event_sync(&self, ids: &[String], state: i64) -> Result<()> {
         let tx = self.conn.unchecked_transaction()?;
         for id in ids {
-            tx.execute("UPDATE events SET sync = ?1 WHERE id = ?2", params![state, id])?;
+            tx.execute(
+                "UPDATE events SET sync = ?1 WHERE id = ?2",
+                params![state, id],
+            )?;
         }
         tx.commit()?;
         Ok(())
@@ -128,7 +135,9 @@ impl Store {
 
     /// Zuletzt geschriebenes Ereignis eines Typs.
     pub fn last_event(&self, kinds: &[crate::model::EventType]) -> Result<Option<Event>> {
-        let mut stmt = self.conn.prepare("SELECT body FROM events ORDER BY ts DESC, seq DESC")?;
+        let mut stmt = self
+            .conn
+            .prepare("SELECT body FROM events ORDER BY ts DESC, seq DESC")?;
         let mut rows = stmt.query([])?;
         while let Some(row) = rows.next()? {
             let event: Event = serde_json::from_str(&row.get::<_, String>(0)?)?;
@@ -160,9 +169,9 @@ impl Store {
     }
 
     fn spans_where(&self, cond: &str, args: &[&dyn rusqlite::ToSql]) -> Result<Vec<Span>> {
-        let mut stmt = self
-            .conn
-            .prepare(&format!("SELECT id, start, end, open FROM spans WHERE {cond} ORDER BY start"))?;
+        let mut stmt = self.conn.prepare(&format!(
+            "SELECT id, start, end, open FROM spans WHERE {cond} ORDER BY start"
+        ))?;
         let rows = stmt.query_map(args, row_to_span)?;
         Ok(rows.collect::<rusqlite::Result<_>>()?)
     }
@@ -171,7 +180,12 @@ impl Store {
         let mut stmt = self.conn.prepare(
             "SELECT id, start, end, open, rev FROM spans WHERE rev > synced_rev ORDER BY start LIMIT ?1",
         )?;
-        let rows = stmt.query_map([limit_i64(limit)], |r| Ok(SpanRev { span: row_to_span(r)?, rev: r.get(4)? }))?;
+        let rows = stmt.query_map([limit_i64(limit)], |r| {
+            Ok(SpanRev {
+                span: row_to_span(r)?,
+                rev: r.get(4)?,
+            })
+        })?;
         Ok(rows.collect::<rusqlite::Result<_>>()?)
     }
 
@@ -188,17 +202,21 @@ impl Store {
     }
 
     pub fn dirty_span_count(&self) -> Result<u64> {
-        let n: i64 = self
-            .conn
-            .query_row("SELECT count(*) FROM spans WHERE rev > synced_rev", [], |r| r.get(0))?;
+        let n: i64 = self.conn.query_row(
+            "SELECT count(*) FROM spans WHERE rev > synced_rev",
+            [],
+            |r| r.get(0),
+        )?;
         Ok(u64::try_from(n).unwrap_or(0))
     }
 
     /// Löscht übertragene Daten vor `before` (lokaler Speicher bleibt klein).
     pub fn prune(&self, before: DateTime<Utc>) -> Result<()> {
         let before = iso(before);
-        self.conn
-            .execute("DELETE FROM events WHERE sync <> ?1 AND ts < ?2", params![PENDING, before])?;
+        self.conn.execute(
+            "DELETE FROM events WHERE sync <> ?1 AND ts < ?2",
+            params![PENDING, before],
+        )?;
         self.conn.execute(
             "DELETE FROM spans WHERE open = 0 AND rev <= synced_rev AND end < ?1",
             params![before],
@@ -213,7 +231,9 @@ impl Store {
             .conn
             .query_row("SELECT value FROM kv WHERE key = ?1", [key], |r| r.get(0))
             .optional()?;
-        raw.map(|v| serde_json::from_str(&v)).transpose().map_err(Into::into)
+        raw.map(|v| serde_json::from_str(&v))
+            .transpose()
+            .map_err(Into::into)
     }
 
     pub fn set<T: Serialize + ?Sized>(&self, key: &str, value: &T) -> Result<()> {
@@ -238,7 +258,9 @@ fn iso(t: DateTime<Utc>) -> String {
 fn parse(s: &str) -> rusqlite::Result<DateTime<Utc>> {
     DateTime::parse_from_rfc3339(s)
         .map(|d| d.with_timezone(&Utc))
-        .map_err(|e| rusqlite::Error::FromSqlConversionFailure(0, rusqlite::types::Type::Text, Box::new(e)))
+        .map_err(|e| {
+            rusqlite::Error::FromSqlConversionFailure(0, rusqlite::types::Type::Text, Box::new(e))
+        })
 }
 
 fn row_to_span(r: &rusqlite::Row<'_>) -> rusqlite::Result<Span> {
@@ -267,14 +289,25 @@ mod tests {
     #[test]
     fn ereignisse_nur_einmal_und_sync_status() {
         let store = Store::in_memory().unwrap();
-        let e = Event::new(EventType::Boot, Source::System, t(6, 0), "Europe/Berlin", t(6, 5));
+        let e = Event::new(
+            EventType::Boot,
+            Source::System,
+            t(6, 0),
+            "Europe/Berlin",
+            t(6, 5),
+        );
         store.insert_event(&e).unwrap();
         store.insert_event(&e).unwrap();
         assert_eq!(store.pending_event_count().unwrap(), 1);
         assert_eq!(store.pending_events(10).unwrap(), vec![e.clone()]);
-        store.mark_events_synced(std::slice::from_ref(&e.id)).unwrap();
+        store
+            .mark_events_synced(std::slice::from_ref(&e.id))
+            .unwrap();
         assert_eq!(store.pending_event_count().unwrap(), 0);
-        assert_eq!(store.events_between(t(0, 0), t(23, 0)).unwrap(), vec![e.clone()]);
+        assert_eq!(
+            store.events_between(t(0, 0), t(23, 0)).unwrap(),
+            vec![e.clone()]
+        );
         assert_eq!(store.last_event(&[EventType::Boot]).unwrap(), Some(e));
         assert_eq!(store.last_event(&[EventType::Shutdown]).unwrap(), None);
     }
@@ -307,9 +340,14 @@ mod tests {
         let pending = Event::new(EventType::Shutdown, Source::System, t(2, 0), "UTC", t(2, 0));
         store.insert_event(&old).unwrap();
         store.insert_event(&pending).unwrap();
-        store.mark_events_synced(std::slice::from_ref(&old.id)).unwrap();
+        store
+            .mark_events_synced(std::slice::from_ref(&old.id))
+            .unwrap();
         store.prune(t(12, 0)).unwrap();
-        assert_eq!(store.events_between(t(0, 0), t(23, 0)).unwrap(), vec![pending]);
+        assert_eq!(
+            store.events_between(t(0, 0), t(23, 0)).unwrap(),
+            vec![pending]
+        );
     }
 
     #[test]

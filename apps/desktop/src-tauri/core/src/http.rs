@@ -86,7 +86,11 @@ fn send(
     let auth = bearer.map(|t| format!("Bearer {t}"));
     let result = match method {
         "GET" | "DELETE" if body.is_none() => {
-            let mut req = if method == "GET" { agent.get(url) } else { agent.delete(url) };
+            let mut req = if method == "GET" {
+                agent.get(url)
+            } else {
+                agent.delete(url)
+            };
             if let Some(a) = &auth {
                 req = req.header("authorization", a);
             }
@@ -98,12 +102,18 @@ fn send(
                 "PUT" => agent.put(url),
                 "PATCH" => agent.patch(url),
                 "DELETE" => agent.delete(url).force_send_body(),
-                other => return Err(ApiError::Rejected { status: 405, code: format!("method_{other}") }),
+                other => {
+                    return Err(ApiError::Rejected {
+                        status: 405,
+                        code: format!("method_{other}"),
+                    })
+                }
             };
             if let Some(a) = &auth {
                 req = req.header("authorization", a);
             }
-            req.header("content-type", "application/json").send(body.unwrap_or("{}"))
+            req.header("content-type", "application/json")
+                .send(body.unwrap_or("{}"))
         }
     };
     let mut resp = result.map_err(unavailable)?;
@@ -119,7 +129,8 @@ fn map_status(resp: &HttpResponse) -> Result<(), ApiError> {
         s if s >= 500 || s == 429 || s == 408 => Err(ApiError::Unavailable(format!("HTTP {s}"))),
         s => Err(ApiError::Rejected {
             status: s,
-            code: serde_json::from_str::<ErrorBody>(&resp.body).map_or_else(|_| "http_error".into(), |b| b.error),
+            code: serde_json::from_str::<ErrorBody>(&resp.body)
+                .map_or_else(|_| "http_error".into(), |b| b.error),
         }),
     }
 }
@@ -131,21 +142,55 @@ pub fn normalize_base_url(url: &str) -> String {
 
 impl HttpApi {
     pub fn new(base_url: &str, tokens: Tokens, timeout: Duration) -> Self {
-        Self { agent: agent(timeout), base_url: normalize_base_url(base_url), tokens: Arc::new(Mutex::new(tokens)) }
+        Self {
+            agent: agent(timeout),
+            base_url: normalize_base_url(base_url),
+            tokens: Arc::new(Mutex::new(tokens)),
+        }
     }
 
     /// Meldet das Gerät an. Liefert die API und ob TOTP noch eingerichtet werden muss.
-    pub fn login(base_url: &str, request: &LoginRequest, timeout: Duration) -> Result<(Self, bool), ApiError> {
+    pub fn login(
+        base_url: &str,
+        request: &LoginRequest,
+        timeout: Duration,
+    ) -> Result<(Self, bool), ApiError> {
         let base_url = normalize_base_url(base_url);
         let agent = agent(timeout);
-        let body = serde_json::to_string(request).map_err(|e| ApiError::Unavailable(e.to_string()))?;
-        let resp = send(&agent, "POST", &format!("{base_url}{API_PREFIX}/auth/login"), None, Some(&body))?;
+        let body =
+            serde_json::to_string(request).map_err(|e| ApiError::Unavailable(e.to_string()))?;
+        let resp = send(
+            &agent,
+            "POST",
+            &format!("{base_url}{API_PREFIX}/auth/login"),
+            None,
+            Some(&body),
+        )?;
+        // Bei der Anmeldung zählt der genaue Grund (z. B. `totp_required`), nicht nur „401“.
+        if resp.status == 401 || resp.status == 403 {
+            let code = serde_json::from_str::<ErrorBody>(&resp.body)
+                .map_or_else(|_| "invalid_credentials".into(), |b| b.error);
+            return Err(ApiError::Rejected {
+                status: resp.status,
+                code,
+            });
+        }
         map_status(&resp)?;
-        let t: TokenResponse =
-            serde_json::from_str(&resp.body).map_err(|e| ApiError::Unavailable(format!("Antwort: {e}")))?;
-        let tokens =
-            Tokens { access_token: t.access_token, refresh_token: t.refresh_token, device_id: t.device_id };
-        Ok((Self { agent, base_url, tokens: Arc::new(Mutex::new(tokens)) }, t.totp_setup_required))
+        let t: TokenResponse = serde_json::from_str(&resp.body)
+            .map_err(|e| ApiError::Unavailable(format!("Antwort: {e}")))?;
+        let tokens = Tokens {
+            access_token: t.access_token,
+            refresh_token: t.refresh_token,
+            device_id: t.device_id,
+        };
+        Ok((
+            Self {
+                agent,
+                base_url,
+                tokens: Arc::new(Mutex::new(tokens)),
+            },
+            t.totp_setup_required,
+        ))
     }
 
     pub fn base_url(&self) -> &str {
@@ -155,22 +200,38 @@ impl HttpApi {
     /// Kopie mit eigener Zeitgrenze (z. B. 2 s beim Herunterfahren); Tokens werden geteilt.
     #[must_use]
     pub fn with_timeout(&self, timeout: Duration) -> Self {
-        Self { agent: agent(timeout), base_url: self.base_url.clone(), tokens: Arc::clone(&self.tokens) }
+        Self {
+            agent: agent(timeout),
+            base_url: self.base_url.clone(),
+            tokens: Arc::clone(&self.tokens),
+        }
     }
 
     pub fn tokens(&self) -> Tokens {
-        self.tokens.lock().unwrap_or_else(PoisonError::into_inner).clone()
+        self.tokens
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone()
     }
 
     fn refresh(&self) -> Result<(), ApiError> {
         let current = self.tokens();
         let body = json!({ "refreshToken": current.refresh_token }).to_string();
-        let resp = send(&self.agent, "POST", &self.url("/auth/refresh"), None, Some(&body))?;
+        let resp = send(
+            &self.agent,
+            "POST",
+            &self.url("/auth/refresh"),
+            None,
+            Some(&body),
+        )?;
         map_status(&resp)?;
-        let t: TokenResponse =
-            serde_json::from_str(&resp.body).map_err(|e| ApiError::Unavailable(format!("Antwort: {e}")))?;
-        *self.tokens.lock().unwrap_or_else(PoisonError::into_inner) =
-            Tokens { access_token: t.access_token, refresh_token: t.refresh_token, device_id: t.device_id };
+        let t: TokenResponse = serde_json::from_str(&resp.body)
+            .map_err(|e| ApiError::Unavailable(format!("Antwort: {e}")))?;
+        *self.tokens.lock().unwrap_or_else(PoisonError::into_inner) = Tokens {
+            access_token: t.access_token,
+            refresh_token: t.refresh_token,
+            device_id: t.device_id,
+        };
         Ok(())
     }
 
@@ -180,19 +241,41 @@ impl HttpApi {
 
     /// Anfrage mit Access-Token; bei 401 einmal erneuern und wiederholen.
     /// Liefert jede HTTP-Antwort; `Err` nur bei Verbindungsproblemen.
-    pub fn request(&self, method: &str, path: &str, body: Option<&str>) -> Result<HttpResponse, ApiError> {
-        let resp = send(&self.agent, method, &self.url(path), Some(&self.tokens().access_token), body)?;
+    pub fn request(
+        &self,
+        method: &str,
+        path: &str,
+        body: Option<&str>,
+    ) -> Result<HttpResponse, ApiError> {
+        let resp = send(
+            &self.agent,
+            method,
+            &self.url(path),
+            Some(&self.tokens().access_token),
+            body,
+        )?;
         if resp.status != 401 {
             return Ok(resp);
         }
         match self.refresh() {
-            Ok(()) => send(&self.agent, method, &self.url(path), Some(&self.tokens().access_token), body),
+            Ok(()) => send(
+                &self.agent,
+                method,
+                &self.url(path),
+                Some(&self.tokens().access_token),
+                body,
+            ),
             Err(ApiError::Unauthorized | ApiError::Rejected { .. }) => Ok(resp),
             Err(e) => Err(e),
         }
     }
 
-    fn json_request(&self, method: &str, path: &str, body: &serde_json::Value) -> Result<HttpResponse, ApiError> {
+    fn json_request(
+        &self,
+        method: &str,
+        path: &str,
+        body: &serde_json::Value,
+    ) -> Result<HttpResponse, ApiError> {
         let resp = self.request(method, path, Some(&body.to_string()))?;
         map_status(&resp)?;
         Ok(resp)
@@ -200,18 +283,26 @@ impl HttpApi {
 
     pub fn logout(&self) -> Result<(), ApiError> {
         let body = json!({ "refreshToken": self.tokens().refresh_token }).to_string();
-        let resp = send(&self.agent, "POST", &self.url("/auth/logout"), None, Some(&body))?;
+        let resp = send(
+            &self.agent,
+            "POST",
+            &self.url("/auth/logout"),
+            None,
+            Some(&body),
+        )?;
         map_status(&resp)
     }
 }
 
 impl Api for HttpApi {
     fn post_events(&self, events: &[Event]) -> Result<(), ApiError> {
-        self.json_request("POST", "/events/batch", &json!({ "events": events })).map(drop)
+        self.json_request("POST", "/events/batch", &json!({ "events": events }))
+            .map(drop)
     }
 
     fn put_presence(&self, spans: &[Span]) -> Result<(), ApiError> {
-        self.json_request("PUT", "/presence", &json!({ "spans": spans })).map(drop)
+        self.json_request("PUT", "/presence", &json!({ "spans": spans }))
+            .map(drop)
     }
 
     fn get_networks(&self) -> Result<NetworkConfig, ApiError> {

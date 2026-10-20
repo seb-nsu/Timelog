@@ -17,13 +17,18 @@ pub fn normalize(value: &str) -> String {
 
 pub fn hmac_hex(key: &[u8], value: &str) -> String {
     // HMAC akzeptiert Schlüssel jeder Länge.
-    let Ok(mut mac) = HmacSha256::new_from_slice(key) else { return String::new() };
+    let Ok(mut mac) = HmacSha256::new_from_slice(key) else {
+        return String::new();
+    };
     mac.update(normalize(value).as_bytes());
-    mac.finalize().into_bytes().iter().fold(String::with_capacity(64), |mut out, b| {
-        use std::fmt::Write;
-        let _ = write!(out, "{b:02x}");
-        out
-    })
+    mac.finalize()
+        .into_bytes()
+        .iter()
+        .fold(String::with_capacity(64), |mut out, b| {
+            use std::fmt::Write;
+            let _ = write!(out, "{b:02x}");
+            out
+        })
 }
 
 /// Treffer: ID des Arbeitsnetzes und Quelle für das Ereignis.
@@ -47,8 +52,15 @@ pub fn match_network(config: &NetworkConfig, info: &NetworkInfo) -> Option<Netwo
         for n in &config.networks {
             if let (Some(want), Some(key)) = (&n.fingerprint_hmac, key_for(n)) {
                 if hmac_hex(key, fp) == *want {
-                    let source = if info.wired { Source::Lan } else { Source::Wifi };
-                    return Some(NetworkMatch { network_id: n.id.clone(), source });
+                    let source = if info.wired {
+                        Source::Lan
+                    } else {
+                        Source::Wifi
+                    };
+                    return Some(NetworkMatch {
+                        network_id: n.id.clone(),
+                        source,
+                    });
                 }
             }
         }
@@ -64,7 +76,10 @@ pub fn match_network(config: &NetworkConfig, info: &NetworkInfo) -> Option<Netwo
                 _ => false,
             };
             if bssid_ok {
-                return Some(NetworkMatch { network_id: n.id.clone(), source: Source::Wifi });
+                return Some(NetworkMatch {
+                    network_id: n.id.clone(),
+                    source: Source::Wifi,
+                });
             }
         }
     }
@@ -98,7 +113,10 @@ mod tests {
     fn hmac_wie_im_backend() {
         // Referenzwert: createHmac('sha256', Buffer.alloc(32, 7)).update('aa:bb:cc:dd:ee:ff').digest('hex')
         let (raw, _) = key();
-        assert_eq!(hmac_hex(&raw, " AA-BB-CC-DD-EE-FF "), hmac_hex(&raw, "aa:bb:cc:dd:ee:ff"));
+        assert_eq!(
+            hmac_hex(&raw, " AA-BB-CC-DD-EE-FF "),
+            hmac_hex(&raw, "aa:bb:cc:dd:ee:ff")
+        );
         assert_eq!(
             hmac_hex(&raw, "aa:bb:cc:dd:ee:ff"),
             "f95add76ac958697fe5b1c17d1f8161f351a9f1a92ae6eaaef29381ad211ab98"
@@ -114,12 +132,25 @@ mod tests {
         wifi.kind = "ssid".into();
         wifi.ssid = Some("Firma".into());
         wifi.bssid_hmac = Some(hmac_hex(&raw, "11:22:33:44:55:66"));
-        let config = NetworkConfig { networks: vec![lan, wifi], keys: NetworkKeys { user: b64, org: None } };
+        let config = NetworkConfig {
+            networks: vec![lan, wifi],
+            keys: NetworkKeys {
+                user: b64,
+                org: None,
+            },
+        };
 
-        let docked = NetworkInfo { fingerprint: Some("GW=AA-BB-CC-DD-EE-FF".into()), wired: true, ..Default::default() };
+        let docked = NetworkInfo {
+            fingerprint: Some("GW=AA-BB-CC-DD-EE-FF".into()),
+            wired: true,
+            ..Default::default()
+        };
         assert_eq!(
             match_network(&config, &docked),
-            Some(NetworkMatch { network_id: "lan".into(), source: Source::Lan })
+            Some(NetworkMatch {
+                network_id: "lan".into(),
+                source: Source::Lan
+            })
         );
 
         let office = NetworkInfo {
@@ -130,11 +161,17 @@ mod tests {
         };
         assert_eq!(
             match_network(&config, &office),
-            Some(NetworkMatch { network_id: "wifi".into(), source: Source::Wifi })
+            Some(NetworkMatch {
+                network_id: "wifi".into(),
+                source: Source::Wifi
+            })
         );
 
         // Gleiche SSID, fremder Access Point
-        let fake = NetworkInfo { bssid: Some("99:99:99:99:99:99".into()), ..office };
+        let fake = NetworkInfo {
+            bssid: Some("99:99:99:99:99:99".into()),
+            ..office
+        };
         assert_eq!(match_network(&config, &fake), None);
         assert_eq!(match_network(&config, &NetworkInfo::default()), None);
     }
@@ -146,10 +183,22 @@ mod tests {
         let org = base64::engine::general_purpose::STANDARD.encode(&org_raw);
         let mut n = net("org", NetworkScope::Org);
         n.fingerprint_hmac = Some(hmac_hex(&org_raw, "gw=1"));
-        let info = NetworkInfo { fingerprint: Some("gw=1".into()), ..Default::default() };
-        let with_org = NetworkConfig { networks: vec![n.clone()], keys: NetworkKeys { user: user.clone(), org: Some(org) } };
+        let info = NetworkInfo {
+            fingerprint: Some("gw=1".into()),
+            ..Default::default()
+        };
+        let with_org = NetworkConfig {
+            networks: vec![n.clone()],
+            keys: NetworkKeys {
+                user: user.clone(),
+                org: Some(org),
+            },
+        };
         assert!(match_network(&with_org, &info).is_some());
-        let without = NetworkConfig { networks: vec![n], keys: NetworkKeys { user, org: None } };
+        let without = NetworkConfig {
+            networks: vec![n],
+            keys: NetworkKeys { user, org: None },
+        };
         assert_eq!(match_network(&without, &info), None);
     }
 }

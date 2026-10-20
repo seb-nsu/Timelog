@@ -30,11 +30,20 @@ pub trait Api {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase", tag = "state")]
+#[serde(
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    tag = "state"
+)]
 pub enum SyncState {
     Idle,
-    Ok { at: DateTime<Utc> },
-    Offline { failures: u32, retry_at: DateTime<Utc> },
+    Ok {
+        at: DateTime<Utc>,
+    },
+    Offline {
+        failures: u32,
+        retry_at: DateTime<Utc>,
+    },
     NeedsLogin,
 }
 
@@ -66,7 +75,11 @@ impl Default for Syncer {
 
 impl Syncer {
     pub fn new() -> Self {
-        Self { failures: 0, retry_at: None, state: SyncState::Idle }
+        Self {
+            failures: 0,
+            retry_at: None,
+            state: SyncState::Idle,
+        }
     }
 
     pub fn state(&self) -> &SyncState {
@@ -87,7 +100,12 @@ impl Syncer {
     }
 
     /// Ein Durchlauf; liefert neue Arbeitsnetze, falls der Server sie geliefert hat.
-    pub fn run(&mut self, store: &Store, api: &dyn Api, now: DateTime<Utc>) -> Result<Option<NetworkConfig>, SyncError> {
+    pub fn run(
+        &mut self,
+        store: &Store,
+        api: &dyn Api,
+        now: DateTime<Utc>,
+    ) -> Result<Option<NetworkConfig>, SyncError> {
         if !self.is_due(now) {
             return Ok(None);
         }
@@ -106,7 +124,10 @@ impl Syncer {
                 self.failures += 1;
                 let retry_at = now + backoff(self.failures);
                 self.retry_at = Some(retry_at);
-                self.state = SyncState::Offline { failures: self.failures, retry_at };
+                self.state = SyncState::Offline {
+                    failures: self.failures,
+                    retry_at,
+                };
                 Ok(None)
             }
         }
@@ -146,7 +167,9 @@ impl Syncer {
                 }
                 Ok(())
             }
-            Err(ApiError::Rejected { .. }) => store.mark_events_rejected(&ids(events)).map_err(local),
+            Err(ApiError::Rejected { .. }) => {
+                store.mark_events_rejected(&ids(events)).map_err(local)
+            }
             Err(e) => Err(e),
         }
     }
@@ -155,6 +178,26 @@ impl Syncer {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn zustand_fuer_die_oberflaeche() {
+        let at = DateTime::parse_from_rfc3339("2026-10-14T06:00:00Z")
+            .unwrap()
+            .with_timezone(&Utc);
+        let json = serde_json::to_value(SyncState::Offline {
+            failures: 2,
+            retry_at: at,
+        })
+        .unwrap();
+        assert_eq!(
+            json,
+            serde_json::json!({ "state": "offline", "failures": 2, "retryAt": "2026-10-14T06:00:00Z" })
+        );
+        assert_eq!(
+            serde_json::to_value(SyncState::NeedsLogin).unwrap(),
+            serde_json::json!({ "state": "needsLogin" })
+        );
+    }
 
     #[test]
     fn backoff_verdoppelt_bis_30_minuten() {

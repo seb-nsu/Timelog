@@ -80,7 +80,12 @@ impl FakeSystem {
             network: NetworkInfo::default(),
             sink: None,
         }));
-        (Self { state: Arc::clone(&state) }, FakeHandle { state })
+        (
+            Self {
+                state: Arc::clone(&state),
+            },
+            FakeHandle { state },
+        )
     }
 
     fn read<T>(&self, f: impl FnOnce(&FakeState) -> T) -> T {
@@ -107,7 +112,12 @@ impl FakeHandle {
 
     /// Sendet ein Signal an den mit `watch` registrierten Empfänger.
     pub fn emit(&self, signal: Signal) -> bool {
-        let sink = self.state.lock().unwrap_or_else(PoisonError::into_inner).sink.clone();
+        let sink = self
+            .state
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .sink
+            .clone();
         sink.is_some_and(|s| s.send(signal).is_ok())
     }
 }
@@ -126,6 +136,9 @@ impl SystemEvents for FakeSystem {
     }
 
     fn watch(&mut self, sink: Sender<Signal>) {
-        self.state.lock().unwrap_or_else(PoisonError::into_inner).sink = Some(sink);
+        self.state
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .sink = Some(sink);
     }
 }

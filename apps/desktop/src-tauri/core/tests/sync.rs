@@ -5,7 +5,9 @@ use std::cell::RefCell;
 use chrono::{DateTime, Duration, TimeZone, Utc};
 use timelog_core::model::NetworkKeys;
 use timelog_core::sync::MAX_BATCH_EVENTS;
-use timelog_core::{Api, ApiError, Event, EventType, NetworkConfig, Source, Span, Store, SyncState, Syncer};
+use timelog_core::{
+    Api, ApiError, Event, EventType, NetworkConfig, Source, Span, Store, SyncState, Syncer,
+};
 
 fn at(h: u32, m: u32) -> DateTime<Utc> {
     Utc.with_ymd_and_hms(2026, 10, 14, h, m, 0).unwrap()
@@ -26,7 +28,10 @@ impl Api for FakeApi {
         }
         if let Some(bad) = self.reject_id.borrow().as_ref() {
             if events.iter().any(|e| &e.id == bad) {
-                return Err(ApiError::Rejected { status: 400, code: "invalid_request".into() });
+                return Err(ApiError::Rejected {
+                    status: 400,
+                    code: "invalid_request".into(),
+                });
             }
         }
         self.batches.borrow_mut().push(events.len());
@@ -39,12 +44,24 @@ impl Api for FakeApi {
     }
 
     fn get_networks(&self) -> Result<NetworkConfig, ApiError> {
-        Ok(NetworkConfig { networks: vec![], keys: NetworkKeys { user: "a2V5".into(), org: None } })
+        Ok(NetworkConfig {
+            networks: vec![],
+            keys: NetworkKeys {
+                user: "a2V5".into(),
+                org: None,
+            },
+        })
     }
 }
 
 fn event(i: u32) -> Event {
-    Event::new(EventType::ManualWork, Source::User, at(6, 0) + Duration::seconds(i.into()), "UTC", at(6, 0))
+    Event::new(
+        EventType::ManualWork,
+        Source::User,
+        at(6, 0) + Duration::seconds(i.into()),
+        "UTC",
+        at(6, 0),
+    )
 }
 
 #[test]
@@ -74,10 +91,22 @@ fn offline_mit_exponentiellem_backoff() {
     *api.fail_with.borrow_mut() = Some(ApiError::Unavailable("timeout".into()));
     let mut sync = Syncer::new();
     sync.run(&store, &api, at(7, 0)).unwrap();
-    assert_eq!(sync.state(), &SyncState::Offline { failures: 1, retry_at: at(7, 0) + Duration::seconds(30) });
+    assert_eq!(
+        sync.state(),
+        &SyncState::Offline {
+            failures: 1,
+            retry_at: at(7, 0) + Duration::seconds(30)
+        }
+    );
     assert!(!sync.is_due(at(7, 0) + Duration::seconds(10)));
     sync.run(&store, &api, at(7, 1)).unwrap();
-    assert_eq!(sync.state(), &SyncState::Offline { failures: 2, retry_at: at(7, 2) });
+    assert_eq!(
+        sync.state(),
+        &SyncState::Offline {
+            failures: 2,
+            retry_at: at(7, 2)
+        }
+    );
     // Netzwechsel: sofort neu versuchen
     *api.fail_with.borrow_mut() = None;
     sync.reset();

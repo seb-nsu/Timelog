@@ -60,7 +60,13 @@ pub struct Event {
 
 impl Event {
     /// Neues Ereignis mit zufälliger ID; Zeiten auf Millisekunden gerundet.
-    pub fn new(kind: EventType, source: Source, ts: DateTime<Utc>, tz: &str, now: DateTime<Utc>) -> Self {
+    pub fn new(
+        kind: EventType,
+        source: Source,
+        ts: DateTime<Utc>,
+        tz: &str,
+        now: DateTime<Utc>,
+    ) -> Self {
         Self {
             id: uuid::Uuid::new_v4().to_string(),
             kind,
@@ -89,7 +95,12 @@ pub struct Span {
 impl Span {
     pub fn open_at(now: DateTime<Utc>) -> Self {
         let now = now.trunc_subsecs(3);
-        Self { id: uuid::Uuid::new_v4().to_string(), start: now, end: now, open: true }
+        Self {
+            id: uuid::Uuid::new_v4().to_string(),
+            start: now,
+            end: now,
+            open: true,
+        }
     }
 }
 
@@ -135,8 +146,16 @@ mod tests {
 
     #[test]
     fn serialisiert_wie_die_api() {
-        let ts = DateTime::parse_from_rfc3339("2026-10-14T06:00:00.123456Z").unwrap().with_timezone(&Utc);
-        let mut e = Event::new(EventType::NetConnected, Source::Lan, ts, "Europe/Berlin", ts);
+        let ts = DateTime::parse_from_rfc3339("2026-10-14T06:00:00.123456Z")
+            .unwrap()
+            .with_timezone(&Utc);
+        let mut e = Event::new(
+            EventType::NetConnected,
+            Source::Lan,
+            ts,
+            "Europe/Berlin",
+            ts,
+        );
         e.id = "0b7a1c4e-2f43-4d4f-9d7e-6f1a2b3c4d5e".into();
         e.network_id = Some("n1".into());
         let json = serde_json::to_value(&e).unwrap();
