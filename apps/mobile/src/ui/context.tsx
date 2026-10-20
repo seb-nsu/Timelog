@@ -17,6 +17,7 @@ export type Route =
   | { name: 'today' }
   | { name: 'log'; date?: string }
   | { name: 'review' }
+  | { name: 'week'; date?: string }
   | { name: 'overview' }
   | { name: 'absences' }
   | { name: 'settings' }
@@ -61,6 +62,8 @@ export interface MobileProviderProps {
     t: MobileTranslator;
   }) => void;
   clock?: () => number;
+  /** Navigation von außen, z. B. beim Antippen einer Benachrichtigung; liefert eine Abmeldung */
+  externalRoutes?: (go: (route: Route) => void) => () => void;
   children: ReactNode;
   loading?: ReactNode;
 }
@@ -71,6 +74,7 @@ export function MobileProvider({
   actions,
   onUpdate,
   clock,
+  externalRoutes,
   children,
   loading = null,
 }: MobileProviderProps) {
@@ -83,6 +87,8 @@ export function MobileProvider({
     version: number;
   } | null>(null);
   const [route, setRoute] = useState<Route>({ name: 'today' });
+
+  useEffect(() => externalRoutes?.(setRoute), [externalRoutes]);
 
   const reload = useCallback(async () => {
     const now = core.now();

@@ -32,6 +32,8 @@ export interface FakeServer {
   devices: Json[];
   corrections: Json[];
   pushTokens: string[];
+  /** Sprache der Push-Texte je POST /devices */
+  pushLocales: string[];
   refreshTokens: Set<string>;
   orgAccount: boolean;
   totpRequired: boolean;
@@ -75,6 +77,7 @@ export function fakeServer(clock: () => number = Date.now): FakeServer {
     ],
     corrections: [],
     pushTokens: [],
+    pushLocales: [],
     refreshTokens: new Set(),
     orgAccount: false,
     totpRequired: false,
@@ -253,6 +256,7 @@ export function fakeServer(clock: () => number = Date.now): FakeServer {
         const parsed = deviceUpdate.safeParse(body);
         if (!parsed.success) return error(400, 'invalid_request');
         if (parsed.data.pushToken) server.pushTokens.push(parsed.data.pushToken);
+        if (parsed.data.locale) server.pushLocales.push(parsed.data.locale);
         return json(server.devices[0]);
       }
       if (method === 'DELETE' && path.startsWith('/devices/')) {

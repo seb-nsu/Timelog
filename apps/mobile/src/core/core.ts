@@ -7,6 +7,7 @@ import {
   ApiError,
   type DeviceResponse,
   type NetworksResponse,
+  type PushData,
   type Settings,
   createApiClient,
   settingsSchema,
@@ -110,6 +111,8 @@ const K = {
   cursorEvents: 'cursor.events',
   cursorSpans: 'cursor.spans',
   pushToken: 'pushToken',
+  pushLocale: 'pushLocale',
+  answered: 'prompts.answered',
   localKey: 'timelog.localNetworkKey',
   totp: 'totpSetupRequired',
 } as const;
@@ -396,10 +399,66 @@ export class MobileCore {
     return mode;
   }
 
-  async registerPushToken(token: string): Promise<void> {
+  /** Push-Token und Sprache der Push-Texte am Gerät hinterlegen. */
+  async registerPushToken(token: string, locale?: 'de' | 'en'): Promise<void> {
     await this.store.set(K.pushToken, token);
+    if (locale) await this.store.set(K.pushLocale, locale);
     if ((await this.account()) !== 'loggedIn') return;
-    await (await this.api()).devices.update({ pushToken: token });
+    const lang = locale ?? (await this.store.get<'de' | 'en'>(K.pushLocale));
+    await (
+      await this.api()
+    ).devices.update({ pushToken: token, ...(lang ? { locale: lang } : {}) });
+  }
+
+  /**
+   * „Stimmt“ aus einer Rückfrage (Benachrichtigung oder Karte): Arbeitsende bestätigen bzw. das
+   * fehlende Ende auf die letzte Aktivität setzen. Je Benachrichtigung (`key`) nur einmal.
+   */
+  async answerPrompt(data: PushData, key: string, reason: string): Promise<boolean> {
+    const answered = (await this.store.get<string[]>(K.answered)) ?? [];
+    if (answered.includes(key)) return false;
+    if (data.kind === 'end_confirm') {
+      await this.decideSession(data.sessionId, true);
+    } else if (data.kind === 'end_missing' && data.end) {
+      await this.correct(data.date, { field: 'end', time: data.end }, reason);
+    } else {
+      return false;
+    }
+    await this.store.set(K.answered, [...answered, key].slice(-50));
+    return true;
+  }
+
+  /**
+   * „Woche bestätigen“: unproblematische Tage per Tagesbestätigung des Servers; ohne Konto oder
+   * ohne Verbindung je Sitzung als session_confirm in der Warteschlange.
+   */
+  async confirmDays(days: readonly WorkDay[], dates: readonly string[]): Promise<number> {
+    const online = (await this.account()) === 'loggedIn';
+    let viaServer = false;
+    let count = 0;
+    for (const date of dates) {
+      if (online) {
+        try {
+          await (await this.api()).corrections.confirmDay(date);
+          viaServer = true;
+          count += 1;
+          continue;
+        } catch (e) {
+          if (classify(e) !== 'unavailable') throw e;
+        }
+      }
+      const day = days.find((d) => d.date === date);
+      for (const s of day?.sessions ?? []) {
+        if (s.confirmed === undefined && !s.open) {
+          await this.record('session_confirm', { refEventId: s.id });
+        }
+      }
+      count += 1;
+    }
+    // Bestätigungen des Servers abholen
+    if (viaServer) await this.sync(true);
+    this.emit();
+    return count;
   }
 
   // ── Ereignisse ──────────────────────────────────────────────────────────────
@@ -498,6 +557,7 @@ export class MobileCore {
         tz: e.tz,
         createdAt: e.createdAt,
         ...(e.networkId ? { networkId: e.networkId } : {}),
+        ...(e.refEventId ? { refEventId: e.refEventId } : {}),
       };
       await this.store.addEvent(local);
     }

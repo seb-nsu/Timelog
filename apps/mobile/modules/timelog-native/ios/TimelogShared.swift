@@ -240,6 +240,37 @@ public enum TimelogShared {
     save("spans", spans)
   }
 
+  // MARK: Rückfragen
+
+  /// Aktion „Stimmt“ einer Rückfrage ohne App-Start: Sitzung bestätigen (`end_confirm`) bzw. das
+  /// fehlende Ende auf die letzte Aktivität setzen (`end_missing`). Je Benachrichtigung (`key`)
+  /// nur einmal. `data` ist der Schlüssel `body` der Push-Nachricht (nur IDs, Datum, Uhrzeit).
+  @discardableResult
+  public static func answerPrompt(_ data: [String: Any], key: String) -> Bool {
+    lock.lock(); defer { lock.unlock() }
+    var answered = defaults.stringArray(forKey: "promptsAnswered") ?? []
+    if answered.contains(key) { return false }
+    guard let kind = data["kind"] as? String, let sessionId = data["sessionId"] as? String,
+          !sessionId.isEmpty, sessionId.count <= 200 else { return false }
+    var events = load("events")
+    switch kind {
+    case "end_confirm":
+      var e = event("session_confirm", "user", iso())
+      e["refEventId"] = sessionId
+      events.append(e)
+    case "end_missing":
+      guard let end = data["end"] as? String, date(end) != nil else { return false }
+      events.append(event("manual_end", "user", end))
+    default:
+      return false
+    }
+    save("events", events)
+    answered.append(key)
+    defaults.set(Array(answered.suffix(50)), forKey: "promptsAnswered")
+    onChange?()
+    return true
+  }
+
   // MARK: Widget
 
   public static func saveWidget(_ json: String) { defaults.set(json, forKey: "widget") }

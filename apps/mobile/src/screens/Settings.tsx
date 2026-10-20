@@ -3,7 +3,7 @@
 import type { DeviceResponse, NetworksResponse, Settings } from '@timelog/shared';
 import { useEffect, useState } from 'react';
 import type { GeofenceStatus } from '../../modules/timelog-native';
-import { Body, Button, Field, Notice, Screen, Section, ToggleRow } from '../ui/components';
+import { Body, Button, Choice, Field, Notice, Screen, Section, ToggleRow } from '../ui/components';
 import { useMobile } from '../ui/context';
 import { LoginForm, ProfileForm } from './forms';
 
@@ -279,6 +279,7 @@ function NotificationSection() {
   const n = state.settings.notifications;
   const [from, setFrom] = useState(n.quietHours.from);
   const [to, setTo] = useState(n.quietHours.to);
+  const [weekTime, setWeekTime] = useState(n.weekReview.time);
   const [msg, setMsg] = useState<Msg>(null);
   const set = (patch: Partial<Settings['notifications']>) =>
     core.saveSettings({ ...state.settings, notifications: { ...n, ...patch } });
@@ -293,6 +294,37 @@ function NotificationSection() {
           onValueChange={(v) => set({ [key]: v })}
         />
       ))}
+      <ToggleRow
+        label={t.t('settings.reminder.confirmEnd')}
+        value={n.confirmEnd}
+        onValueChange={(v) => set({ confirmEnd: v })}
+      />
+      <ToggleRow
+        label={t.t('settings.weekReviewOn')}
+        value={n.weekReview.enabled}
+        onValueChange={(v) => set({ weekReview: { ...n.weekReview, enabled: v } })}
+      />
+      {n.weekReview.enabled ? (
+        <>
+          <Choice<string>
+            label={t.t('settings.weekReviewDay')}
+            value={String(n.weekReview.weekday)}
+            onChange={(v) => {
+              void set({ weekReview: { ...n.weekReview, weekday: Number(v) } });
+            }}
+            options={[1, 2, 3, 4, 5, 6, 0].map((d) => ({
+              value: String(d),
+              label: t.weekday(d),
+            }))}
+          />
+          <Field
+            label={t.t('settings.weekReviewTime')}
+            value={weekTime}
+            onChangeText={setWeekTime}
+            inputMode="numeric"
+          />
+        </>
+      ) : null}
       <Field
         label={t.m('settings.quietFrom')}
         value={from}
@@ -304,11 +336,11 @@ function NotificationSection() {
         variant="secondary"
         label={t.m('settings.saveNotifications')}
         onPress={async () => {
-          if (!CLOCK.test(from) || !CLOCK.test(to)) {
+          if (!CLOCK.test(from) || !CLOCK.test(to) || !CLOCK.test(weekTime)) {
             setMsg({ tone: 'error', text: t.m('log.invalidTime') });
             return;
           }
-          await set({ quietHours: { from, to } });
+          await set({ quietHours: { from, to }, weekReview: { ...n.weekReview, time: weekTime } });
           setMsg({ tone: 'success', text: t.m('settings.saved') });
         }}
       />

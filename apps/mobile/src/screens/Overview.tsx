@@ -101,6 +101,13 @@ export function OverviewScreen() {
 
       <Button
         variant="secondary"
+        label={t.t('nav.week')}
+        onPress={() => {
+          go(mode === 'week' ? { name: 'week', date: from } : { name: 'week' });
+        }}
+      />
+      <Button
+        variant="secondary"
         label={t.m('overview.absences')}
         onPress={() => {
           go({ name: 'absences' });
