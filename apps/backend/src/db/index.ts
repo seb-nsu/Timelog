@@ -40,6 +40,27 @@ export function withUser<T>(db: Db, scope: Scope, fn: (tx: Tx) => Promise<T>): P
   });
 }
 
+/**
+ * Transaktion im Auftrag eines Mitglieds (Manager- oder Admin-Zugriff): RLS gilt für das Mitglied,
+ * app.actor_id ist der Akteur. Die Datenbank prüft zu Beginn selbst, ob der Akteur das Mitglied sehen
+ * darf (app_assert_delegate), und erlaubt Schreiben nur Admins.
+ */
+export function withMember<T>(
+  db: Db,
+  actor: { userId: string; orgId: string },
+  memberId: string,
+  fn: (tx: Tx) => Promise<T>,
+): Promise<T> {
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`set local role timelog_app`);
+    await tx.execute(
+      sql`select set_config('app.user_id', ${memberId}, true), set_config('app.org_id', ${actor.orgId}, true), set_config('app.actor_id', ${actor.userId}, true)`,
+    );
+    await tx.execute(sql`select app_assert_delegate()`);
+    return fn(tx);
+  });
+}
+
 /** Transaktion ohne Nutzerbezug (Anmeldung, Token-Prüfung). Nur im Auth-Dienst verwenden. */
 export function asSystem<T>(db: Db, fn: (tx: Tx) => Promise<T>): Promise<T> {
   return db.transaction(async (tx) => {

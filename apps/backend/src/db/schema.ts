@@ -36,6 +36,10 @@ export const organizations = pgTable('organizations', {
   fingerprintSalt: text('fingerprint_salt')
     .notNull()
     .default(sql`encode(sha256(gen_random_uuid()::text::bytea), 'hex')`),
+  /** Kurzname für die SSO-Anmeldung (z. B. „acme“). */
+  slug: text('slug').unique(),
+  /** SSO-Einstellungen (OIDC/SAML); Secrets nur als Name einer Umgebungsvariable. */
+  sso: jsonb('sso').notNull().default({}),
   createdAt: createdAt(),
 });
 
@@ -69,6 +73,10 @@ export const users = pgTable(
     settings: jsonb('settings').notNull().default({}),
     createdAt: createdAt(),
     deletedAt: tstz('deleted_at'),
+    /** Von der Organisation deaktiviert: keine Anmeldung mehr, Daten bleiben bis zur Löschfrist. */
+    deactivatedAt: tstz('deactivated_at'),
+    /** Unveränderliche Kennung beim IdP (Issuer|Subject), nach der ersten SSO-Anmeldung gesetzt. */
+    ssoSubject: text('sso_subject'),
   },
   (t) => [uniqueIndex('users_email_key').on(sql`lower(${t.email})`)],
 );
@@ -239,6 +247,7 @@ export const approvals = pgTable(
       .references(() => users.id),
     month: text('month').notNull(),
     status: text('status', { enum: ['submitted', 'approved', 'rejected'] }).notNull(),
+    submittedAt: tstz('submitted_at'),
     snapshot: jsonb('snapshot'),
     rulesConfigVersion: integer('rules_config_version'),
     approverId: uuid('approver_id'),
@@ -260,6 +269,8 @@ export const refreshTokens = pgTable(
       .references(() => devices.id),
     tokenHash: text('token_hash').notNull(),
     familyId: uuid('family_id').notNull(),
+    /** Familie stammt aus einer SSO-Anmeldung (ersetzt TOTP für Manager und Admins). */
+    sso: boolean('sso').notNull().default(false),
     expiresAt: tstz('expires_at').notNull(),
     usedAt: tstz('used_at'),
     revokedAt: tstz('revoked_at'),
@@ -271,7 +282,7 @@ export const refreshTokens = pgTable(
   ],
 );
 
-/** Einmal-Tokens für E-Mail-Bestätigung und Passwort-Reset (nur Hash gespeichert). */
+/** Einmal-Tokens für E-Mail-Bestätigung, Passwort-Reset und SSO-Anmeldecode (nur Hash gespeichert). */
 export const authTokens = pgTable(
   'auth_tokens',
   {
@@ -279,7 +290,7 @@ export const authTokens = pgTable(
     userId: uuid('user_id')
       .notNull()
       .references(() => users.id),
-    purpose: text('purpose', { enum: ['verify_email', 'password_reset'] }).notNull(),
+    purpose: text('purpose', { enum: ['verify_email', 'password_reset', 'sso_login'] }).notNull(),
     tokenHash: text('token_hash').notNull(),
     expiresAt: tstz('expires_at').notNull(),
     usedAt: tstz('used_at'),
@@ -295,5 +306,40 @@ export const auditLog = pgTable('audit_log', {
   action: text('action').notNull(),
   target: text('target'),
   payload: jsonb('payload'),
+  createdAt: createdAt(),
+});
+
+/** Einladungen in eine Organisation (nur Hash des Tokens gespeichert). */
+export const invitations = pgTable(
+  'invitations',
+  {
+    id: id(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id),
+    email: text('email').notNull(),
+    role: text('role', { enum: ['user', 'manager', 'admin'] }).notNull(),
+    teamId: uuid('team_id').references(() => teams.id),
+    tokenHash: text('token_hash').notNull(),
+    invitedBy: uuid('invited_by').notNull(),
+    expiresAt: tstz('expires_at').notNull(),
+    acceptedAt: tstz('accepted_at'),
+    revokedAt: tstz('revoked_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('invitations_hash').on(t.tokenHash), index('invitations_org').on(t.orgId)],
+);
+
+/** Offene SSO-Anfragen (OIDC: state mit PKCE-Verifier und Nonce; SAML: AuthnRequest-ID). */
+export const ssoRequests = pgTable('sso_requests', {
+  id: text('id').primaryKey(),
+  orgId: uuid('org_id')
+    .notNull()
+    .references(() => organizations.id),
+  kind: text('kind', { enum: ['oidc', 'saml'] }).notNull(),
+  codeVerifier: text('code_verifier'),
+  nonce: text('nonce'),
+  redirect: text('redirect').notNull(),
+  expiresAt: tstz('expires_at').notNull(),
   createdAt: createdAt(),
 });

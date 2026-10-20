@@ -1,5 +1,16 @@
 import { z } from 'zod';
 
+/** Kommagetrennte Liste, leer = keine Einträge. */
+const list = z
+  .string()
+  .default('')
+  .transform((v) =>
+    v
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0),
+  );
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   HOST: z.string().default('0.0.0.0'),
@@ -15,6 +26,10 @@ const envSchema = z.object({
     ),
   NETWORK_HMAC_SECRET: z.string().min(32, 'NETWORK_HMAC_SECRET braucht mindestens 32 Zeichen'),
   APP_URL: z.url().default('http://localhost:5173'),
+  ADMIN_URL: z.url().optional(),
+  API_URL: z.url().default('http://localhost:3000'),
+  CORS_ORIGINS: list,
+  SSO_REDIRECT_ORIGINS: list,
   SMTP_URL: z.string().optional(),
   MAIL_FROM: z.string().default('TimeLog <no-reply@localhost>'),
   TRUST_PROXY: z.stringbool().default(false),

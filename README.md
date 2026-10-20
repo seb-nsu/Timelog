@@ -8,20 +8,21 @@ Automatische Arbeitszeiterfassung für Laptop (Windows, macOS) und Handy (Androi
 | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
 | [docs/PRODUKTKONZEPT.md](docs/PRODUKTKONZEPT.md) | Produktkonzept: Erfassungslogik, Sonderfälle, Funktionsumfang, Datenschutz, Markt, Entscheidungen      |
 | [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md) | Implementierungskonzept: Tech-Stack, Regelwerk, Testfälle, API, Clients, Phasen mit Akzeptanzkriterien |
+| [docs/ADMIN.md](docs/ADMIN.md)                   | Firmenversion: Rollen, Web-Admin, SSO-Einrichtung (Entra ID, Google, SAML) und Prüfanleitung           |
 | [CLAUDE.md](CLAUDE.md)                           | Regeln für Claude Code                                                                                 |
 
 ## Stand
 
-| Phase              | Status                                           |
-| ------------------ | ------------------------------------------------ |
-| 0 – Grundgerüst    | erledigt                                         |
-| 1 – Regelwerk      | erledigt                                         |
-| 2a – Backend-Kern  | erledigt                                         |
-| 2b – Backend-Fach  | erledigt                                         |
-| 3a – Desktop-Kern  | erledigt                                         |
-| 3b/3c – Win, macOS | gebaut, Gerätetest, Signierung und Updater offen |
-| 4/5 – Android, iOS | offen                                            |
-| 6 – Firmenversion  | offen                                            |
+| Phase              | Status                                                                                  |
+| ------------------ | --------------------------------------------------------------------------------------- |
+| 0 – Grundgerüst    | erledigt                                                                                |
+| 1 – Regelwerk      | erledigt                                                                                |
+| 2a – Backend-Kern  | erledigt                                                                                |
+| 2b – Backend-Fach  | erledigt                                                                                |
+| 3a – Desktop-Kern  | erledigt                                                                                |
+| 3b/3c – Win, macOS | gebaut, Gerätetest, Signierung und Updater offen                                        |
+| 4/5 – Android, iOS | offen                                                                                   |
+| 6 – Firmenversion  | gebaut, SSO mit echtem IdP 👤 offen; ArbZG-Hinweise und axe-Prüfung der Tray-UI separat |
 
 ## Repo-Struktur
 
@@ -33,6 +34,7 @@ packages/
 apps/
   backend/    REST-API (Fastify, PostgreSQL, Drizzle)
   desktop/    Tauri 2: React-Oberfläche (src/), Rust-App (src-tauri/), Rust-Kern (src-tauri/core/)
+  admin/      Web-Admin der Firmenversion (React + Vite)
 docs/         Konzepte
 ```
 
@@ -79,6 +81,16 @@ cd apps/desktop/src-tauri && cargo test --workspace
 ```
 
 Der Rust-Kern (`src-tauri/core`) schreibt Ereignisse und Aktiv-Spannen sofort in SQLite und synchronisiert sie mit dem Backend; Tokens bleiben im Rust-Teil. Die Oberfläche berechnet Arbeitstage lokal mit `@timelog/rules`. Systemereignisse laufen über die Schnittstelle `SystemEvents` mit eigenen Modulen für Windows und macOS (Details und Prüfanleitung in [docs/PLATFORM.md](docs/PLATFORM.md)); für Tests gibt es die Attrappe `FakeSystem`. Optional setzt `VITE_DEFAULT_SERVER` beim Bauen die vorbelegte Server-Adresse.
+
+### Web-Admin (Firmenversion)
+
+```sh
+pnpm build
+pnpm --filter @timelog/backend dev   # API auf Port 3000
+pnpm --filter @timelog/admin dev     # Web-Admin auf http://localhost:5174, /api wird an die API weitergeleitet
+```
+
+Manager geben Monate frei oder weisen sie mit Kommentar zurück und sehen je Tag nur Beginn, Ende, Pausen, Auffüllung, Netto, Status und Hinweise ihrer Teams. Admins verwalten zusätzlich Mitglieder, Einladungen, Teams, Sollzeiten, Firmen-Netze, Regelwerk-Parameter, SSO, Export und Audit-Log. Für Manager und Admins ist Zwei-Faktor Pflicht (oder SSO). In `.env` sind `ADMIN_URL` (Einladungslinks, SSO-Rücksprung), `API_URL` (SSO-Callback) und bei getrenntem Ursprung `CORS_ORIGINS` zu setzen; SSO-Secrets nur als `SSO_*`-Variablen. Einrichtung und Prüfanleitung: [docs/ADMIN.md](docs/ADMIN.md). Die UI-Tests prüfen jede Hauptseite mit axe-core.
 
 ## Weiter mit Claude Code
 

@@ -1,3 +1,5 @@
+import cors from '@fastify/cors';
+import formbody from '@fastify/formbody';
 import swagger from '@fastify/swagger';
 import Fastify, {
   type FastifyBaseLogger,
@@ -30,6 +32,11 @@ import { daysRoutes } from './routes/days.js';
 import { deviceRoutes } from './routes/devices.js';
 import { eventRoutes } from './routes/events.js';
 import { requireAuth } from './routes/guard.js';
+import { invitationRoutes, membershipRoutes } from './routes/membership.js';
+import { requireOrgRole } from './routes/org/access.js';
+import { orgApprovalRoutes } from './routes/org/approvals.js';
+import { orgManageRoutes } from './routes/org/manage.js';
+import { ssoRoutes } from './routes/sso.js';
 import type { AccessClaims } from './security/jwt.js';
 import { TokenSigner } from './security/jwt.js';
 
@@ -41,6 +48,15 @@ export type App = FastifyInstance<
   ZodTypeProvider
 >;
 
+export interface SsoOptions {
+  /** Nur für Tests mit lokalem IdP: http statt https erlauben. */
+  allowInsecure: boolean;
+  /** Liest ein Secret (nur Namen mit Präfix SSO_), Standard: process.env. */
+  secret: (name: string) => string | undefined;
+  /** Zusätzlich erlaubte Rücksprung-Ursprünge neben ADMIN_URL und APP_URL. */
+  redirectOrigins: string[];
+}
+
 export interface AppOptions {
   db: Db;
   mailer: Mailer;
@@ -48,6 +64,13 @@ export interface AppOptions {
   totpKey: Buffer;
   networkSecret: string;
   appUrl: string;
+  /** Web-Admin (Einladungslinks, SSO-Rücksprung); Standard: appUrl. */
+  adminUrl?: string;
+  /** Öffentliche Adresse der API (SSO-Callback, SAML-Metadaten); Standard: http://localhost:3000. */
+  apiUrl?: string;
+  /** Ursprünge, die die API per CORS aufrufen dürfen (z. B. der Web-Admin). */
+  corsOrigins?: string[];
+  sso?: Partial<SsoOptions>;
   logLevel?: string;
   trustProxy?: boolean;
   /** Uhr für Tests; Standard Date.now. */
@@ -63,6 +86,9 @@ export interface AppContext {
   totpKey: Buffer;
   networkSecret: string;
   appUrl: string;
+  adminUrl: string;
+  apiUrl: string;
+  sso: SsoOptions;
   now: () => number;
   limiter: RateLimiter;
   limits: { auth: number; device: number };
@@ -119,6 +145,16 @@ export async function buildApp(options: AppOptions): Promise<App> {
     totpKey: options.totpKey,
     networkSecret: options.networkSecret,
     appUrl: options.appUrl,
+    adminUrl: (options.adminUrl ?? options.appUrl).replace(/\/$/, ''),
+    apiUrl: (options.apiUrl ?? 'http://localhost:3000').replace(/\/$/, ''),
+    sso: {
+      allowInsecure: options.sso?.allowInsecure ?? false,
+      // Nur Variablen mit Präfix SSO_: ein Admin darf nie andere Secrets (z. B. JWT_SECRET) an einen IdP senden.
+      secret:
+        options.sso?.secret ??
+        ((name) => (/^SSO_[A-Z0-9_]+$/.test(name) ? process.env[name] : undefined)),
+      redirectOrigins: options.sso?.redirectOrigins ?? [],
+    },
     now,
     limiter: new RateLimiter(now),
     limits: options.limits ?? { auth: 10, device: 60 },
@@ -152,6 +188,12 @@ export async function buildApp(options: AppOptions): Promise<App> {
     return reply.code(500).send({ error: 'internal_error' });
   });
 
+  // SAML-IdPs senden die Antwort als Formular (HTTP-POST-Binding).
+  await app.register(formbody, { bodyLimit: 512 * 1024 });
+  if (options.corsOrigins && options.corsOrigins.length > 0) {
+    await app.register(cors, { origin: options.corsOrigins, maxAge: 600 });
+  }
+
   await app.register(swagger, {
     openapi: {
       openapi: '3.1.0',
@@ -176,6 +218,8 @@ export async function buildApp(options: AppOptions): Promise<App> {
     async (api) => {
       await api.register((scope, _opts, done) => {
         authRoutes(scope, ctx);
+        invitationRoutes(scope, ctx);
+        ssoRoutes(scope, ctx);
         done();
       });
       await api.register((scope, _opts, done) => {
@@ -186,6 +230,17 @@ export async function buildApp(options: AppOptions): Promise<App> {
         correctionRoutes(scope, ctx);
         profileRoutes(scope, ctx);
         privacyRoutes(scope, ctx);
+        membershipRoutes(scope, ctx);
+        void scope.register(
+          (org, _o, next) => {
+            org.decorateRequest('actor', null);
+            org.addHook('onRequest', requireOrgRole(ctx));
+            orgManageRoutes(org, ctx);
+            orgApprovalRoutes(org, ctx);
+            next();
+          },
+          { prefix: '/org' },
+        );
         done();
       });
     },

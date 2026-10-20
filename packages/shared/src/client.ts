@@ -33,6 +33,33 @@ import {
   tokenResponse,
   totpSetupResponse,
 } from './schemas.js';
+import {
+  type InviteAcceptRequest,
+  type InviteRequest,
+  type MemberUpdate,
+  type OrgConfigUpdate,
+  type SsoExchangeRequest,
+  type teamInput,
+  type teamUpdate,
+  approvalDetailResponse,
+  approvalSchema,
+  approvalsResponse,
+  auditResponse,
+  createOrgResponse,
+  invitationSchema,
+  invitationsResponse,
+  inviteInfoResponse,
+  memberDaysResponse,
+  memberSchema,
+  membersResponse,
+  orgConfigResponse,
+  orgMeResponse,
+  ownApprovalSchema,
+  ownApprovalsResponse,
+  ssoInfoResponse,
+  teamSchema,
+  teamsResponse,
+} from './org.js';
 
 export const API_PREFIX = '/api/v1';
 
@@ -104,6 +131,7 @@ export function createApiClient(options: ApiClientOptions) {
   }
 
   const range = (q: { from: string; to: string }) => ({ from: q.from, to: q.to });
+  const enc = encodeURIComponent;
 
   return {
     auth: {
@@ -176,6 +204,105 @@ export function createApiClient(options: ApiClientOptions) {
     me: {
       export: async (): Promise<unknown> => (await send('GET', '/me/export')).json(),
       delete: (password: string) => call('DELETE', '/me', deleteAccountResponse, { password }),
+    },
+    /** Eigene Monatsfreigaben (Firmenkonto). */
+    approvals: {
+      list: () => call('GET', '/approvals', ownApprovalsResponse),
+      submit: (month: string) => call('POST', `/approvals/${month}`, ownApprovalSchema, {}),
+    },
+    invitations: {
+      info: (token: string) =>
+        call('GET', '/auth/invite', inviteInfoResponse, undefined, { token }),
+      accept: (body: InviteAcceptRequest) => call('POST', '/auth/invite/accept', okResponse, body),
+    },
+    sso: {
+      info: (slug: string) => call('GET', `/auth/sso/${enc(slug)}`, ssoInfoResponse),
+      /** Adresse, zu der der Browser für die SSO-Anmeldung navigiert. */
+      startUrl: (slug: string, method: 'oidc' | 'saml', redirect: string): string => {
+        const url = new URL(`${API_PREFIX}/auth/sso/${enc(slug)}/start`, options.baseUrl);
+        url.searchParams.set('method', method);
+        url.searchParams.set('redirect', redirect);
+        return url.toString();
+      },
+      exchange: (body: SsoExchangeRequest) =>
+        call('POST', '/auth/sso/exchange', tokenResponse, body),
+    },
+    /** Firmenversion: Verwaltung (Manager und Admins). */
+    org: {
+      create: (name: string, slug: string) =>
+        call('POST', '/orgs', createOrgResponse, { name, slug }),
+      me: () => call('GET', '/org/me', orgMeResponse),
+      config: {
+        get: () => call('GET', '/org/config', orgConfigResponse),
+        put: (body: OrgConfigUpdate) => call('PUT', '/org/config', orgConfigResponse, body),
+      },
+      members: {
+        list: () => call('GET', '/org/members', membersResponse),
+        update: (id: string, body: MemberUpdate) =>
+          call('PATCH', `/org/members/${enc(id)}`, memberSchema, body),
+        deactivate: (id: string) =>
+          call('POST', `/org/members/${enc(id)}/deactivate`, okResponse, {}),
+        days: (id: string, q: { from: string; to: string }) =>
+          call('GET', `/org/members/${enc(id)}/days`, memberDaysResponse, undefined, range(q)),
+        targetHours: (id: string) =>
+          call('GET', `/org/members/${enc(id)}/target-hours`, targetHoursResponse),
+        setTargetHours: (id: string, body: z.input<typeof targetHoursUpdate>) =>
+          call('PUT', `/org/members/${enc(id)}/target-hours`, okResponse, body),
+        correct: (id: string, date: string, body: z.input<typeof correctionRequest>) =>
+          call('PATCH', `/org/members/${enc(id)}/days/${date}`, correctionResponse, body),
+      },
+      teams: {
+        list: () => call('GET', '/org/teams', teamsResponse),
+        create: (body: z.input<typeof teamInput>) => call('POST', '/org/teams', teamSchema, body),
+        update: (id: string, body: z.input<typeof teamUpdate>) =>
+          call('PATCH', `/org/teams/${enc(id)}`, teamSchema, body),
+        remove: (id: string) => call('DELETE', `/org/teams/${enc(id)}`, okResponse),
+      },
+      invite: (body: InviteRequest) => call('POST', '/org/invite', invitationSchema, body),
+      invitations: {
+        list: () => call('GET', '/org/invitations', invitationsResponse),
+        revoke: (id: string) => call('DELETE', `/org/invitations/${enc(id)}`, okResponse),
+      },
+      networks: {
+        list: () => call('GET', '/org/networks', networksResponse),
+        add: (body: z.input<typeof networkInput>) =>
+          call('POST', '/org/networks', networkResponse, body),
+        remove: (id: string) => call('DELETE', `/org/networks/${enc(id)}`, okResponse),
+      },
+      approvals: {
+        list: (month: string, status?: 'none' | 'submitted' | 'approved' | 'rejected') =>
+          call('GET', '/org/approvals', approvalsResponse, undefined, {
+            month,
+            ...(status ? { status } : {}),
+          }),
+        get: (userId: string, month: string) =>
+          call('GET', `/org/approvals/${enc(userId)}/${month}`, approvalDetailResponse),
+        approve: (userId: string, month: string, comment?: string) =>
+          call(
+            'POST',
+            `/org/approvals/${enc(userId)}/${month}/approve`,
+            approvalSchema,
+            comment ? { comment } : {},
+          ),
+        reject: (userId: string, month: string, comment: string) =>
+          call('POST', `/org/approvals/${enc(userId)}/${month}/reject`, approvalSchema, {
+            comment,
+          }),
+      },
+      /** Monatsexport als CSV oder PDF (Blob). */
+      export: async (q: { month: string; format: 'csv' | 'pdf'; teamId?: string }) =>
+        (
+          await send('GET', '/org/export', undefined, {
+            month: q.month,
+            format: q.format,
+            ...(q.teamId ? { teamId: q.teamId } : {}),
+          })
+        ).blob(),
+      audit: (q: { limit?: number; before?: string } = {}) =>
+        call('GET', '/org/audit', auditResponse, undefined, {
+          limit: q.limit ?? 50,
+          ...(q.before ? { before: q.before } : {}),
+        }),
     },
   };
 }

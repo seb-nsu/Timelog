@@ -5,6 +5,7 @@ import {
   passwordResetRequest,
   refreshRequest,
   registerRequest,
+  ssoConfig,
   tokenResponse,
   totpSetupResponse,
   totpVerifyRequest,
@@ -14,7 +15,7 @@ import { and, eq, gt, isNull, sql } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { type App, type AppContext, HttpError, limit } from '../app.js';
 import { type Tx, asSystem, withUser } from '../db/index.js';
-import { authTokens, devices, refreshTokens, users } from '../db/schema.js';
+import { authTokens, devices, organizations, refreshTokens, users } from '../db/schema.js';
 import { decrypt, encrypt, randomToken, sha256 } from '../security/crypto.js';
 import { ACCESS_TOKEN_TTL_S, REFRESH_TOKEN_TTL_MS } from '../security/jwt.js';
 import { burnPasswordCheck, hashPassword, verifyPassword } from '../security/password.js';
@@ -27,10 +28,10 @@ const tags = ['auth'];
 
 type User = typeof users.$inferSelect;
 
-async function createOneTimeToken(
+export async function createOneTimeToken(
   tx: Tx,
   userId: string,
-  purpose: 'verify_email' | 'password_reset',
+  purpose: 'verify_email' | 'password_reset' | 'sso_login',
   ttlMs: number,
   now: number,
 ): Promise<string> {
@@ -44,10 +45,10 @@ async function createOneTimeToken(
   return token;
 }
 
-async function consumeOneTimeToken(
+export async function consumeOneTimeToken(
   tx: Tx,
   token: string,
-  purpose: 'verify_email' | 'password_reset',
+  purpose: 'verify_email' | 'password_reset' | 'sso_login',
   now: number,
 ): Promise<string> {
   const rows = await tx
@@ -67,12 +68,13 @@ async function consumeOneTimeToken(
   return row.userId;
 }
 
-async function issueTokens(
+export async function issueTokens(
   ctx: AppContext,
   tx: Tx,
   user: User,
   deviceId: string,
   familyId: string,
+  sso = false,
 ) {
   const now = ctx.now();
   const refreshToken = randomToken();
@@ -81,9 +83,11 @@ async function issueTokens(
     deviceId,
     tokenHash: sha256(refreshToken),
     familyId,
+    sso,
     expiresAt: new Date(now + REFRESH_TOKEN_TTL_MS),
   });
-  const totpEnabled = user.totpSecret !== null;
+  // TOTP ist Pflicht für Manager und Admins – außer bei Anmeldung über SSO (MFA beim IdP).
+  const secondFactor = user.totpSecret !== null || sso;
   const needsMfa = user.role !== 'user';
   const accessToken = await ctx.signer.sign(
     {
@@ -91,7 +95,8 @@ async function issueTokens(
       did: deviceId,
       org: user.orgId,
       role: user.role,
-      mfa: !needsMfa || totpEnabled,
+      mfa: !needsMfa || secondFactor,
+      ...(sso ? { sso: true } : {}),
     },
     now,
   );
@@ -100,8 +105,43 @@ async function issueTokens(
     refreshToken,
     expiresIn: ACCESS_TOKEN_TTL_S,
     deviceId,
-    totpSetupRequired: needsMfa && !totpEnabled,
+    totpSetupRequired: needsMfa && !secondFactor,
   };
+}
+
+/** Verwendet ein bekanntes Gerät des Nutzers wieder oder legt ein neues an. */
+export async function bindDevice(
+  ctx: AppContext,
+  tx: Tx,
+  userId: string,
+  deviceId: string | undefined,
+  device: { kind: 'desktop' | 'mobile'; os: string; name: string },
+): Promise<string> {
+  let id: string | undefined;
+  if (deviceId) {
+    const reused = await tx
+      .update(devices)
+      .set({ os: device.os, name: device.name, lastSeenAt: new Date(ctx.now()) })
+      .where(
+        and(
+          eq(devices.id, deviceId),
+          eq(devices.userId, userId),
+          eq(devices.kind, device.kind),
+          isNull(devices.revokedAt),
+        ),
+      )
+      .returning({ id: devices.id });
+    id = reused[0]?.id;
+  }
+  if (!id) {
+    const created = await tx
+      .insert(devices)
+      .values({ userId, ...device, lastSeenAt: new Date(ctx.now()) })
+      .returning({ id: devices.id });
+    id = created[0]?.id;
+  }
+  if (!id) throw new HttpError(500, 'internal_error');
+  return id;
 }
 
 export function authRoutes(app: App, ctx: AppContext): void {
@@ -181,6 +221,17 @@ export function authRoutes(app: App, ctx: AppContext): void {
         throw new HttpError(401, 'invalid_credentials');
       }
       if (!user.emailVerifiedAt) throw new HttpError(403, 'email_not_verified');
+      if (user.deactivatedAt) throw new HttpError(403, 'account_deactivated');
+      if (user.orgId && user.role !== 'admin') {
+        const [org] = await asSystem(ctx.db, (tx) =>
+          tx
+            .select({ sso: organizations.sso })
+            .from(organizations)
+            .where(eq(organizations.id, user.orgId ?? '')),
+        );
+        // Admins behalten Passwort + TOTP als Notzugang.
+        if (ssoConfig.safeParse(org?.sso).data?.enforced) throw new HttpError(403, 'sso_required');
+      }
 
       let totpStep: number | undefined;
       if (user.totpSecret) {
@@ -198,30 +249,7 @@ export function authRoutes(app: App, ctx: AppContext): void {
         if (totpStep !== undefined) {
           await tx.update(users).set({ totpLastStep: totpStep }).where(eq(users.id, user.id));
         }
-        let id: string | undefined;
-        if (deviceId) {
-          const reused = await tx
-            .update(devices)
-            .set({ os: device.os, name: device.name, lastSeenAt: new Date(ctx.now()) })
-            .where(
-              and(
-                eq(devices.id, deviceId),
-                eq(devices.userId, user.id),
-                eq(devices.kind, device.kind),
-                isNull(devices.revokedAt),
-              ),
-            )
-            .returning({ id: devices.id });
-          id = reused[0]?.id;
-        }
-        if (!id) {
-          const created = await tx
-            .insert(devices)
-            .values({ userId: user.id, ...device, lastSeenAt: new Date(ctx.now()) })
-            .returning({ id: devices.id });
-          id = created[0]?.id;
-        }
-        if (!id) throw new HttpError(500, 'internal_error');
+        const id = await bindDevice(ctx, tx, user.id, deviceId, device);
         return issueTokens(ctx, tx, user, id, randomUUID());
       });
     },
@@ -252,7 +280,7 @@ export function authRoutes(app: App, ctx: AppContext): void {
         if (row.expiresAt.getTime() <= now) return { ok: false, error: 'token_expired' } as const;
         const [device] = await tx.select().from(devices).where(eq(devices.id, row.deviceId));
         const [user] = await tx.select().from(users).where(eq(users.id, row.userId));
-        if (!device || device.revokedAt || !user || user.deletedAt) {
+        if (!device || device.revokedAt || !user || user.deletedAt || user.deactivatedAt) {
           return { ok: false, error: 'invalid_token' } as const;
         }
         await tx
@@ -261,7 +289,7 @@ export function authRoutes(app: App, ctx: AppContext): void {
           .where(eq(refreshTokens.id, row.id));
         return {
           ok: true,
-          tokens: await issueTokens(ctx, tx, user, device.id, row.familyId),
+          tokens: await issueTokens(ctx, tx, user, device.id, row.familyId, row.sso),
         } as const;
       });
       if (!result.ok) throw new HttpError(401, result.error);
