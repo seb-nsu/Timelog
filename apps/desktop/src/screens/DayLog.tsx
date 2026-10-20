@@ -15,16 +15,19 @@ export function DayLog({
   events,
   today,
   tz,
+  initialDate,
 }: {
   days: WorkDay[];
   events: LocalEvent[];
   today: string;
   tz: string;
+  /** Beim Öffnen aus einer Rückfrage oder dem Wochenrückblick */
+  initialDate?: string | undefined;
 }) {
   const backend = useBackend();
   const tr = useT();
   const { t } = tr;
-  const [date, setDate] = useState(today);
+  const [date, setDate] = useState(initialDate ?? today);
   const day = days.find((d) => d.date === date);
   const list = eventsOfDay(events, date);
   const breaks = detectedBreaks(day);

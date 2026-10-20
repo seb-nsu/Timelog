@@ -252,13 +252,20 @@ describe('Erinnerungen', () => {
     const from = screen.getByLabelText('Ruhezeit von');
     await userEvent.clear(from);
     await userEvent.type(from, '21:00');
+    await userEvent.click(
+      screen.getByLabelText('Nach erkanntem Feierabend fragen („Stimmt das?“)'),
+    );
+    await userEvent.selectOptions(screen.getByLabelText('Wochentag'), 'Montag');
+    const time = screen.getByLabelText('Uhrzeit');
+    await userEvent.clear(time);
+    await userEvent.type(time, '08:30');
     const form = screen.getByRole('group', { name: 'Erinnerungen' }).closest('form');
     if (!form) throw new Error('Formular fehlt');
     await userEvent.click(within(form).getByRole('button', { name: 'Speichern' }));
     await waitFor(() => {
       expect(backend.calls.requests).toContainEqual(
         expect.stringContaining(
-          '"notifications":{"forgotEnd":true,"over10h":false,"breakViolation":true,"confirmDay":true,"quietHours":{"from":"21:00","to":"07:00"}}',
+          '"notifications":{"forgotEnd":true,"over10h":false,"breakViolation":true,"confirmDay":true,"confirmEnd":false,"weekReview":{"enabled":true,"weekday":1,"time":"08:30"},"quietHours":{"from":"21:00","to":"07:00"}}',
         ),
       );
     });
@@ -281,7 +288,13 @@ describe('Barrierefreiheit', () => {
       <App locale="de" backend={backend} clock={clock('2026-10-15T09:00:00Z')} />,
     );
     await screen.findByText('Arbeitszeit läuft');
-    for (const page of ['Status', 'Tagesprotokoll', 'Zu prüfen', 'Einstellungen']) {
+    for (const page of [
+      'Status',
+      'Tagesprotokoll',
+      'Zu prüfen',
+      'Wochenrückblick',
+      'Einstellungen',
+    ]) {
       await userEvent.click(screen.getByRole('button', { name: new RegExp(`^${page}`) }));
       // Farbkontrast lässt sich in jsdom nicht messen; dafür gilt styles.css (AA geprüft).
       const result = await axe.run(container, { rules: { 'color-contrast': { enabled: false } } });

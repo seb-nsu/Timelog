@@ -98,6 +98,10 @@ export const profileSchema = z.object({
         over_10h: z.boolean(),
         break_missing: z.boolean(),
       }),
+      confirmEnd: z.boolean().optional(),
+      weekReview: z
+        .object({ enabled: z.boolean(), weekday: z.number().int(), time: z.string() })
+        .optional(),
       quietFrom: z.string(),
       quietTo: z.string(),
     })
