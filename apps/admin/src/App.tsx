@@ -5,24 +5,37 @@ import { Approvals } from './screens/Approvals.js';
 import { Audit } from './screens/Audit.js';
 import { Export } from './screens/Export.js';
 import { InviteAccept } from './screens/InviteAccept.js';
+import { Leave } from './screens/Leave.js';
 import { CreateOrg, Login, TotpSetup } from './screens/Login.js';
 import { Members } from './screens/Members.js';
 import { Networks } from './screens/Networks.js';
+import { Payroll } from './screens/Payroll.js';
 import { Settings } from './screens/Settings.js';
 import { Teams } from './screens/Teams.js';
 import type { Session } from './session.js';
 import { ROLE_LABELS, errorText } from './texts.js';
 import { AdminContext, type AdminContextValue, isAdmin } from './ui.js';
 
-type Page = 'approvals' | 'members' | 'teams' | 'networks' | 'settings' | 'export' | 'audit';
+type Page =
+  | 'approvals'
+  | 'leave'
+  | 'members'
+  | 'teams'
+  | 'networks'
+  | 'settings'
+  | 'export'
+  | 'payroll'
+  | 'audit';
 
 const PAGES: { id: Page; label: string; adminOnly: boolean }[] = [
   { id: 'approvals', label: 'Freigaben', adminOnly: false },
+  { id: 'leave', label: 'Urlaub', adminOnly: false },
   { id: 'members', label: 'Mitglieder', adminOnly: false },
   { id: 'teams', label: 'Teams', adminOnly: false },
   { id: 'networks', label: 'Firmen-Netze', adminOnly: true },
   { id: 'settings', label: 'Einstellungen', adminOnly: true },
   { id: 'export', label: 'Export', adminOnly: true },
+  { id: 'payroll', label: 'Lohn', adminOnly: true },
   { id: 'audit', label: 'Audit-Log', adminOnly: true },
 ];
 
@@ -230,11 +243,13 @@ function Shell({
       </nav>
       <main id="main" tabIndex={-1}>
         {page === 'approvals' && <Approvals />}
+        {page === 'leave' && <Leave />}
         {page === 'members' && <Members />}
         {page === 'teams' && <Teams />}
         {page === 'networks' && admin && <Networks />}
         {page === 'settings' && admin && <Settings />}
         {page === 'export' && admin && <Export download={download} />}
+        {page === 'payroll' && admin && <Payroll download={download} />}
         {page === 'audit' && admin && <Audit />}
       </main>
       <p role="status" className="live">

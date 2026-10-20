@@ -38,7 +38,51 @@ export const AUDIT_LABELS: Record<string, string> = {
   'approval.reject': 'Monat zurückgewiesen',
   'approval.reopen': 'Freigabe zurückgesetzt',
   'export.create': 'Export erstellt',
+  'leave.request': 'Urlaub/Abbau beantragt',
+  'leave.approve': 'Antrag genehmigt',
+  'leave.reject': 'Antrag abgelehnt',
+  'leave.cancel': 'Antrag storniert',
+  'leave.settings': 'Urlaubseinstellungen geändert',
+  'leave.profile': 'Urlaubsanspruch geändert',
+  'leave.adjust': 'Urlaubskonto gebucht',
+  'overtime.book': 'Überstunden gebucht',
+  'payroll.config': 'Lohn-Einstellungen geändert',
+  'payroll.member': 'Personalnummer geändert',
+  'payroll.export': 'Lohn-Export erstellt',
+  'payroll.credentials': 'Personio-Zugang gespeichert',
+  'payroll.credentials.delete': 'Personio-Zugang entfernt',
+  'payroll.transfer': 'An Personio übertragen',
 };
+
+export const LEAVE_KIND_LABELS = { vacation: 'Urlaub', overtime: 'Überstundenabbau' } as const;
+export const LEAVE_STATUS_LABELS = {
+  pending: 'offen',
+  approved: 'genehmigt',
+  rejected: 'abgelehnt',
+  cancelled: 'storniert',
+} as const;
+export const CALENDAR_KIND_LABELS = {
+  vacation: 'Urlaub',
+  overtime: 'Überstundenabbau',
+  absent: 'abwesend',
+} as const;
+export const BOOKING_KIND_LABELS = {
+  payout: 'Auszahlung',
+  cap: 'Kappung',
+  correction: 'Korrektur',
+} as const;
+export const PAYROLL_FORMAT_LABELS = {
+  datev_lodas: 'DATEV LODAS (ASCII-Import)',
+  datev_lug: 'DATEV Lohn und Gehalt (ASCII-Import)',
+  lexware: 'Lexware lohn+gehalt (Import-ASCII)',
+} as const;
+export const TRANSFER_LABELS = {
+  ok: 'erfolgreich',
+  partial: 'teilweise erfolgreich',
+  failed: 'fehlgeschlagen',
+  transferred: 'übertragen',
+  skipped: 'übersprungen',
+} as const;
 
 export const RULE_LABELS: Record<string, string> = {
   shutdownBonusMin: 'Aufschlag beim Herunterfahren (Minuten)',
@@ -78,6 +122,19 @@ const ERRORS: Record<string, string> = {
   not_found: 'Nicht gefunden.',
   cannot_deactivate_self: 'Das eigene Konto lässt sich hier nicht deaktivieren.',
   reason_required: 'Bitte eine Begründung angeben.',
+  overlapping_request: 'Für diesen Zeitraum gibt es schon einen Antrag oder eine Abwesenheit.',
+  month_locked: 'Der Monat ist freigegeben. Nur ein Admin kann ihn dafür wieder öffnen.',
+  no_workdays: 'Im Zeitraum liegt kein Arbeitstag.',
+  already_started: 'Der Zeitraum hat schon begonnen.',
+  not_pending: 'Der Antrag ist nicht mehr offen.',
+  not_cancellable: 'Der Antrag lässt sich nicht stornieren.',
+  use_own_cancel: 'Eigene Anträge bitte in der App stornieren.',
+  self_booking: 'Buchungen am eigenen Konto sind nicht erlaubt.',
+  managed_by_admin: 'Das pflegt der Admin der Organisation.',
+  nothing_to_export: 'Kein Mitglied mit freigegebenem Monat und Personalnummer.',
+  payroll_config_incomplete:
+    'Lohn-Einstellungen unvollständig (Lohnart bzw. Berater-/Mandantennummer).',
+  personio_not_configured: 'Bitte zuerst den Personio-Zugang hinterlegen.',
 };
 
 export function errorText(err: unknown): string {

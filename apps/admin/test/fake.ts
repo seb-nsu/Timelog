@@ -1,5 +1,12 @@
 // Kleiner In-Memory-Server für die UI-Tests: beantwortet die Aufrufe des API-Clients.
-import type { Approval, Member, Role, Team } from '@timelog/shared';
+import type {
+  Approval,
+  Member,
+  OrgLeaveRequest,
+  PayrollTransfer,
+  Role,
+  Team,
+} from '@timelog/shared';
 import { API_PREFIX } from '@timelog/shared';
 import { Session } from '../src/session.js';
 
@@ -12,6 +19,48 @@ export const ID = {
   device: '66666666-6666-4666-8666-666666666666',
   invitation: '77777777-7777-4777-8777-777777777777',
   audit: '88888888-8888-4888-8888-888888888888',
+  request: '99999999-9999-4999-8999-999999999999',
+  transfer: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+};
+
+const ACCOUNT = {
+  year: 2026,
+  entitlement: 30,
+  correction: 0,
+  carryOver: 3,
+  carryOverManual: false,
+  carryOverUsed: 3,
+  carryOverForfeited: 0,
+  carryOverExpiry: '2026-03-31',
+  taken: 20,
+  planned: 0,
+  pending: 5,
+  remaining: 13,
+  remainingAfterPending: 8,
+};
+const LEAVE_SETTINGS = {
+  defaultAnnualDays: 30,
+  standardWorkdaysPerWeek: 5,
+  carryOverExpiry: '03-31',
+  carryOverExpires: true,
+};
+const OVERTIME = {
+  year: 2026,
+  startBalanceMinutes: 0,
+  months: [
+    {
+      month: '2026-10',
+      workMinutes: 300,
+      bookedMinutes: 0,
+      reducedMinutes: 0,
+      balanceMinutes: 300,
+      overMax: false,
+      approved: false,
+    },
+  ],
+  balanceMinutes: 300,
+  overMax: false,
+  bookings: [],
 };
 
 export const NOW = Date.parse('2026-10-20T10:00:00Z');
@@ -38,6 +87,9 @@ export interface FakeState {
     retentionYears: number;
     rules: Record<string, number>;
   };
+  leaveRequests: OrgLeaveRequest[];
+  personio: { configured: boolean; clientId?: string; updatedAt?: string };
+  transfers: PayrollTransfer[];
 }
 
 const token = (name: string) => ({
@@ -86,6 +138,27 @@ export function fakeServer(over: Partial<FakeState> = {}) {
     ],
     invitations: [],
     config: { name: 'Firma GmbH', slug: 'firma', retentionYears: 2, rules: {} },
+    leaveRequests: [
+      {
+        id: ID.request,
+        userId: ID.anna,
+        name: 'Anna Arbeit',
+        kind: 'vacation',
+        from: '2026-11-02',
+        to: '2026-11-06',
+        halfDayStart: false,
+        halfDayEnd: false,
+        days: 5,
+        minutes: 2400,
+        note: 'Familienbesuch',
+        status: 'pending',
+        createdAt: '2026-10-19T08:00:00Z',
+        history: [],
+        overlaps: [{ name: 'Ben Büro', from: '2026-11-04', to: '2026-11-05' }],
+      },
+    ],
+    personio: { configured: false },
+    transfers: [],
     ...over,
   };
   const calls: Call[] = [];
@@ -140,7 +213,143 @@ export function fakeServer(over: Partial<FakeState> = {}) {
         },
       ];
     }
+    const leaveDecision = /^POST \/org\/leave\/requests\/([^/]+)\/(approve|reject|cancel)$/.exec(m);
+    if (leaveDecision) {
+      const r = state.leaveRequests.find((x) => x.id === leaveDecision[1]);
+      if (!r) return err(404, 'not_found');
+      const status = { approve: 'approved', reject: 'rejected', cancel: 'cancelled' }[
+        leaveDecision[2] as 'approve' | 'reject' | 'cancel'
+      ];
+      state.leaveRequests = state.leaveRequests.filter((x) => x.id !== r.id);
+      const comment = (c.body as { comment?: string }).comment;
+      return [200, { ...r, status, ...(comment ? { decisionComment: comment } : {}) }];
+    }
+    const memberLeave = /^GET \/org\/members\/([^/]+)\/leave$/.exec(m);
+    if (memberLeave) {
+      const who = state.members.find((x) => x.id === memberLeave[1]);
+      return [
+        200,
+        {
+          year: 2026,
+          name: who?.name ?? '?',
+          account: ACCOUNT,
+          requests: [],
+          profile: {},
+          adjustments: [],
+          settings: LEAVE_SETTINGS,
+          managed: true,
+        },
+      ];
+    }
+    if (/^GET \/org\/members\/[^/]+\/overtime$/.test(m)) return [200, OVERTIME];
+    if (/^PUT \/org\/members\/[^/]+\/leave-profile$/.test(m)) return [200, { ok: true }];
+    if (/^POST \/org\/members\/[^/]+\/overtime-bookings$/.test(m)) {
+      return [200, { ...(c.body as object), id: ID.audit, createdAt: '2026-10-20T10:00:00Z' }];
+    }
+    const payrollMember = /^PUT \/org\/payroll\/members\/([^/]+)$/.exec(m);
+    if (payrollMember) {
+      const body = c.body as { personnelNumber?: string | null };
+      const who = state.members.find((x) => x.id === payrollMember[1]);
+      return [
+        200,
+        {
+          userId: payrollMember[1],
+          name: who?.name ?? '?',
+          ...(body.personnelNumber ? { personnelNumber: body.personnelNumber } : {}),
+        },
+      ];
+    }
     switch (m) {
+      case 'GET /org/leave/requests':
+        return [200, { requests: state.leaveRequests }];
+      case 'GET /org/leave/calendar':
+        return [
+          200,
+          {
+            entries: [
+              {
+                userId: ID.anna,
+                name: 'Anna Arbeit',
+                from: '2026-10-05',
+                to: '2026-10-06',
+                kind: 'absent',
+                pending: false,
+              },
+            ],
+          },
+        ];
+      case 'GET /org/leave/settings':
+      case 'PUT /org/leave/settings':
+        return [200, LEAVE_SETTINGS];
+      case 'GET /leave':
+        return [
+          200,
+          {
+            year: 2026,
+            account: ACCOUNT,
+            requests: [],
+            profile: {},
+            adjustments: [],
+            settings: LEAVE_SETTINGS,
+            managed: true,
+          },
+        ];
+      case 'GET /org/payroll/config':
+      case 'PUT /org/payroll/config':
+        return [
+          200,
+          {
+            datev: { wageTypes: {}, absenceCodes: {} },
+            lexware: { wageTypes: {} },
+            personio: { skipApproval: true, matchBy: 'email' },
+            ...(c.method === 'PUT' && typeof c.body === 'object' ? c.body : {}),
+          },
+        ];
+      case 'GET /org/payroll/members':
+        return [
+          200,
+          {
+            members: state.members.map((x) => ({
+              userId: x.id,
+              name: x.name,
+              ...(x.email ? { email: x.email } : {}),
+            })),
+          },
+        ];
+      case 'GET /org/payroll/export':
+        return [200, 'Jahr;Monat;Personalnummer;Lohnartnummer;Wert'];
+      case 'GET /org/payroll/personio':
+        return [200, state.personio];
+      case 'PUT /org/payroll/personio':
+        state.personio = {
+          configured: true,
+          clientId: (c.body as { clientId: string }).clientId,
+          updatedAt: '2026-10-20T10:00:00Z',
+        };
+        return [200, state.personio];
+      case 'GET /org/payroll/transfers':
+        return [200, { transfers: state.transfers }];
+      case 'POST /org/payroll/personio/transfer': {
+        const t = {
+          id: ID.transfer,
+          month: (c.body as { month: string }).month,
+          createdAt: '2026-10-20T10:00:00Z',
+          actorName: 'Alex Admin',
+          status: 'partial' as const,
+          members: [
+            { userId: ID.anna, name: 'Anna Arbeit', status: 'transferred' as const, periods: 40 },
+            {
+              userId: ID.admin,
+              name: 'Alex Admin',
+              status: 'skipped' as const,
+              periods: 0,
+              message: 'Monat nicht freigegeben',
+            },
+          ],
+        };
+        state.transfers = [t];
+        return [200, t];
+      }
       case 'POST /auth/login': {
         const body = c.body as { totp?: string };
         if (state.loginNeedsTotp && !body.totp) return err(401, 'totp_required');
