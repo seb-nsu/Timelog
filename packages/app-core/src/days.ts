@@ -17,6 +17,7 @@ import {
   localDate,
   resolveConfig,
 } from '@timelog/rules';
+import type { ReminderSettings } from './reminders.js';
 
 /** Ereignis, wie es der Client lokal speichert (ohne userId/deviceId). */
 export interface LocalEvent {
@@ -50,6 +51,8 @@ export interface Profile {
   timezone: string;
   targetSchedule?: TargetSchedule[];
   absences?: Absence[];
+  /** Erinnerungen und Ruhezeit aus den Kontoeinstellungen. */
+  reminders?: ReminderSettings;
 }
 
 const LOCAL_DEVICE = 'local';
