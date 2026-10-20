@@ -61,6 +61,28 @@ import {
   teamSchema,
   teamsResponse,
 } from './org.js';
+import {
+  type orgFeaturesUpdate,
+  type orgProjectInput,
+  type orgProjectUpdate,
+  type projectAssignmentInput,
+  type projectInput,
+  type projectUpdate,
+  calendarConnectResponse,
+  calendarStatusResponse,
+  calendarSyncResponse,
+  dayLocationSchema,
+  dayProjectsResponse,
+  locationsResponse,
+  orgFeatures,
+  orgHomeOfficeResponse,
+  projectReportResponse,
+  projectSchema,
+  projectsResponse,
+  suggestionsResponse,
+} from './extras.js';
+import type { CalendarProviderId } from './extras.js';
+import type { networkUpdate } from './schemas.js';
 
 export const API_PREFIX = '/api/v1';
 
@@ -188,6 +210,51 @@ export function createApiClient(options: ApiClientOptions) {
       put: (body: z.input<typeof networksUpdate>) => call('PUT', '/networks', okResponse, body),
       add: (body: z.input<typeof networkInput>) => call('POST', '/networks', networkResponse, body),
       remove: (id: string) => call('DELETE', `/networks/${encodeURIComponent(id)}`, okResponse),
+      update: (id: string, body: z.input<typeof networkUpdate>) =>
+        call('PATCH', `/networks/${enc(id)}`, networkResponse, body),
+    },
+    /** Projekte und Tätigkeiten. */
+    projects: {
+      list: () => call('GET', '/projects', projectsResponse),
+      create: (body: z.input<typeof projectInput>) =>
+        call('POST', '/projects', projectSchema, body),
+      update: (id: string, body: z.input<typeof projectUpdate>) =>
+        call('PATCH', `/projects/${enc(id)}`, projectSchema, body),
+      day: (date: string) => call('GET', `/days/${date}/projects`, dayProjectsResponse),
+      assign: (date: string, body: z.input<typeof projectAssignmentInput>) =>
+        call('POST', `/days/${date}/projects`, dayProjectsResponse, body),
+      report: (q: { from: string; to: string }) =>
+        call('GET', '/projects/report', projectReportResponse, undefined, range(q)),
+      /** CSV oder PDF je Projekt und Tag (Blob). */
+      export: async (q: { from: string; to: string; format: 'csv' | 'pdf' }) =>
+        (
+          await send('GET', '/projects/export', undefined, { ...range(q), format: q.format })
+        ).blob(),
+    },
+    /** Tagesort und Homeoffice-Nachweis. */
+    locations: {
+      year: (year: number) => call('GET', '/locations', locationsResponse, undefined, { year }),
+      set: (date: string, location: 'office' | 'home' | 'other' | null) =>
+        call('PUT', `/days/${date}/location`, dayLocationSchema, { location }),
+      export: async (q: { year: number; format: 'csv' | 'pdf' }) =>
+        (await send('GET', '/locations/export', undefined, q)).blob(),
+    },
+    /** Kalender-Anbindung (nur lesend). */
+    calendar: {
+      status: () => call('GET', '/calendar', calendarStatusResponse),
+      connect: (provider: CalendarProviderId, redirect?: string) =>
+        call(
+          'POST',
+          `/calendar/${provider}/connect`,
+          calendarConnectResponse,
+          redirect ? { redirect } : {},
+        ),
+      sync: (provider: CalendarProviderId) =>
+        call('POST', `/calendar/${provider}/sync`, calendarSyncResponse, {}),
+      disconnect: (provider: CalendarProviderId) =>
+        call('DELETE', `/calendar/${provider}`, okResponse),
+      suggestions: (q: { from: string; to: string }) =>
+        call('GET', '/calendar/suggestions', suggestionsResponse, undefined, range(q)),
     },
     targetHours: {
       get: () => call('GET', '/target-hours', targetHoursResponse),
@@ -300,6 +367,27 @@ export function createApiClient(options: ApiClientOptions) {
             ...(q.teamId ? { teamId: q.teamId } : {}),
           })
         ).blob(),
+      features: {
+        get: () => call('GET', '/org/features', orgFeatures),
+        put: (body: z.input<typeof orgFeaturesUpdate>) =>
+          call('PUT', '/org/features', orgFeatures, body),
+      },
+      projects: {
+        list: () => call('GET', '/org/projects', projectsResponse),
+        create: (body: z.input<typeof orgProjectInput>) =>
+          call('POST', '/org/projects', projectSchema, body),
+        update: (id: string, body: z.input<typeof orgProjectUpdate>) =>
+          call('PATCH', `/org/projects/${enc(id)}`, projectSchema, body),
+        report: (q: { from: string; to: string; teamId?: string }) =>
+          call('GET', '/org/projects/report', projectReportResponse, undefined, {
+            ...range(q),
+            ...(q.teamId ? { teamId: q.teamId } : {}),
+          }),
+      },
+      updateNetwork: (id: string, body: z.input<typeof networkUpdate>) =>
+        call('PATCH', `/org/networks/${enc(id)}`, networkResponse, body),
+      homeOffice: (year: number) =>
+        call('GET', '/org/home-office', orgHomeOfficeResponse, undefined, { year }),
       audit: (q: { limit?: number; before?: string } = {}) =>
         call('GET', '/org/audit', auditResponse, undefined, {
           limit: q.limit ?? 50,

@@ -341,6 +341,8 @@ export const settingsSchema = z.object({
   /** Privatversion ohne Synchronisation. */
   localOnly: z.boolean().default(false),
   personnelNumber: z.string().max(50).optional(),
+  /** Projekte und Tätigkeiten (Privatkonto; bei Firmenkonten schaltet der Admin). */
+  projects: z.boolean().default(false),
 });
 export type Settings = z.infer<typeof settingsSchema>;
 
@@ -360,9 +362,18 @@ export const settingsUpdate = z.object({
 
 // ── Arbeitsnetze ──────────────────────────────────────────────────────────────
 
+/** Ort eines Arbeitsnetzes für den Homeoffice-Nachweis. */
+export const networkLocation = z.enum(['office', 'home', 'other']);
+const networkExtras = {
+  location: networkLocation.default('office'),
+  /** Standardprojekt für Arbeitszeit in diesem Netz (Automatik-Regel) */
+  defaultProjectId: z.uuid().nullable().optional(),
+};
+
 /** Klartext-Kennungen gehen nur beim Hinterlegen an den Server und werden dort als HMAC gespeichert. */
 export const networkInput = z.discriminatedUnion('kind', [
   z.object({
+    ...networkExtras,
     kind: z.literal('ssid'),
     label: z.string().min(1).max(100),
     ssid: z.string().min(1).max(64),
@@ -372,11 +383,13 @@ export const networkInput = z.discriminatedUnion('kind', [
       .optional(),
   }),
   z.object({
+    ...networkExtras,
     kind: z.literal('fingerprint'),
     label: z.string().min(1).max(100),
     fingerprint: z.string().min(8).max(512),
   }),
   z.object({
+    ...networkExtras,
     kind: z.literal('geofence'),
     label: z.string().min(1).max(100),
     lat: z.number().min(-90).max(90),
@@ -389,12 +402,20 @@ export const networksUpdate = z.object({
   networks: z.array(networkInput).max(MAX_USER_NETWORKS),
 });
 export const networkParams = z.object({ id: z.uuid() });
+/** Ort, Bezeichnung und Standardprojekt eines Netzes ändern (Kennungen bleiben). */
+export const networkUpdate = z.object({
+  label: z.string().min(1).max(100).optional(),
+  location: networkLocation.optional(),
+  defaultProjectId: z.uuid().nullable().optional(),
+});
 
 export const networkResponse = z.object({
   id: z.uuid(),
   scope: z.enum(['user', 'org']),
   kind: z.enum(['ssid', 'fingerprint', 'geofence']),
   label: z.string(),
+  location: networkLocation.default('office'),
+  defaultProjectId: z.uuid().optional(),
   ssid: z.string().optional(),
   bssidHmac: z.string().optional(),
   fingerprintHmac: z.string().optional(),
