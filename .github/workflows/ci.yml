@@ -26,8 +26,12 @@ jobs:
       - run: pnpm test
 
   rust:
-    name: Desktop (Rust)
-    runs-on: ubuntu-latest
+    name: Desktop (Rust, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     defaults:
       run:
         working-directory: apps/desktop/src-tauri
@@ -39,6 +43,7 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - name: Systembibliotheken für Tauri (Linux)
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev
@@ -54,5 +59,6 @@ jobs:
       - run: pnpm turbo run build --filter @timelog/desktop
         working-directory: .
       - run: cargo fmt --all --check
+        if: runner.os == 'Linux'
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo test --workspace --locked
