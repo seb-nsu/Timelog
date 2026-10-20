@@ -22,7 +22,7 @@ import {
 } from '../db/schema.js';
 import { renderPdf } from '../export/pdf.js';
 import { verifyPassword } from '../security/password.js';
-import { computeUserDays } from './days.js';
+import { loadDays } from './days.js';
 import { toStoredEvent } from './events.js';
 import { authOf, scopeOf } from './guard.js';
 
@@ -35,7 +35,7 @@ const STATUS_DE: Record<WorkDay['status'], string> = {
   confirmed: 'bestätigt',
 };
 
-const CSV_HEADER = [
+export const CSV_HEADER = [
   'Personalnummer',
   'Datum',
   'Beginn',
@@ -49,7 +49,7 @@ const CSV_HEADER = [
   'Warnungen',
 ];
 
-function exportRows(days: WorkDay[], tz: string, personnelNumber: string): string[][] {
+export function exportRows(days: WorkDay[], tz: string, personnelNumber: string): string[][] {
   const time = (iso: string | undefined, date: string) => {
     if (!iso) return '';
     const ms = Date.parse(iso);
@@ -70,7 +70,7 @@ function exportRows(days: WorkDay[], tz: string, personnelNumber: string): strin
   ]);
 }
 
-function csvCell(v: string): string {
+export function csvCell(v: string): string {
   return /[";\n\r]/.test(v) ? `"${v.replaceAll('"', '""')}"` : v;
 }
 
@@ -114,7 +114,7 @@ export function privacyRoutes(app: App, ctx: AppContext): void {
       const { days, timezone, user } = await withUser(ctx.db, scopeOf(claims), async (tx) => {
         const [u] = await tx.select().from(users).where(eq(users.id, claims.sub));
         if (!u) throw new HttpError(401, 'unauthorized');
-        return { ...(await computeUserDays(tx, claims.sub, from, to, ctx.now())), user: u };
+        return { ...(await loadDays(tx, claims.sub, from, to, ctx.now())), user: u };
       });
       const settings = z
         .object({ personnelNumber: z.string().optional() })

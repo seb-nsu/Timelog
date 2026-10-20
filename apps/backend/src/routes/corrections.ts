@@ -9,10 +9,10 @@ import {
 } from '@timelog/shared';
 import { and, eq } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
+import type { z } from 'zod';
 import { type App, type AppContext, HttpError } from '../app.js';
 import { type Tx, withUser } from '../db/index.js';
 import { approvals, corrections, events, users } from '../db/schema.js';
-import type { AccessClaims } from '../security/jwt.js';
 import { computeUserDays } from './days.js';
 import { authOf, scopeOf } from './guard.js';
 
@@ -29,7 +29,7 @@ async function loadUser(tx: Tx, userId: string): Promise<User> {
 }
 
 /** Freigegebene Monate sind gesperrt (Snapshot). */
-async function assertMonthOpen(tx: Tx, userId: string, date: string): Promise<void> {
+export async function assertMonthOpen(tx: Tx, userId: string, date: string): Promise<void> {
   const [row] = await tx
     .select({ status: approvals.status })
     .from(approvals)
@@ -50,9 +50,15 @@ interface NewEvent {
   refEventId?: string;
 }
 
+/** Wer das Ereignis erzeugt: Nutzer und Gerät aus dem Token. */
+interface Origin {
+  sub: string;
+  did: string;
+}
+
 async function insertUserEvent(
   tx: Tx,
-  claims: AccessClaims,
+  claims: Origin,
   tz: string,
   now: Date,
   e: NewEvent,
@@ -74,6 +80,77 @@ async function insertUserEvent(
   return id;
 }
 
+export interface CorrectionInput {
+  /** Nutzer, dessen Tag korrigiert wird. */
+  userId: string;
+  /** Gerät des Akteurs (aus dessen Token). */
+  deviceId: string;
+  authorId: string;
+  timezone: string;
+  date: string;
+  body: z.infer<typeof correctionRequest>;
+  nowMs: number;
+}
+
+/**
+ * Legt das passende manual_*-Ereignis und die corrections-Zeile an und liefert den neu berechneten Tag.
+ * Die Prüfung, ob der Monat gesperrt ist, liegt beim Aufrufer.
+ */
+export async function applyCorrection(
+  tx: Tx,
+  input: CorrectionInput,
+): Promise<z.infer<typeof correctionResponse>> {
+  const { userId, date, body, timezone, nowMs } = input;
+  const now = new Date(nowMs);
+  const dayStart = startOfLocalDay(date, timezone);
+  const dayEnd = startOfLocalDay(addDays(date, 1), timezone);
+  const inRange = (ms: number) => ms >= dayStart - DAY_MS && ms <= dayEnd + DAY_MS;
+
+  const before = (await computeUserDays(tx, userId, date, date, nowMs)).days[0];
+  let event: NewEvent;
+  let oldValue: string | null = null;
+  let newValue: string;
+  if (body.field === 'start' || body.field === 'end') {
+    const ts = new Date(body.time);
+    if (!inRange(ts.getTime())) throw new HttpError(400, 'out_of_range');
+    event = { type: body.field === 'start' ? 'manual_start' : 'manual_end', ts };
+    oldValue = (body.field === 'start' ? before?.start : before?.end) ?? null;
+    newValue = ts.toISOString();
+  } else {
+    const from = new Date(body.from);
+    const to = new Date(body.to);
+    if (to <= from) throw new HttpError(400, 'invalid_range');
+    if (!inRange(from.getTime()) || !inRange(to.getTime()))
+      throw new HttpError(400, 'out_of_range');
+    event = {
+      type: body.field === 'break' ? 'manual_break' : 'manual_work',
+      ts: from,
+      endTs: to,
+    };
+    newValue = `${from.toISOString()}/${to.toISOString()}`;
+  }
+
+  const eventId = await insertUserEvent(
+    tx,
+    { sub: userId, did: input.deviceId },
+    timezone,
+    now,
+    event,
+  );
+  await tx.insert(corrections).values({
+    userId,
+    date,
+    eventId,
+    field: body.field,
+    oldValue,
+    newValue,
+    reason: body.reason ?? null,
+    authorId: input.authorId,
+  });
+  const after = (await computeUserDays(tx, userId, date, date, nowMs)).days[0];
+  return after ? { eventId, day: after } : { eventId };
+}
+
 export function correctionRoutes(app: App, ctx: AppContext): void {
   app.patch(
     '/days/:date',
@@ -92,53 +169,19 @@ export function correctionRoutes(app: App, ctx: AppContext): void {
       const claims = authOf(request);
       const { date } = request.params;
       const body = request.body;
-      const now = new Date(ctx.now());
       return withUser(ctx.db, scopeOf(claims), async (tx) => {
         const user = await loadUser(tx, claims.sub);
         if (user.orgId && !body.reason) throw new HttpError(400, 'reason_required');
         await assertMonthOpen(tx, claims.sub, date);
-
-        const dayStart = startOfLocalDay(date, user.timezone);
-        const dayEnd = startOfLocalDay(addDays(date, 1), user.timezone);
-        const inRange = (ms: number) => ms >= dayStart - DAY_MS && ms <= dayEnd + DAY_MS;
-
-        const before = (await computeUserDays(tx, claims.sub, date, date, ctx.now())).days[0];
-        let event: NewEvent;
-        let oldValue: string | null = null;
-        let newValue: string;
-        if (body.field === 'start' || body.field === 'end') {
-          const ts = new Date(body.time);
-          if (!inRange(ts.getTime())) throw new HttpError(400, 'out_of_range');
-          event = { type: body.field === 'start' ? 'manual_start' : 'manual_end', ts };
-          oldValue = (body.field === 'start' ? before?.start : before?.end) ?? null;
-          newValue = ts.toISOString();
-        } else {
-          const from = new Date(body.from);
-          const to = new Date(body.to);
-          if (to <= from) throw new HttpError(400, 'invalid_range');
-          if (!inRange(from.getTime()) || !inRange(to.getTime()))
-            throw new HttpError(400, 'out_of_range');
-          event = {
-            type: body.field === 'break' ? 'manual_break' : 'manual_work',
-            ts: from,
-            endTs: to,
-          };
-          newValue = `${from.toISOString()}/${to.toISOString()}`;
-        }
-
-        const eventId = await insertUserEvent(tx, claims, user.timezone, now, event);
-        await tx.insert(corrections).values({
+        return applyCorrection(tx, {
           userId: claims.sub,
-          date,
-          eventId,
-          field: body.field,
-          oldValue,
-          newValue,
-          reason: body.reason ?? null,
+          deviceId: claims.did,
           authorId: claims.sub,
+          timezone: user.timezone,
+          date,
+          body,
+          nowMs: ctx.now(),
         });
-        const after = (await computeUserDays(tx, claims.sub, date, date, ctx.now())).days[0];
-        return after ? { eventId, day: after } : { eventId };
       });
     },
   );

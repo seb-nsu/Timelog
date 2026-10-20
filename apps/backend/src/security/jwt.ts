@@ -10,6 +10,8 @@ const claimsSchema = z.object({
   org: z.uuid().nullable(),
   role: z.enum(['user', 'manager', 'admin']),
   mfa: z.boolean(),
+  /** Anmeldung über SSO (ersetzt TOTP für Manager und Admins). */
+  sso: z.boolean().optional(),
 });
 
 export type AccessClaims = z.infer<typeof claimsSchema>;

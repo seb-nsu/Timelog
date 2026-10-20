@@ -1,7 +1,7 @@
 import type { TokenResponse } from '@timelog/shared';
 import { randomUUID } from 'node:crypto';
 import { inject } from 'vitest';
-import { type App, buildApp } from '../src/app.js';
+import { type App, type AppOptions, buildApp } from '../src/app.js';
 import { type Database, createDatabase } from '../src/db/index.js';
 import { MemoryMailer } from '../src/mailer.js';
 
@@ -15,7 +15,10 @@ export interface TestEnv {
   close: () => Promise<void>;
 }
 
-export async function createTestEnv(limits = { auth: 1000, device: 1000 }): Promise<TestEnv> {
+export async function createTestEnv(
+  limits = { auth: 1000, device: 1000 },
+  extra: Partial<AppOptions> = {},
+): Promise<TestEnv> {
   const database = createDatabase(inject('databaseUrl'));
   const mailer = new MemoryMailer();
   const clock = { now: Date.parse('2026-10-15T07:00:00Z') };
@@ -29,6 +32,7 @@ export async function createTestEnv(limits = { auth: 1000, device: 1000 }): Prom
     logLevel: 'silent',
     now: () => clock.now,
     limits,
+    ...extra,
   });
   await app.ready();
   return {

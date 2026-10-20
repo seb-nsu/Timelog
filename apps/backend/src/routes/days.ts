@@ -12,13 +12,20 @@ import {
   localDate,
   resolveConfig,
 } from '@timelog/rules';
-import { daysQuery, daysResponse, statusResponse } from '@timelog/shared';
+import {
+  daysQuery,
+  daysResponse,
+  orgRulesConfig,
+  statusResponse,
+  workDaySchema,
+} from '@timelog/shared';
 import { and, eq, gte, lte } from 'drizzle-orm';
 import { z } from 'zod';
 import type { App, AppContext } from '../app.js';
 import { type Tx, withUser } from '../db/index.js';
 import {
   absences,
+  approvals,
   devices,
   events,
   organizations,
@@ -32,20 +39,6 @@ import { toStoredEvent } from './events.js';
 const security = [{ bearer: [] }];
 /** Vorlauf für Neustarts, Sitzungen über Mitternacht und den 24-Wochen-Durchschnitt. */
 const LOOKBACK_DAYS = 24 * 7 + 2;
-
-/** Regelwerk-Parameter der Organisation; nur bekannte Zahlenwerte werden übernommen. */
-const orgRulesConfig = z
-  .object({
-    shutdownBonusMin: z.number().int().min(0).max(30),
-    restartWindowMin: z.number().int().min(0).max(120),
-    updateRestartWindowMin: z.number().int().min(0).max(240),
-    netGraceMin: z.number().int().min(0).max(60),
-    standbyBreakMin: z.number().int().min(1).max(120),
-    maxStandbyMin: z.number().int().min(15).max(720),
-    maxBreakMin: z.number().int().min(15).max(720),
-    maxSessionH: z.number().int().min(1).max(24),
-  })
-  .partial();
 
 function buildSchedule(rows: (typeof targetHours.$inferSelect)[]): TargetSchedule[] | undefined {
   if (rows.length === 0) return undefined;
@@ -134,6 +127,62 @@ export async function computeUserDays(
   return { days: days.filter((d) => d.date >= from && d.date <= to), timezone: user.timezone };
 }
 
+/** Monate (JJJJ-MM) zwischen zwei Daten, jeweils einschließlich. */
+export function monthsBetween(from: string, to: string): string[] {
+  const out: string[] = [];
+  let [y, m] = [Number(from.slice(0, 4)), Number(from.slice(5, 7))];
+  const end = to.slice(0, 7);
+  for (;;) {
+    const month = `${String(y)}-${String(m).padStart(2, '0')}`;
+    if (month > end) break;
+    out.push(month);
+    m += 1;
+    if (m > 12) {
+      m = 1;
+      y += 1;
+    }
+  }
+  return out;
+}
+
+const snapshotSchema = z.array(workDaySchema);
+
+/**
+ * Arbeitstage wie computeUserDays, aber freigegebene Monate kommen unverändert aus dem Snapshot
+ * und werden nie neu berechnet.
+ */
+export async function loadDays(
+  tx: Tx,
+  userId: string,
+  from: string,
+  to: string,
+  nowMs: number,
+): Promise<Computed & { approvedMonths: string[] }> {
+  const months = monthsBetween(from, to);
+  const rows = await tx
+    .select({ month: approvals.month, snapshot: approvals.snapshot })
+    .from(approvals)
+    .where(
+      and(
+        eq(approvals.userId, userId),
+        eq(approvals.status, 'approved'),
+        gte(approvals.month, months[0] ?? ''),
+        lte(approvals.month, months[months.length - 1] ?? ''),
+      ),
+    );
+  const frozen = new Map<string, WorkDay[]>();
+  for (const r of rows) {
+    const parsed = snapshotSchema.safeParse(r.snapshot);
+    if (parsed.success) frozen.set(r.month, parsed.data);
+  }
+  const computed = await computeUserDays(tx, userId, from, to, nowMs);
+  if (frozen.size === 0) return { ...computed, approvedMonths: [] };
+  const live = computed.days.filter((d) => !frozen.has(d.date.slice(0, 7)));
+  const fromSnapshots = [...frozen.values()].flat().filter((d) => d.date >= from && d.date <= to);
+  const days = [...live, ...fromSnapshots].sort((a, b) => a.date.localeCompare(b.date));
+  return { days, timezone: computed.timezone, approvedMonths: [...frozen.keys()].sort() };
+}
+
 export function daysRoutes(app: App, ctx: AppContext): void {
   app.get(
     '/days',
@@ -141,7 +190,8 @@ export function daysRoutes(app: App, ctx: AppContext): void {
       schema: {
         tags: ['days'],
         security,
-        description: 'Berechnete Arbeitstage im Zeitraum (höchstens 93 Tage).',
+        description:
+          'Berechnete Arbeitstage im Zeitraum (höchstens 93 Tage); freigegebene Monate als Snapshot.',
         querystring: daysQuery,
         response: { 200: daysResponse },
       },
@@ -149,7 +199,7 @@ export function daysRoutes(app: App, ctx: AppContext): void {
     async (request) => {
       const claims = authOf(request);
       const { days } = await withUser(ctx.db, scopeOf(claims), (tx) =>
-        computeUserDays(tx, claims.sub, request.query.from, request.query.to, ctx.now()),
+        loadDays(tx, claims.sub, request.query.from, request.query.to, ctx.now()),
       );
       return { days, balanceMinutes: computeBalance(days) };
     },
