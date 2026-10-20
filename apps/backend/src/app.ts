@@ -19,6 +19,7 @@ import {
 import { API_PREFIX } from '@timelog/shared';
 import { sql } from 'drizzle-orm';
 import type { Db } from './db/index.js';
+import { logSerializers } from './log.js';
 import type { Mailer } from './mailer.js';
 import { RateLimiter } from './rate-limit.js';
 import { authRoutes } from './routes/auth.js';
@@ -102,6 +103,7 @@ export async function buildApp(options: AppOptions): Promise<App> {
       level: options.logLevel ?? 'info',
       // Keine personenbezogenen Inhalte: Bodies werden nie geloggt, Tokens geschwärzt.
       redact: ['req.headers.authorization', 'req.headers.cookie'],
+      serializers: logSerializers,
     },
   }).withTypeProvider<ZodTypeProvider>();
 
