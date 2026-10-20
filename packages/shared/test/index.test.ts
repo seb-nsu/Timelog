@@ -90,4 +90,28 @@ describe('API-Client', () => {
     });
     await expect(client.status()).rejects.toBeInstanceOf(ApiError);
   });
+
+  it('lädt den Export als Blob und meldet Fehler ohne JSON-Körper', async () => {
+    const urls: string[] = [];
+    const client = createApiClient({
+      baseUrl: 'https://api.example',
+      fetch: ((url: URL) => {
+        urls.push(url.toString());
+        return Promise.resolve(
+          url.pathname.endsWith('/export')
+            ? new Response('%PDF-1.4', {
+                status: 200,
+                headers: { 'content-type': 'application/pdf' },
+              })
+            : new Response('Bad Gateway', { status: 502 }),
+        );
+      }) as typeof fetch,
+    });
+    const blob = await client.export({ from: '2026-10-01', to: '2026-10-31', format: 'pdf' });
+    expect(await blob.text()).toBe('%PDF-1.4');
+    expect(urls[0]).toBe(
+      'https://api.example/api/v1/export?from=2026-10-01&to=2026-10-31&format=pdf',
+    );
+    await expect(client.holidays(2026)).rejects.toMatchObject({ status: 502, code: 'http_error' });
+  });
 });

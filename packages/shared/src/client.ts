@@ -7,14 +7,27 @@ import {
   type LoginRequest,
   type PresenceRequest,
   type RegisterRequest,
+  type absencesUpdate,
+  type correctionRequest,
+  type networksUpdate,
+  type settingsUpdate,
+  type targetHoursUpdate,
+  absencesResponse,
+  confirmResponse,
+  correctionResponse,
   daysResponse,
+  deleteAccountResponse,
   deviceResponse,
   errorResponse,
   eventBatchResponse,
   eventPage,
+  holidaysResponse,
+  networksResponse,
   okResponse,
   presencePage,
+  settingsResponse,
   statusResponse,
+  targetHoursResponse,
   tokenResponse,
   totpSetupResponse,
 } from './schemas.js';
@@ -44,13 +57,12 @@ type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 export function createApiClient(options: ApiClientOptions) {
   const doFetch = options.fetch ?? fetch;
 
-  async function call<S extends z.ZodType>(
+  async function send(
     method: Method,
     path: string,
-    schema: S,
     body?: unknown,
     query?: Record<string, string | number>,
-  ): Promise<z.infer<S>> {
+  ): Promise<Response> {
     const url = new URL(API_PREFIX + path, options.baseUrl);
     for (const [k, v] of Object.entries(query ?? {})) url.searchParams.set(k, String(v));
     const headers: Record<string, string> = {};
@@ -60,9 +72,14 @@ export function createApiClient(options: ApiClientOptions) {
     const init: RequestInit = { method, headers };
     if (body !== undefined) init.body = JSON.stringify(body);
     const res = await doFetch(url, init);
-    const text = await res.text();
-    const json: unknown = text ? JSON.parse(text) : undefined;
     if (!res.ok) {
+      const text = await res.text();
+      let json: unknown;
+      try {
+        json = text ? JSON.parse(text) : undefined;
+      } catch {
+        json = undefined;
+      }
       const err = errorResponse.safeParse(json);
       throw new ApiError(
         res.status,
@@ -70,8 +87,21 @@ export function createApiClient(options: ApiClientOptions) {
         err.success ? err.data.message : undefined,
       );
     }
-    return schema.parse(json);
+    return res;
   }
+
+  async function call<S extends z.ZodType>(
+    method: Method,
+    path: string,
+    schema: S,
+    body?: unknown,
+    query?: Record<string, string | number>,
+  ): Promise<z.infer<S>> {
+    const text = await (await send(method, path, body, query)).text();
+    return schema.parse(text ? JSON.parse(text) : undefined);
+  }
+
+  const range = (q: { from: string; to: string }) => ({ from: q.from, to: q.to });
 
   return {
     auth: {
@@ -107,6 +137,42 @@ export function createApiClient(options: ApiClientOptions) {
     days: (q: DaysQuery) =>
       call('GET', '/days', daysResponse, undefined, { from: q.from, to: q.to }),
     status: () => call('GET', '/status', statusResponse),
+    corrections: {
+      correct: (date: string, body: z.input<typeof correctionRequest>) =>
+        call('PATCH', `/days/${date}`, correctionResponse, body),
+      confirmDay: (date: string) => call('POST', `/days/${date}/confirm`, confirmResponse, {}),
+      confirmSession: (id: string) =>
+        call('POST', `/sessions/${encodeURIComponent(id)}/confirm`, confirmResponse, {}),
+      rejectSession: (id: string) =>
+        call('POST', `/sessions/${encodeURIComponent(id)}/reject`, confirmResponse, {}),
+    },
+    settings: {
+      get: () => call('GET', '/settings', settingsResponse),
+      put: (body: z.input<typeof settingsUpdate>) =>
+        call('PUT', '/settings', settingsResponse, body),
+    },
+    networks: {
+      get: () => call('GET', '/networks', networksResponse),
+      put: (body: z.input<typeof networksUpdate>) => call('PUT', '/networks', okResponse, body),
+    },
+    targetHours: {
+      get: () => call('GET', '/target-hours', targetHoursResponse),
+      put: (body: z.input<typeof targetHoursUpdate>) =>
+        call('PUT', '/target-hours', okResponse, body),
+    },
+    absences: {
+      list: (q: { from: string; to: string }) =>
+        call('GET', '/absences', absencesResponse, undefined, range(q)),
+      put: (body: z.input<typeof absencesUpdate>) => call('PUT', '/absences', okResponse, body),
+    },
+    holidays: (year: number) => call('GET', '/holidays', holidaysResponse, undefined, { year }),
+    /** CSV oder PDF als Blob. */
+    export: async (q: { from: string; to: string; format: 'csv' | 'pdf' }) =>
+      (await send('GET', '/export', undefined, { ...range(q), format: q.format })).blob(),
+    me: {
+      export: async (): Promise<unknown> => (await send('GET', '/me/export')).json(),
+      delete: (password: string) => call('DELETE', '/me', deleteAccountResponse, { password }),
+    },
   };
 }
 
