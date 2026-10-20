@@ -22,6 +22,9 @@ import type { Db } from './db/index.js';
 import type { Mailer } from './mailer.js';
 import { RateLimiter } from './rate-limit.js';
 import { authRoutes } from './routes/auth.js';
+import { correctionRoutes } from './routes/corrections.js';
+import { privacyRoutes } from './routes/privacy.js';
+import { profileRoutes } from './routes/profile.js';
 import { daysRoutes } from './routes/days.js';
 import { deviceRoutes } from './routes/devices.js';
 import { eventRoutes } from './routes/events.js';
@@ -42,6 +45,7 @@ export interface AppOptions {
   mailer: Mailer;
   jwtSecret: string;
   totpKey: Buffer;
+  networkSecret: string;
   appUrl: string;
   logLevel?: string;
   trustProxy?: boolean;
@@ -56,6 +60,7 @@ export interface AppContext {
   mailer: Mailer;
   signer: TokenSigner;
   totpKey: Buffer;
+  networkSecret: string;
   appUrl: string;
   now: () => number;
   limiter: RateLimiter;
@@ -110,6 +115,7 @@ export async function buildApp(options: AppOptions): Promise<App> {
     mailer: options.mailer,
     signer: new TokenSigner(options.jwtSecret),
     totpKey: options.totpKey,
+    networkSecret: options.networkSecret,
     appUrl: options.appUrl,
     now,
     limiter: new RateLimiter(now),
@@ -175,6 +181,9 @@ export async function buildApp(options: AppOptions): Promise<App> {
         deviceRoutes(scope, ctx);
         eventRoutes(scope, ctx);
         daysRoutes(scope, ctx);
+        correctionRoutes(scope, ctx);
+        profileRoutes(scope, ctx);
+        privacyRoutes(scope, ctx);
         done();
       });
     },

@@ -10,6 +10,7 @@ export async function generateOpenApi(): Promise<string> {
     mailer: new MemoryMailer(),
     jwtSecret: 'x'.repeat(32),
     totpKey: Buffer.alloc(32),
+    networkSecret: 'n'.repeat(32),
     appUrl: 'http://localhost',
     logLevel: 'silent',
   });
