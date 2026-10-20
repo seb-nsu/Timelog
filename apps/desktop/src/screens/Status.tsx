@@ -1,0 +1,74 @@
+import { formatBalance, formatClock, formatMinutes, todaySummary } from '@timelog/app-core';
+import { computeBalance, type WorkDay } from '@timelog/rules';
+import { useEffect } from 'react';
+import type { AppState } from '../backend.js';
+import { useBackend, useT } from '../context.js';
+
+export function SyncLine({ state }: { state: AppState }) {
+  const { t } = useT();
+  if (state.sync.state === 'needsLogin') return <span>{t('sync.needsLogin')}</span>;
+  if (state.sync.state === 'offline') return <span>{t('sync.offline')}</span>;
+  if (state.pending > 0) return <span>{t('sync.pending', { count: state.pending })}</span>;
+  return <span>{t('sync.ok')}</span>;
+}
+
+export function Status({ state, days, now }: { state: AppState; days: WorkDay[]; now: string }) {
+  const backend = useBackend();
+  const { t } = useT();
+  const tz = state.tracker.timezone;
+  const summary = todaySummary(days, now, tz);
+  const month = summary.date.slice(0, 7);
+  const balance = computeBalance(
+    days.filter((d) => d.date.startsWith(month) && d.date <= summary.date),
+  );
+  const net = formatMinutes(summary.netMinutes);
+  const since = summary.since ? formatClock(summary.since, tz) : undefined;
+
+  // Tray-Text aus derselben Berechnung
+  const trayText =
+    summary.running && since
+      ? t('status.trayRunning', { time: since, net })
+      : t('status.trayStopped', { net });
+  useEffect(() => {
+    void backend.setTrayStatus(trayText);
+  }, [backend, trayText]);
+
+  return (
+    <main className="screen">
+      <h1>{t('status.today')}</h1>
+      <section aria-live="polite" className="card">
+        <p className="state">{t(summary.running ? 'status.running' : 'status.stopped')}</p>
+        {since && <p>{t('status.since', { time: since })}</p>}
+        <dl>
+          <div>
+            <dt>{t('status.net')}</dt>
+            <dd className="big">{net} h</dd>
+          </div>
+          <div>
+            <dt>{t('status.breaks')}</dt>
+            <dd>{formatMinutes(summary.breakMinutes)} h</dd>
+          </div>
+          <div>
+            <dt>{t('status.month')}</dt>
+            <dd>{formatBalance(balance)} h</dd>
+          </div>
+        </dl>
+      </section>
+      <button
+        type="button"
+        className="primary"
+        onClick={() => void backend.manual(summary.running ? 'manual_end' : 'manual_start')}
+      >
+        {t(summary.running ? 'action.stop' : 'action.start')}
+      </button>
+      <p className="muted">
+        <SyncLine state={state} />{' '}
+        {state.pending > 0 && (
+          <button type="button" className="link" onClick={() => void backend.syncNow()}>
+            {t('sync.now')}
+          </button>
+        )}
+      </p>
+    </main>
+  );
+}
