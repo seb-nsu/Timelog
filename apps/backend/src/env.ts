@@ -13,6 +13,7 @@ const envSchema = z.object({
       (v) => Buffer.from(v, 'base64').length === 32,
       'TOTP_ENCRYPTION_KEY: 32 Byte als Base64',
     ),
+  NETWORK_HMAC_SECRET: z.string().min(32, 'NETWORK_HMAC_SECRET braucht mindestens 32 Zeichen'),
   APP_URL: z.url().default('http://localhost:5173'),
   SMTP_URL: z.string().optional(),
   MAIL_FROM: z.string().default('TimeLog <no-reply@localhost>'),

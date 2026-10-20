@@ -24,6 +24,7 @@ export async function createTestEnv(limits = { auth: 1000, device: 1000 }): Prom
     mailer,
     jwtSecret: 'test-secret-test-secret-test-secret!',
     totpKey: Buffer.alloc(32, 7),
+    networkSecret: 'network-secret-network-secret-123',
     appUrl: 'https://app.test',
     logLevel: 'silent',
     now: () => clock.now,
