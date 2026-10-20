@@ -9,6 +9,8 @@ import { createDatabase, runMigrations } from '../src/db/index.js';
 declare module 'vitest' {
   export interface ProvidedContext {
     databaseUrl: string;
+    /** Für Tests, die eine eigene Datenbank brauchen (siehe `createIsolatedDatabase`). */
+    adminDatabaseUrl: string;
   }
 }
 
@@ -35,6 +37,7 @@ export async function setup(project: TestProject): Promise<void> {
   await runMigrations(db);
   await pool.end();
   project.provide('databaseUrl', url.toString());
+  project.provide('adminDatabaseUrl', adminUrl);
 }
 
 export async function teardown(): Promise<void> {

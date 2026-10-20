@@ -1,8 +1,9 @@
 import type { TokenResponse } from '@timelog/shared';
-import { randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
+import pg from 'pg';
 import { inject } from 'vitest';
 import { type App, type AppOptions, buildApp } from '../src/app.js';
-import { type Database, createDatabase } from '../src/db/index.js';
+import { type Database, createDatabase, runMigrations } from '../src/db/index.js';
 import { MemoryMailer } from '../src/mailer.js';
 
 export const PASSWORD = 'korrekt-pferd-batterie';
@@ -15,11 +16,41 @@ export interface TestEnv {
   close: () => Promise<void>;
 }
 
+async function adminQuery(sql: string): Promise<void> {
+  const admin = new pg.Client({ connectionString: inject('adminDatabaseUrl') });
+  await admin.connect();
+  try {
+    await admin.query(sql);
+  } finally {
+    await admin.end();
+  }
+}
+
+/**
+ * Eigene, frisch migrierte Datenbank für Tests, die datenbankweit wirken (z. B. die
+ * Lösch-Job-Tests): Sie dürfen die parallel laufenden Testdateien nicht stören.
+ */
+async function createIsolatedDatabase(): Promise<{ url: string; drop: () => Promise<void> }> {
+  const name = `timelog_iso_${randomBytes(4).toString('hex')}`;
+  await adminQuery(`create database ${name}`);
+  const url = new URL(inject('adminDatabaseUrl'));
+  url.pathname = `/${name}`;
+  const { db, pool } = createDatabase(url.toString());
+  await runMigrations(db);
+  await pool.end();
+  return {
+    url: url.toString(),
+    drop: () => adminQuery(`drop database if exists ${name} with (force)`),
+  };
+}
+
 export async function createTestEnv(
   limits = { auth: 1000, device: 1000 },
   extra: Partial<AppOptions> = {},
+  { isolated = false }: { isolated?: boolean } = {},
 ): Promise<TestEnv> {
-  const database = createDatabase(inject('databaseUrl'));
+  const own = isolated ? await createIsolatedDatabase() : undefined;
+  const database = createDatabase(own?.url ?? inject('databaseUrl'));
   const mailer = new MemoryMailer();
   const clock = { now: Date.parse('2026-10-15T07:00:00Z') };
   const app = await buildApp({
@@ -43,6 +74,7 @@ export async function createTestEnv(
     close: async () => {
       await app.close();
       await database.pool.end();
+      await own?.drop();
     },
   };
 }

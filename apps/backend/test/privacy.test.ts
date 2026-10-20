@@ -16,7 +16,9 @@ import {
 
 let env: TestEnv;
 beforeAll(async () => {
-  env = await createTestEnv();
+  // Eigene Datenbank: der Lösch-Job wirkt datenbankweit und würde sonst Daten anderer
+  // Testdateien löschen.
+  env = await createTestEnv(undefined, undefined, { isolated: true });
 });
 afterAll(() => env.close());
 
