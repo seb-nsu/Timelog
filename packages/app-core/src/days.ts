@@ -172,7 +172,8 @@ export function periodDays(
   };
 }
 
-function configOf(profile: Profile) {
+/** Regelwerk-Einstellungen aus dem Profil (Bundesland, Sollzeiten). */
+export function configOf(profile: Profile) {
   return resolveConfig({
     state: profile.state,
     ...(profile.targetSchedule && profile.targetSchedule.length > 0

@@ -10,8 +10,18 @@ export const REMINDER_KINDS: readonly ReminderKind[] = [
   'break_missing',
 ];
 
+/** Wochenrückblick: Wochentag (0 = Sonntag) und Uhrzeit (Ortszeit). */
+export interface WeekReviewSetting {
+  enabled: boolean;
+  weekday: number;
+  time: string;
+}
+
 export interface ReminderSettings {
   enabled: Record<ReminderKind, boolean>;
+  /** Rückfrage nach automatisch erkanntem Arbeitsende (Push bzw. Desktop). */
+  confirmEnd?: boolean;
+  weekReview?: WeekReviewSetting;
   /** Ruhezeit (Ortszeit, `HH:MM`): keine Benachrichtigungen. Über Mitternacht erlaubt. */
   quietFrom: string;
   quietTo: string;
@@ -19,6 +29,8 @@ export interface ReminderSettings {
 
 export const DEFAULT_REMINDERS: ReminderSettings = {
   enabled: { end_forgotten: true, over_10h: true, break_missing: true },
+  confirmEnd: true,
+  weekReview: { enabled: true, weekday: 5, time: '15:00' },
   quietFrom: '20:00',
   quietTo: '07:00',
 };
@@ -95,12 +107,16 @@ export interface AccountNotifications {
   forgotEnd: boolean;
   over10h: boolean;
   breakViolation: boolean;
+  confirmEnd?: boolean;
+  weekReview?: WeekReviewSetting;
   quietHours: { from: string; to: string };
 }
 
 export function remindersFromAccount(n: AccountNotifications): ReminderSettings {
   return {
     enabled: { end_forgotten: n.forgotEnd, over_10h: n.over10h, break_missing: n.breakViolation },
+    ...(n.confirmEnd !== undefined ? { confirmEnd: n.confirmEnd } : {}),
+    ...(n.weekReview ? { weekReview: { ...n.weekReview } } : {}),
     quietFrom: n.quietHours.from,
     quietTo: n.quietHours.to,
   };
@@ -111,6 +127,8 @@ export function remindersToAccount(r: ReminderSettings): AccountNotifications {
     forgotEnd: r.enabled.end_forgotten,
     over10h: r.enabled.over_10h,
     breakViolation: r.enabled.break_missing,
+    ...(r.confirmEnd !== undefined ? { confirmEnd: r.confirmEnd } : {}),
+    ...(r.weekReview ? { weekReview: { ...r.weekReview } } : {}),
     quietHours: { from: r.quietFrom, to: r.quietTo },
   };
 }
