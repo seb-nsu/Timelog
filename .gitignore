@@ -9,3 +9,4 @@ coverage/
 .DS_Store
 # Rust
 apps/desktop/src-tauri/target/
+apps/desktop/src-tauri/gen/
