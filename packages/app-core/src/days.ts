@@ -118,13 +118,16 @@ export interface PeriodSummary {
   netMinutes: number;
   targetMinutes: number;
   absenceMinutes: number;
-  /** Saldo bis einschließlich `until` (zukünftige Tage zählen nicht). */
+  /**
+   * Saldo bis einschließlich `until` (zukünftige Tage zählen nicht). Wie am Desktop zählen nur
+   * Tage mit Erfassung oder Abwesenheit; leere Tage gehen nicht als Minus ein.
+   */
   balanceMinutes: number;
 }
 
 /**
- * Woche/Monat für die Übersicht. Das Regelwerk liefert nur Tage mit Daten; Tage ohne Erfassung
- * zählen hier mit ihrer Sollzeit (aus `targetMinutes` des Regelwerks), damit der Saldo stimmt.
+ * Woche/Monat für die Übersicht. Das Regelwerk liefert nur Tage mit Daten; für die Anzeige
+ * kommen Tage ohne Erfassung mit ihrer Sollzeit (aus `targetMinutes` des Regelwerks) dazu.
  */
 export function periodDays(
   days: readonly WorkDay[],
@@ -163,7 +166,9 @@ export function periodDays(
     netMinutes: sum((d) => d.netMinutes),
     targetMinutes: sum((d) => d.targetMinutes),
     absenceMinutes: sum((d) => d.absenceMinutes),
-    balanceMinutes: computeBalance(list.filter((d) => d.date <= until)),
+    balanceMinutes: computeBalance(
+      list.filter((d) => d.date <= until && (byDate.has(d.date) || absence.has(d.date))),
+    ),
   };
 }
 

@@ -214,8 +214,8 @@ describe('Übersicht und Abwesenheiten', () => {
     await show(h);
     const user = userEvent.setup();
     await user.press(await screen.findByRole('tab', { name: 'Übersicht' }));
-    // Mo–Do ohne Erfassung: 4 × 8 h Soll offen
-    expect(await screen.findByLabelText('Saldo: −32:00')).toBeOnTheScreen();
+    // Tage ohne Erfassung zählen nicht zum Saldo (wie am Desktop)
+    expect(await screen.findByLabelText('Saldo: 0:00')).toBeOnTheScreen();
     await user.press(screen.getByRole('radio', { name: 'Monat' }));
     expect(await screen.findByLabelText(/Soll: 176:00/)).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: 'Abwesenheiten' }));

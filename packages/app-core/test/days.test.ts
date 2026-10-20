@@ -204,7 +204,7 @@ describe('Woche/Monat', () => {
     expect(week.days.map((d) => d.targetMinutes)).toEqual([480, 480, 480, 480, 480, 0, 0]);
     expect(week.netMinutes).toBe(500);
     expect(week.absenceMinutes).toBe(480);
-    // Mo −480, Di Urlaub ±0, Mi +20; Do/Fr liegen nach `until`
-    expect(week.balanceMinutes).toBe(-460);
+    // Mo ohne Erfassung zählt nicht, Di Urlaub ±0, Mi +20; Do/Fr liegen nach `until`
+    expect(week.balanceMinutes).toBe(20);
   });
 });
