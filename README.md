@@ -17,7 +17,7 @@ Automatische Arbeitszeiterfassung für Laptop (Windows, macOS) und Handy (Androi
 | 0 – Grundgerüst    | erledigt |
 | 1 – Regelwerk      | erledigt |
 | 2a – Backend-Kern  | erledigt |
-| 2b – Backend-Fach  | offen    |
+| 2b – Backend-Fach  | erledigt |
 | 3a–3c – Desktop    | offen    |
 | 4/5 – Android, iOS | offen    |
 | 6 – Firmenversion  | offen    |
@@ -41,11 +41,13 @@ Voraussetzungen: Node.js 22 (≥ 22.12, siehe `.nvmrc`) und pnpm 10 (am einfachs
 ```sh
 corepack enable
 pnpm install
-cp .env.example .env   # JWT_SECRET und TOTP_ENCRYPTION_KEY eintragen
+cp .env.example .env   # JWT_SECRET, TOTP_ENCRYPTION_KEY und NETWORK_HMAC_SECRET eintragen
 docker compose up -d   # PostgreSQL 16
 pnpm build
 pnpm --filter @timelog/backend dev   # API auf http://localhost:3000, Migrationen laufen beim Start
 ```
+
+Der nächtliche Lösch-Job (Aufbewahrungsfristen, abgelaufene Tokens) läuft im Server täglich um 03:00 UTC; einmalig von Hand: `pnpm --filter @timelog/backend purge`.
 
 Ohne SMTP_URL gibt das Backend Mails (Bestätigungslink) in der Konsole aus – nur in der Entwicklung.
 
@@ -67,8 +69,8 @@ Die GitHub Action `.github/workflows/ci.yml` prüft bei jedem Push und Pull Requ
 ## Weiter mit Claude Code
 
 ```
-Lies docs/IMPLEMENTATION.md. Setze Phase 2b um. Halte dich an CLAUDE.md.
-Stoppe, wenn alle Akzeptanzkriterien von Phase 2b erfüllt und die Tests grün sind.
+Lies docs/IMPLEMENTATION.md. Setze Phase 3a um. Halte dich an CLAUDE.md.
+Stoppe, wenn alle Akzeptanzkriterien von Phase 3a erfüllt und die Tests grün sind.
 ```
 
 Jede Phase einzeln beauftragen. Punkte mit 👤 prüfst du selbst auf echter Hardware.
