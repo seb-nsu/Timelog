@@ -1,0 +1,238 @@
+// Texte der Oberflächen. Deutsch ist führend; Englisch folgt dem gleichen Schlüsselsatz.
+import type { DayStatus, EventSource, EventType, Warning } from '@timelog/rules';
+
+const de = {
+  'app.title': 'TimeLog',
+  'status.running': 'Arbeitszeit läuft',
+  'status.stopped': 'Keine Arbeitszeit erfasst',
+  'status.today': 'Heute',
+  'status.net': 'Netto',
+  'status.breaks': 'Pausen',
+  'status.since': 'seit {time}',
+  'status.balance': 'Saldo',
+  'action.start': 'Arbeit beginnen',
+  'action.stop': 'Arbeit beenden',
+  'action.wasWork': 'War Arbeit',
+  'action.confirm': 'Bestätigen',
+  'action.reject': 'Verwerfen',
+  'action.next': 'Weiter',
+  'action.back': 'Zurück',
+  'action.finish': 'Fertig',
+  'action.save': 'Speichern',
+  'action.login': 'Anmelden',
+  'action.logout': 'Abmelden',
+  'action.useCurrentNetwork': 'Aktuelles Netz übernehmen',
+  'nav.status': 'Status',
+  'nav.log': 'Tagesprotokoll',
+  'nav.review': 'Zu prüfen',
+  'nav.settings': 'Einstellungen',
+  'log.empty': 'Für diesen Tag gibt es keine Einträge.',
+  'log.event': '{time} {type} ({source})',
+  'log.break': 'Pause {from}–{to}',
+  'review.empty': 'Nichts zu prüfen.',
+  'review.session': 'Sitzung {from}–{to}',
+  'sync.pending': '{count} Einträge warten auf Übertragung',
+  'sync.ok': 'Alles übertragen',
+  'sync.offline': 'Offline – Einträge werden später übertragen',
+  'setup.title': 'Einrichtung',
+  'setup.account': 'Konto anmelden',
+  'setup.server': 'Server-Adresse',
+  'setup.email': 'E-Mail',
+  'setup.password': 'Passwort',
+  'setup.totp': 'Code aus der Authenticator-App (falls aktiviert)',
+  'setup.network': 'Arbeitsnetz hinterlegen',
+  'setup.networkHint':
+    'Übernimmt die Kennung des Netzes, in dem du gerade bist (z. B. Büro-LAN oder Dockingstation). Gespeichert wird nur ein HMAC, nicht die Kennung selbst.',
+  'setup.networkNone': 'Kein Netz erkannt.',
+  'setup.networkSaved': 'Netz „{label}“ hinterlegt.',
+  'setup.target': 'Sollzeiten und Bundesland',
+  'setup.state': 'Bundesland',
+  'setup.weekday': 'Sollzeit {day} (Minuten)',
+  'setup.explain': 'So wird erfasst',
+  'setup.explainText':
+    'Hochfahren startet die Arbeitszeit, Herunterfahren beendet sie (plus 5 Minuten). Deckel zu, Standby oder Bildschirmsperre ab 15 Minuten gelten als Pause, ab 3 Stunden als Ende. Neustart, Abmelden und Standby beenden die Arbeitszeit nicht.',
+  'setup.test': 'Testlauf',
+  'setup.testText': 'Diese Signale hat TimeLog gerade erkannt:',
+  'error.generic': 'Das hat nicht geklappt. Bitte erneut versuchen.',
+  'error.login': 'Anmeldung fehlgeschlagen. E-Mail und Passwort prüfen.',
+  'error.totp': 'Bitte den Code aus der Authenticator-App eingeben.',
+} as const;
+
+export type MessageKey = keyof typeof de;
+type Messages = Record<MessageKey, string>;
+
+const en: Messages = {
+  'app.title': 'TimeLog',
+  'status.running': 'Working time running',
+  'status.stopped': 'No working time recorded',
+  'status.today': 'Today',
+  'status.net': 'Net',
+  'status.breaks': 'Breaks',
+  'status.since': 'since {time}',
+  'status.balance': 'Balance',
+  'action.start': 'Start work',
+  'action.stop': 'Stop work',
+  'action.wasWork': 'Was work',
+  'action.confirm': 'Confirm',
+  'action.reject': 'Discard',
+  'action.next': 'Next',
+  'action.back': 'Back',
+  'action.finish': 'Done',
+  'action.save': 'Save',
+  'action.login': 'Sign in',
+  'action.logout': 'Sign out',
+  'action.useCurrentNetwork': 'Use current network',
+  'nav.status': 'Status',
+  'nav.log': 'Day log',
+  'nav.review': 'To review',
+  'nav.settings': 'Settings',
+  'log.empty': 'No entries for this day.',
+  'log.event': '{time} {type} ({source})',
+  'log.break': 'Break {from}–{to}',
+  'review.empty': 'Nothing to review.',
+  'review.session': 'Session {from}–{to}',
+  'sync.pending': '{count} entries waiting to be sent',
+  'sync.ok': 'Everything sent',
+  'sync.offline': 'Offline – entries will be sent later',
+  'setup.title': 'Setup',
+  'setup.account': 'Sign in',
+  'setup.server': 'Server address',
+  'setup.email': 'Email',
+  'setup.password': 'Password',
+  'setup.totp': 'Authenticator code (if enabled)',
+  'setup.network': 'Work network',
+  'setup.networkHint':
+    'Stores the identifier of the network you are in right now (e.g. office LAN or docking station). Only an HMAC is stored, not the identifier itself.',
+  'setup.networkNone': 'No network detected.',
+  'setup.networkSaved': 'Network “{label}” saved.',
+  'setup.target': 'Target hours and state',
+  'setup.state': 'State',
+  'setup.weekday': 'Target {day} (minutes)',
+  'setup.explain': 'How tracking works',
+  'setup.explainText':
+    'Booting starts working time, shutting down ends it (plus 5 minutes). Closing the lid, standby or screen lock for 15 minutes or more counts as a break, 3 hours or more as the end. Restart, sign-out and standby do not end working time.',
+  'setup.test': 'Test run',
+  'setup.testText': 'TimeLog currently detects these signals:',
+  'error.generic': 'Something went wrong. Please try again.',
+  'error.login': 'Sign-in failed. Check email and password.',
+  'error.totp': 'Please enter the code from your authenticator app.',
+};
+
+const EVENT_LABELS: Record<'de' | 'en', Record<EventType, string>> = {
+  de: {
+    boot: 'Hochgefahren',
+    shutdown: 'Heruntergefahren',
+    restart: 'Neustart',
+    net_connected: 'Arbeitsnetz verbunden',
+    net_lost: 'Arbeitsnetz getrennt',
+    manual_start: 'Start (manuell)',
+    manual_end: 'Ende (manuell)',
+    manual_break: 'Pause (manuell)',
+    manual_work: 'Arbeit (manuell)',
+    session_confirm: 'Sitzung bestätigt',
+    session_reject: 'Sitzung verworfen',
+  },
+  en: {
+    boot: 'Booted',
+    shutdown: 'Shut down',
+    restart: 'Restart',
+    net_connected: 'Work network connected',
+    net_lost: 'Work network lost',
+    manual_start: 'Start (manual)',
+    manual_end: 'End (manual)',
+    manual_break: 'Break (manual)',
+    manual_work: 'Work (manual)',
+    session_confirm: 'Session confirmed',
+    session_reject: 'Session discarded',
+  },
+};
+
+const SOURCE_LABELS: Record<'de' | 'en', Record<EventSource, string>> = {
+  de: {
+    system: 'System',
+    wifi: 'WLAN',
+    lan: 'LAN',
+    geofence: 'Ort',
+    shortcut: 'Kurzbefehl',
+    user: 'von dir',
+  },
+  en: {
+    system: 'System',
+    wifi: 'Wi-Fi',
+    lan: 'LAN',
+    geofence: 'Location',
+    shortcut: 'Shortcut',
+    user: 'by you',
+  },
+};
+
+const STATUS_LABELS: Record<'de' | 'en', Record<DayStatus, string>> = {
+  de: { open: 'läuft', unchecked: 'zu prüfen', auto: 'automatisch', confirmed: 'bestätigt' },
+  en: { open: 'running', unchecked: 'to review', auto: 'automatic', confirmed: 'confirmed' },
+};
+
+const WARNING_LABELS: Record<'de' | 'en', Record<Warning, string>> = {
+  de: {
+    break_violation: 'Pause zu kurz (§ 4 ArbZG); die fehlende Zeit wird abgezogen',
+    break_placement: 'Mehr als 6 Stunden ohne Pause am Stück',
+    gap_end: 'Lange inaktiv – Ende bei letzter Aktivität angenommen',
+    no_end: 'Ende fehlt',
+    session_capped: 'Sitzung nach 16 Stunden abgeschnitten',
+    late_event: 'Ereignis nachträglich erzeugt',
+    future_event: 'Ereignis liegt in der Zukunft',
+    second_session: 'Weitere Sitzung am Tag – bitte bestätigen',
+    non_workday: 'Arbeit an einem Tag ohne Sollzeit – bitte bestätigen',
+    over_10h: 'Mehr als 10 Stunden gearbeitet (§ 3 ArbZG)',
+    rest_under_11h: 'Ruhezeit unter 11 Stunden (§ 5 ArbZG)',
+    sunday_or_holiday: 'Arbeit an Sonn- oder Feiertag (§ 9 ArbZG)',
+    avg_over_8h: 'Durchschnitt über 8 Stunden (24 Wochen)',
+    crash_restart: 'Absturz mit Neustart erkannt',
+  },
+  en: {
+    break_violation: 'Break too short; the missing time is deducted',
+    break_placement: 'More than 6 hours without a break',
+    gap_end: 'Inactive for long – end assumed at last activity',
+    no_end: 'End missing',
+    session_capped: 'Session capped after 16 hours',
+    late_event: 'Event created after the fact',
+    future_event: 'Event lies in the future',
+    second_session: 'Additional session – please confirm',
+    non_workday: 'Work on a day without target hours – please confirm',
+    over_10h: 'More than 10 hours worked',
+    rest_under_11h: 'Rest period under 11 hours',
+    sunday_or_holiday: 'Work on Sunday or public holiday',
+    avg_over_8h: 'Average above 8 hours (24 weeks)',
+    crash_restart: 'Crash with restart detected',
+  },
+};
+
+export type Locale = 'de' | 'en';
+
+export interface Translator {
+  locale: Locale;
+  t: (key: MessageKey, params?: Record<string, string | number>) => string;
+  eventType: (type: EventType) => string;
+  source: (source: EventSource) => string;
+  status: (status: DayStatus) => string;
+  warning: (warning: Warning) => string;
+}
+
+export function createTranslator(locale: Locale = 'de'): Translator {
+  const messages: Messages = locale === 'en' ? en : de;
+  return {
+    locale,
+    t: (key, params) =>
+      messages[key].replace(/\{(\w+)\}/g, (match, name: string) =>
+        params && name in params ? String(params[name]) : match,
+      ),
+    eventType: (type) => EVENT_LABELS[locale][type],
+    source: (source) => SOURCE_LABELS[locale][source],
+    status: (status) => STATUS_LABELS[locale][status],
+    warning: (warning) => WARNING_LABELS[locale][warning],
+  };
+}
+
+/** Wählt die Sprache aus einer BCP-47-Angabe (z. B. navigator.language). */
+export function pickLocale(tag: string | undefined): Locale {
+  return tag?.toLowerCase().startsWith('en') ? 'en' : 'de';
+}
