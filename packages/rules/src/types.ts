@@ -69,11 +69,21 @@ export interface PresenceSpan {
   open: boolean;
 }
 
-export type AbsenceKind = 'vacation' | 'sick' | 'holiday' | 'other';
+/** Überstundenabbau (`overtime`) schreibt 0 Minuten gut: Das Soll bleibt, der Saldo sinkt. */
+export type AbsenceKind = 'vacation' | 'sick' | 'holiday' | 'other' | 'overtime';
+
+export const ABSENCE_KINDS = [
+  'vacation',
+  'sick',
+  'holiday',
+  'other',
+  'overtime',
+] as const satisfies readonly AbsenceKind[];
 
 export interface Absence {
   date: string;
   kind: AbsenceKind;
+  /** Bei `overtime`: abgebaute Minuten (nur Info, Gutschrift 0). */
   minutes: number;
 }
 
