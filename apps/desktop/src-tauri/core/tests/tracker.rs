@@ -46,9 +46,9 @@ fn start(boot: DateTime<Utc>, now: DateTime<Utc>) -> (Tracker, timelog_core::sys
 #[test]
 fn startpuffer_boot_erst_nach_5_minuten_mit_echter_einschaltzeit() {
     let (mut t, _) = start(at(6, 0), at(6, 1));
-    assert!(kinds(&t).is_empty());
+    assert_eq!(kinds(&t), Vec::<EventType>::new());
     t.tick(at(6, 3)).unwrap();
-    assert!(kinds(&t).is_empty());
+    assert_eq!(kinds(&t), Vec::<EventType>::new());
     t.tick(at(6, 5)).unwrap();
     let (from, to) = day();
     let events = t.local_data(from, to).unwrap().0;
@@ -184,7 +184,7 @@ fn neustart_und_update_neustart() {
     t2.handle(&Signal::PowerOff(PowerOff::Restart), at(12, 0))
         .unwrap();
     let events = t2.local_data(from, to).unwrap().0;
-    assert!(events[1].flags.is_empty());
+    assert_eq!(events[1].flags, Vec::<EventFlag>::new());
 }
 
 fn networks() -> (NetworkConfig, String) {

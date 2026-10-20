@@ -330,7 +330,10 @@ mod tests {
         assert_eq!(store.dirty_span_count().unwrap(), 0);
         assert_eq!(store.open_spans().unwrap(), vec![span.clone()]);
         assert_eq!(store.spans_between(t(6, 1), t(7, 0)).unwrap(), vec![span]);
-        assert!(store.spans_between(t(7, 0), t(8, 0)).unwrap().is_empty());
+        assert_eq!(
+            store.spans_between(t(7, 0), t(8, 0)).unwrap(),
+            Vec::<Span>::new()
+        );
     }
 
     #[test]
