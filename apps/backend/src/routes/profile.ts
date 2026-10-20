@@ -5,7 +5,11 @@ import {
   absencesResponse,
   absencesUpdate,
   holidaysQuery,
+  MAX_USER_NETWORKS,
   holidaysResponse,
+  networkInput,
+  networkParams,
+  networkResponse,
   networksResponse,
   networksUpdate,
   okResponse,
@@ -57,6 +61,41 @@ async function keysFor(ctx: AppContext, tx: Tx, user: typeof users.$inferSelect)
   }
   return { userKey, orgKey };
 }
+
+type NetworkRow = typeof workNetworks.$inferSelect;
+
+function toNetworkResponse(r: NetworkRow): z.infer<typeof networkResponse> {
+  const n: z.infer<typeof networkResponse> = {
+    id: r.id,
+    scope: r.orgId ? 'org' : 'user',
+    kind: r.kind,
+    label: r.label,
+  };
+  if (r.ssid) n.ssid = r.ssid;
+  if (r.bssidHmac) n.bssidHmac = r.bssidHmac;
+  if (r.fingerprintHmac) n.fingerprintHmac = r.fingerprintHmac;
+  if (r.lat !== null) n.lat = r.lat;
+  if (r.lng !== null) n.lng = r.lng;
+  if (r.radius !== null) n.radius = r.radius;
+  return n;
+}
+
+function toNetworkRow(userId: string, userKey: Buffer, n: z.infer<typeof networkInput>) {
+  return {
+    userId,
+    label: n.label,
+    kind: n.kind,
+    ssid: n.kind === 'ssid' ? n.ssid : null,
+    bssidHmac: n.kind === 'ssid' && n.bssid ? networkHmac(userKey, n.bssid) : null,
+    fingerprintHmac: n.kind === 'fingerprint' ? networkHmac(userKey, n.fingerprint) : null,
+    lat: n.kind === 'geofence' ? n.lat : null,
+    lng: n.kind === 'geofence' ? n.lng : null,
+    radius: n.kind === 'geofence' ? n.radius : null,
+  };
+}
+
+const ownNetworks = (userId: string) =>
+  and(eq(workNetworks.userId, userId), isNull(workNetworks.orgId));
 
 export function profileRoutes(app: App, ctx: AppContext): void {
   // ── Einstellungen ───────────────────────────────────────────────────────────
@@ -127,21 +166,7 @@ export function profileRoutes(app: App, ctx: AppContext): void {
               : eq(workNetworks.userId, user.id),
           );
         return {
-          networks: rows.map((r) => {
-            const n: z.infer<typeof networksResponse>['networks'][number] = {
-              id: r.id,
-              scope: r.orgId ? 'org' : 'user',
-              kind: r.kind,
-              label: r.label,
-            };
-            if (r.ssid) n.ssid = r.ssid;
-            if (r.bssidHmac) n.bssidHmac = r.bssidHmac;
-            if (r.fingerprintHmac) n.fingerprintHmac = r.fingerprintHmac;
-            if (r.lat !== null) n.lat = r.lat;
-            if (r.lng !== null) n.lng = r.lng;
-            if (r.radius !== null) n.radius = r.radius;
-            return n;
-          }),
+          networks: rows.map(toNetworkResponse),
           keys: {
             user: userKey.toString('base64'),
             ...(orgKey ? { org: orgKey.toString('base64') } : {}),
@@ -168,24 +193,68 @@ export function profileRoutes(app: App, ctx: AppContext): void {
       await withUser(ctx.db, scopeOf(claims), async (tx) => {
         const user = await loadUser(tx, claims.sub);
         const { userKey } = await keysFor(ctx, tx, user);
-        await tx
-          .delete(workNetworks)
-          .where(and(eq(workNetworks.userId, user.id), isNull(workNetworks.orgId)));
+        await tx.delete(workNetworks).where(ownNetworks(user.id));
         if (request.body.networks.length === 0) return;
-        await tx.insert(workNetworks).values(
-          request.body.networks.map((n) => ({
-            userId: user.id,
-            label: n.label,
-            kind: n.kind,
-            ssid: n.kind === 'ssid' ? n.ssid : null,
-            bssidHmac: n.kind === 'ssid' && n.bssid ? networkHmac(userKey, n.bssid) : null,
-            fingerprintHmac: n.kind === 'fingerprint' ? networkHmac(userKey, n.fingerprint) : null,
-            lat: n.kind === 'geofence' ? n.lat : null,
-            lng: n.kind === 'geofence' ? n.lng : null,
-            radius: n.kind === 'geofence' ? n.radius : null,
-          })),
-        );
+        await tx
+          .insert(workNetworks)
+          .values(request.body.networks.map((n) => toNetworkRow(user.id, userKey, n)));
       });
+      return { ok: true as const };
+    },
+  );
+
+  app.post(
+    '/networks',
+    {
+      schema: {
+        tags: ['networks'],
+        security,
+        description:
+          'Fügt ein eigenes Arbeitsnetz hinzu (z. B. „aktuelles Netz übernehmen“). Kennungen werden nur als HMAC gespeichert.',
+        body: networkInput,
+        response: { 200: networkResponse },
+      },
+    },
+    async (request) => {
+      const claims = authOf(request);
+      return withUser(ctx.db, scopeOf(claims), async (tx) => {
+        const user = await loadUser(tx, claims.sub);
+        const existing = await tx
+          .select({ id: workNetworks.id })
+          .from(workNetworks)
+          .where(ownNetworks(user.id));
+        if (existing.length >= MAX_USER_NETWORKS) throw new HttpError(409, 'too_many_networks');
+        const { userKey } = await keysFor(ctx, tx, user);
+        const [row] = await tx
+          .insert(workNetworks)
+          .values(toNetworkRow(user.id, userKey, request.body))
+          .returning();
+        if (!row) throw new HttpError(500, 'insert_failed');
+        return toNetworkResponse(row);
+      });
+    },
+  );
+
+  app.delete(
+    '/networks/:id',
+    {
+      schema: {
+        tags: ['networks'],
+        security,
+        description: 'Entfernt ein eigenes Arbeitsnetz. Firmen-Netze verwaltet nur der Admin.',
+        params: networkParams,
+        response: { 200: okResponse },
+      },
+    },
+    async (request) => {
+      const claims = authOf(request);
+      const removed = await withUser(ctx.db, scopeOf(claims), (tx) =>
+        tx
+          .delete(workNetworks)
+          .where(and(ownNetworks(claims.sub), eq(workNetworks.id, request.params.id)))
+          .returning({ id: workNetworks.id }),
+      );
+      if (removed.length === 0) throw new HttpError(404, 'not_found');
       return { ok: true as const };
     },
   );

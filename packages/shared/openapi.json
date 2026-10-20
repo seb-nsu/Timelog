@@ -2868,6 +2868,193 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": ["networks"],
+        "description": "Fügt ein eigenes Arbeitsnetz hinzu (z. B. „aktuelles Netz übernehmen“). Kennungen werden nur als HMAC gespeichert.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": ["ssid"]
+                      },
+                      "label": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                      },
+                      "ssid": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 64
+                      },
+                      "bssid": {
+                        "type": "string",
+                        "pattern": "^([0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2}$"
+                      }
+                    },
+                    "required": ["kind", "label", "ssid"]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": ["fingerprint"]
+                      },
+                      "label": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                      },
+                      "fingerprint": {
+                        "type": "string",
+                        "minLength": 8,
+                        "maxLength": 512
+                      }
+                    },
+                    "required": ["kind", "label", "fingerprint"]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": ["geofence"]
+                      },
+                      "label": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                      },
+                      "lat": {
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90
+                      },
+                      "lng": {
+                        "type": "number",
+                        "minimum": -180,
+                        "maximum": 180
+                      },
+                      "radius": {
+                        "type": "integer",
+                        "minimum": 50,
+                        "maximum": 1000
+                      }
+                    },
+                    "required": ["kind", "label", "lat", "lng", "radius"]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "scope": {
+                      "type": "string",
+                      "enum": ["user", "org"]
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": ["ssid", "fingerprint", "geofence"]
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "ssid": {
+                      "type": "string"
+                    },
+                    "bssidHmac": {
+                      "type": "string"
+                    },
+                    "fingerprintHmac": {
+                      "type": "string"
+                    },
+                    "lat": {
+                      "type": "number"
+                    },
+                    "lng": {
+                      "type": "number"
+                    },
+                    "radius": {
+                      "type": "number"
+                    }
+                  },
+                  "required": ["id", "scope", "kind", "label"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/networks/{id}": {
+      "delete": {
+        "tags": ["networks"],
+        "description": "Entfernt ein eigenes Arbeitsnetz. Firmen-Netze verwaltet nur der Admin.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [true]
+                    }
+                  },
+                  "required": ["ok"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/target-hours": {

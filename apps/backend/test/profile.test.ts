@@ -204,3 +204,49 @@ describe('Sollzeiten und Abwesenheiten', () => {
     );
   });
 });
+
+describe('Arbeitsnetz hinzufügen und entfernen', () => {
+  it('POST fügt hinzu, DELETE entfernt nur eigene Netze', async () => {
+    const a = await registerAndLogin(env);
+    const b = await registerAndLogin(env);
+    const add = await env.app.inject({
+      method: 'POST',
+      url: '/api/v1/networks',
+      headers: a.auth,
+      payload: {
+        kind: 'fingerprint',
+        label: 'Dock',
+        fingerprint: 'gw:aa:bb:cc:dd:ee:ff|dns:firma.local',
+      },
+    });
+    expect(add.statusCode).toBe(200);
+    const net = add.json<{ id: string; fingerprintHmac: string; scope: string }>();
+    expect(net.scope).toBe('user');
+    expect(net.fingerprintHmac).toMatch(/^[0-9a-f]{64}$/);
+
+    const second = await env.app.inject({
+      method: 'POST',
+      url: '/api/v1/networks',
+      headers: a.auth,
+      payload: { kind: 'ssid', label: 'Büro', ssid: 'Firma' },
+    });
+    expect(second.statusCode).toBe(200);
+
+    const foreign = await env.app.inject({
+      method: 'DELETE',
+      url: `/api/v1/networks/${net.id}`,
+      headers: b.auth,
+    });
+    expect(foreign.statusCode).toBe(404);
+    const del = await env.app.inject({
+      method: 'DELETE',
+      url: `/api/v1/networks/${net.id}`,
+      headers: a.auth,
+    });
+    expect(del.statusCode).toBe(200);
+    const list = await env.app.inject({ method: 'GET', url: '/api/v1/networks', headers: a.auth });
+    expect(list.json<{ networks: { label: string }[] }>().networks.map((n) => n.label)).toEqual([
+      'Büro',
+    ]);
+  });
+});

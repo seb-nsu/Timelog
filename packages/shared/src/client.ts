@@ -9,6 +9,7 @@ import {
   type RegisterRequest,
   type absencesUpdate,
   type correctionRequest,
+  type networkInput,
   type networksUpdate,
   type settingsUpdate,
   type targetHoursUpdate,
@@ -22,6 +23,7 @@ import {
   eventBatchResponse,
   eventPage,
   holidaysResponse,
+  networkResponse,
   networksResponse,
   okResponse,
   presencePage,
@@ -154,6 +156,8 @@ export function createApiClient(options: ApiClientOptions) {
     networks: {
       get: () => call('GET', '/networks', networksResponse),
       put: (body: z.input<typeof networksUpdate>) => call('PUT', '/networks', okResponse, body),
+      add: (body: z.input<typeof networkInput>) => call('POST', '/networks', networkResponse, body),
+      remove: (id: string) => call('DELETE', `/networks/${encodeURIComponent(id)}`, okResponse),
     },
     targetHours: {
       get: () => call('GET', '/target-hours', targetHoursResponse),

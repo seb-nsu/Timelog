@@ -383,7 +383,11 @@ export const networkInput = z.discriminatedUnion('kind', [
     radius: z.number().int().min(50).max(1000),
   }),
 ]);
-export const networksUpdate = z.object({ networks: z.array(networkInput).max(20) });
+export const MAX_USER_NETWORKS = 20;
+export const networksUpdate = z.object({
+  networks: z.array(networkInput).max(MAX_USER_NETWORKS),
+});
+export const networkParams = z.object({ id: z.uuid() });
 
 export const networkResponse = z.object({
   id: z.uuid(),
