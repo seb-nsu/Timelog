@@ -1,6 +1,7 @@
 // Verdrahtung mit Expo: SQLite, sicherer Speicher (Keychain/Keystore), Gerätedaten, natives Modul.
 // Eine Instanz je Prozess – die App und der Hintergrund-Task teilen sie.
 import { uuid } from 'expo';
+import * as Crypto from 'expo-crypto';
 import * as Device from 'expo-device';
 import { getCalendars } from 'expo-localization';
 import * as SecureStore from 'expo-secure-store';
@@ -49,6 +50,11 @@ export function getCore(): Promise<MobileCore> {
       native: loadTimelogNative(),
       uuid: () => uuid.v4(),
       timezone: deviceTimezone,
+      crypto: {
+        sha256: async (data) =>
+          new Uint8Array(await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, data)),
+        randomBytes: (n) => Crypto.getRandomBytes(n),
+      },
       device: {
         os: `${Platform.OS} ${Device.osVersion ?? ''}`.trim().slice(0, 50),
         name: (Device.deviceName ?? Device.modelName ?? 'Handy').slice(0, 100),

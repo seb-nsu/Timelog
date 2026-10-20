@@ -2,11 +2,12 @@
 // Nur für „Nur lokal“: Ohne Server erzeugt die App ihren HMAC-Schlüssel selbst und speichert
 // Arbeitsnetze wie der Server nur als HMAC.
 
-export type Sha256 = (data: Uint8Array) => Promise<Uint8Array>;
+export type Bytes = Uint8Array<ArrayBuffer>;
+export type Sha256 = (data: Bytes) => Promise<Bytes>;
 
 const BLOCK = 64;
 
-export function base64ToBytes(b64: string): Uint8Array {
+export function base64ToBytes(b64: string): Bytes {
   const bin = atob(b64);
   const out = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
@@ -23,18 +24,14 @@ export function toHex(bytes: Uint8Array): string {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-function concat(a: Uint8Array, b: Uint8Array): Uint8Array {
+function concat(a: Bytes, b: Bytes): Bytes {
   const out = new Uint8Array(a.length + b.length);
   out.set(a, 0);
   out.set(b, a.length);
   return out;
 }
 
-export async function hmacSha256(
-  sha256: Sha256,
-  key: Uint8Array,
-  message: Uint8Array,
-): Promise<Uint8Array> {
+export async function hmacSha256(sha256: Sha256, key: Bytes, message: Bytes): Promise<Bytes> {
   let k = key.length > BLOCK ? await sha256(key) : key;
   if (k.length < BLOCK) {
     const padded = new Uint8Array(BLOCK);

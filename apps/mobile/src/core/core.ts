@@ -168,6 +168,7 @@ export class MobileCore {
 
   /** Native Meldungen abonnieren (solange die App läuft). */
   start(): void {
+    void this.configureNative().catch(() => undefined);
     this.nativeSubscription ??= this.native.addChangeListener(() => {
       void this.ingestNative().then((n) => {
         if (n > 0) void this.sync();
@@ -634,8 +635,10 @@ export class MobileCore {
   async configureNative(networks?: NetworksResponse): Promise<void> {
     const nets = networks ?? (await this.networks());
     const settings = await this.settings();
+    // iOS: Das WLAN wählt der Nutzer in der Kurzbefehl-Automation; dort gibt es keine hinterlegten Netze.
+    const shortcuts = (await this.capabilities()).shortcuts;
     const config: NativeConfig = {
-      detection: settings.triggers.network && (nets?.networks.length ?? 0) > 0,
+      detection: settings.triggers.network && (shortcuts || (nets?.networks.length ?? 0) > 0),
       ssid: (await this.store.get<boolean>(K.ssid)) ?? false,
       networks: (nets?.networks ?? []).map((n) => ({
         id: n.id,
