@@ -20,9 +20,31 @@ import {
 } from './src/notifications';
 import { getCore } from './src/platform';
 import { setDefaultServer } from './src/screens/forms';
-import type { MobileProviderProps, PlatformActions } from './src/ui/context';
+import { createMobileTranslator } from './src/i18n';
+import type { MobileProviderProps, PlatformActions, Route } from './src/ui/context';
 
 const locale = pickLocale(getLocales()[0].languageTag);
+const translator = createMobileTranslator(locale);
+
+/** Ziele aus angetippten Benachrichtigungen an die Oberfläche weiterreichen. */
+const routes = (() => {
+  let target: ((route: Route) => void) | undefined;
+  let pending: Route | undefined;
+  return {
+    emit: (route: Route) => {
+      if (target) target(route);
+      else pending = route;
+    },
+    listen: (go: (route: Route) => void) => {
+      target = go;
+      if (pending) go(pending);
+      pending = undefined;
+      return () => {
+        target = undefined;
+      };
+    },
+  };
+})();
 const extra = Constants.expoConfig?.extra as { defaultServer?: unknown } | undefined;
 if (typeof extra?.defaultServer === 'string') setDefaultServer(extra.defaultServer);
 
@@ -44,12 +66,13 @@ function Root() {
     core.start();
     void core.ingestNative().then(() => core.sync());
     void registerBackgroundSync().catch(() => undefined);
-    void startPush(core);
+    const stopPush = startPush(core, translator, routes.emit);
     const sub = AppState.addEventListener('change', (s) => {
       if (s === 'active') void core.ingestNative().then(() => core.sync());
     });
     return () => {
       sub.remove();
+      stopPush();
       core.stop();
     };
   }, [core]);
@@ -76,11 +99,18 @@ function Root() {
   if (!core) return null;
   const actions: PlatformActions = {
     shareFile,
-    requestNotifications: () => requestNotifications(core),
+    requestNotifications: () => requestNotifications(core, locale),
   };
   return [
     createElement(StatusBar, { key: 'bar', style: 'auto' }),
-    createElement(App, { key: 'app', core, locale, actions, onUpdate }),
+    createElement(App, {
+      key: 'app',
+      core,
+      locale,
+      actions,
+      onUpdate,
+      externalRoutes: routes.listen,
+    }),
   ];
 }
 

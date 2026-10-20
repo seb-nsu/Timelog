@@ -3,6 +3,8 @@ import { createDatabase, runMigrations } from './db/index.js';
 import { loadEnv } from './env.js';
 import { schedulePurge } from './jobs/purge.js';
 import { ConsoleMailer, type Mailer, SmtpMailer } from './mailer.js';
+import { createPushSender } from './push/config.js';
+import { schedulePrompts } from './push/prompts.js';
 
 const env = loadEnv();
 const { db, pool } = createDatabase(env.DATABASE_URL);
@@ -32,8 +34,19 @@ const stopPurge = schedulePurge(db, (msg) => {
   app.log.info(msg);
 });
 
+const push = createPushSender(env, (msg) => {
+  app.log.info(msg);
+});
+const stopPrompts = env.PROMPTS_JOB
+  ? schedulePrompts({ db, sender: push.sender }, (msg) => {
+      app.log.info(msg);
+    })
+  : () => undefined;
+
 const shutdown = async (): Promise<void> => {
   stopPurge();
+  stopPrompts();
+  push.close();
   await app.close();
   await pool.end();
 };

@@ -9,13 +9,14 @@ import { ReviewScreen } from './screens/Review';
 import { SettingsScreen } from './screens/Settings';
 import { SetupScreen } from './screens/Setup';
 import { TodayScreen } from './screens/Today';
+import { WeekScreen } from './screens/Week';
 import { MobileProvider, type MobileProviderProps, type Route, useMobile } from './ui/context';
 import { TOUCH, useTheme } from './ui/theme';
 
 type Tab = 'today' | 'log' | 'review' | 'overview' | 'settings';
 
 function tabOf(route: Route): Tab {
-  if (route.name === 'absences') return 'overview';
+  if (route.name === 'absences' || route.name === 'week') return 'overview';
   if (route.name === 'setup') return 'settings';
   return route.name;
 }
@@ -34,6 +35,10 @@ function Content() {
       return <ReviewScreen />;
     case 'overview':
       return <OverviewScreen />;
+    case 'week':
+      return (
+        <WeekScreen key={route.date ?? 'week'} {...(route.date ? { date: route.date } : {})} />
+      );
     case 'absences':
       return <AbsencesScreen />;
     case 'settings':

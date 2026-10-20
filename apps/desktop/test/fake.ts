@@ -15,6 +15,8 @@ export interface Fake extends DesktopBackend {
   };
   data: LocalData;
   state: AppState;
+  /** Antworten der Server-Attrappe je `METHODE /pfad` (ohne Abfrage) */
+  responses: Record<string, unknown>;
   emit: () => void;
 }
 
@@ -54,6 +56,8 @@ export function fakeBackend(
     'PUT /api/v1/target-hours': { ok: true },
     'GET /api/v1/target-hours': { schedule: [] },
     'GET /api/v1/absences': { absences: [] },
+    'GET /api/v1/prompts': { prompts: [] },
+    'POST /api/v1/prompts/dismiss': { ok: true },
   };
   responses['GET /api/v1/settings'] = responses['PUT /api/v1/settings'];
 
@@ -74,6 +78,7 @@ export function fakeBackend(
   const fake: Fake = {
     notifications,
     stored,
+    responses,
     notify: (title, body) => {
       notifications.push([title, body]);
       return Promise.resolve();

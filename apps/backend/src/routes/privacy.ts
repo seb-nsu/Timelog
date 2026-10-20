@@ -14,6 +14,7 @@ import {
   events,
   organizations,
   presenceSpans,
+  pushPrompts,
   refreshTokens,
   targetHours,
   users,
@@ -86,6 +87,7 @@ export async function deleteUserData(tx: Tx, userId: string, includeUser: boolea
     approvals,
     absences,
     targetHours,
+    pushPrompts,
   ]) {
     await tx.delete(table).where(eq(table.userId, userId));
   }
@@ -181,6 +183,7 @@ export function privacyRoutes(app: App, ctx: AppContext): void {
             os: d.os,
             name: d.name,
             lastSeenAt: d.lastSeenAt?.toISOString() ?? null,
+            pushToken: d.pushToken !== null,
             revokedAt: d.revokedAt?.toISOString() ?? null,
           })),
           events: (await tx.select().from(events).orderBy(events.seq)).map(toStoredEvent),
@@ -199,6 +202,14 @@ export function privacyRoutes(app: App, ctx: AppContext): void {
             .where(eq(workNetworks.userId, claims.sub)),
           corrections: await tx.select().from(corrections),
           approvals: await tx.select().from(approvals),
+          pushPrompts: (await tx.select().from(pushPrompts)).map((p) => ({
+            kind: p.kind,
+            ref: p.ref,
+            payload: p.payload,
+            createdAt: p.createdAt.toISOString(),
+            sentAt: p.sentAt?.toISOString() ?? null,
+            dismissedAt: p.dismissedAt?.toISOString() ?? null,
+          })),
         };
       });
       return reply
@@ -256,6 +267,7 @@ export function privacyRoutes(app: App, ctx: AppContext): void {
         await tx.delete(refreshTokens).where(eq(refreshTokens.userId, user.id));
         await tx.delete(authTokens).where(eq(authTokens.userId, user.id));
         await tx.delete(workNetworks).where(eq(workNetworks.userId, user.id));
+        await tx.delete(pushPrompts).where(eq(pushPrompts.userId, user.id));
         return { mode: 'anonymized' as const };
       });
     },

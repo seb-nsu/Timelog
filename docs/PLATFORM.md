@@ -106,3 +106,13 @@ Wie unter Windows (Schritte 1, 4, 5, 7, 8, 9, 10, 11, 12), dazu:
   „Nicht erlauben“?
 
 Abweichungen bitte mit macOS-Version und Mac-Modell melden.
+
+## Rückfragen und Wochenrückblick am Desktop
+
+Der Desktop bekommt kein Push. Er fragt alle 5 min `GET /prompts` ab und zeigt jede neue
+Rückfrage einmal als Systembenachrichtigung (`@tauri-apps/plugin-notification`) und als Karte
+oben in der App mit „Stimmt“, „Korrigieren“ (öffnet das Tagesprotokoll) und „Später“. Ein Ende
+durch Herunterfahren meldet er nicht als Benachrichtigung, denn das hat er selbst erkannt. Aktionen
+in der Benachrichtigung bietet das Plugin nur auf Mobilgeräten, und ein Klick ist am Desktop nicht
+dokumentiert. Deshalb gibt es die Karte. Der „Wochenrückblick“ steht in der Navigation. Details in
+[PUSH.md](PUSH.md).

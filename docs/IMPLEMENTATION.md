@@ -262,7 +262,7 @@ Der Server speichert Rohereignisse unveränderlich und berechnet Arbeitstage mit
 | GET | `/status` | aktueller Zustand für Tray und Widget |
 | — | `/org/*` | Firmenversion, siehe unten |
 
-**`settings` (jsonb, per Zod validiert)**: `triggers` { boot, shutdown, network, geofence, standbyBreaks: boolean }, `notifications` { forgotEnd, over10h, breakViolation, confirmDay: boolean, quietHours: { from, to } }, `workdays` (abweichend von Soll), `localOnly` (Privatversion ohne Sync).
+**`settings` (jsonb, per Zod validiert)**: `triggers` { boot, shutdown, network, geofence, standbyBreaks: boolean }, `notifications` { forgotEnd, over10h, breakViolation, confirmDay, confirmEnd: boolean, weekReview: { enabled, weekday 0–6, time }, quietHours: { from, to } }, `workdays` (abweichend von Soll), `localOnly` (Privatversion ohne Sync).
 
 **CSV-Export** (DATEV-tauglich vorbereitet): Personalnummer, Datum, Beginn, Ende, Pause (min), davon aufgefüllt (min), Netto (min), Abwesenheit, Status, korrigiert (ja/nein), Warnungen.
 

@@ -33,6 +33,17 @@ const envSchema = z.object({
   SMTP_URL: z.string().optional(),
   MAIL_FROM: z.string().default('TimeLog <no-reply@localhost>'),
   TRUST_PROXY: z.stringbool().default(false),
+  // Push (docs/PUSH.md). Ohne Angaben ist Push aus.
+  FCM_SERVICE_ACCOUNT: z.string().min(1).optional(),
+  FCM_SERVICE_ACCOUNT_FILE: z.string().min(1).optional(),
+  APNS_KEY: z.string().min(1).optional(),
+  APNS_KEY_FILE: z.string().min(1).optional(),
+  APNS_KEY_ID: z.string().length(10).optional(),
+  APNS_TEAM_ID: z.string().length(10).optional(),
+  APNS_BUNDLE_ID: z.string().min(1).optional(),
+  APNS_ENV: z.enum(['production', 'sandbox']).default('production'),
+  /** Rückfragen-Job (Arbeitsende, Wochenrückblick) im Server starten. */
+  PROMPTS_JOB: z.stringbool().default(true),
 });
 
 export type Env = z.infer<typeof envSchema>;

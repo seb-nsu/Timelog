@@ -6,7 +6,8 @@ import type { EventSource } from '@timelog/rules';
 /** Ereignis, das das native Modul selbst erzeugt hat (auch bei beendeter App). */
 export interface NativeEvent {
   id: string;
-  type: 'net_connected' | 'net_lost' | 'manual_start' | 'manual_end';
+  /** `session_confirm`/`manual_end` auch aus der Aktion „Stimmt“ einer Rückfrage (iOS) */
+  type: 'net_connected' | 'net_lost' | 'manual_start' | 'manual_end' | 'session_confirm';
   source: EventSource;
   /** UTC, ISO 8601 */
   ts: string;
@@ -15,6 +16,8 @@ export interface NativeEvent {
   createdAt: string;
   /** ID des hinterlegten Arbeitsnetzes (vom Server), falls bekannt */
   networkId?: string;
+  /** Bei `session_confirm`: ID der Sitzung (Start-Ereignis) */
+  refEventId?: string;
 }
 
 /** Aktiv-Spanne „im Arbeitsnetz“ dieses Handys. */
