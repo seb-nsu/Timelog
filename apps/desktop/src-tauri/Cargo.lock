@@ -4032,6 +4032,7 @@ dependencies = [
  "tauri-plugin-autostart",
  "tauri-plugin-single-instance",
  "timelog-core",
+ "windows",
 ]
 
 [[package]]

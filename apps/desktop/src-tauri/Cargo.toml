@@ -24,8 +24,25 @@ tauri-plugin-autostart = "2.7"
 tauri-plugin-single-instance = "2.5"
 timelog-core = { path = "core" }
 
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.62", features = [
+  "Win32_Foundation",
+  "Win32_Graphics_Gdi",
+  "Win32_NetworkManagement_IpHelper",
+  "Win32_NetworkManagement_Ndis",
+  "Win32_Networking_WinSock",
+  "Win32_Security",
+  "Win32_System_EventLog",
+  "Win32_System_LibraryLoader",
+  "Win32_System_Power",
+  "Win32_System_RemoteDesktop",
+  "Win32_System_SystemInformation",
+  "Win32_UI_WindowsAndMessaging",
+] }
+
 [lints.rust]
-unsafe_code = "forbid"
+# Nur die Plattform-Module erlauben `unsafe` für Systemaufrufe.
+unsafe_code = "deny"
 
 [lints.clippy]
 pedantic = { level = "warn", priority = -1 }

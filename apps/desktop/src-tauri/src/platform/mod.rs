@@ -1,9 +1,21 @@
-//! Plattform-Anbindung hinter [`SystemEvents`]. Windows (Phase 3b) und macOS (Phase 3c) bekommen
-//! eigene Implementierungen; bis dahin liefert [`GenericSystem`] nur Startzeit und Zeitzone.
+//! Plattform-Anbindung hinter [`SystemEvents`]: Windows (Phase 3b) und macOS (Phase 3c) haben
+//! eigene Implementierungen; andere Systeme nutzen [`GenericSystem`] mit Startzeit und Zeitzone.
 
+#[cfg(windows)]
+mod windows;
+
+#[cfg(not(windows))]
 use chrono::{DateTime, Utc};
-use timelog_core::{NetworkInfo, SignalSink, SystemEvents};
+use timelog_core::SystemEvents;
+#[cfg(not(windows))]
+use timelog_core::{NetworkInfo, SignalSink};
 
+#[cfg(windows)]
+pub fn system() -> Box<dyn SystemEvents> {
+    Box::new(windows::WindowsSystem)
+}
+
+#[cfg(not(windows))]
 pub fn system() -> Box<dyn SystemEvents> {
     Box::new(GenericSystem)
 }
@@ -18,8 +30,10 @@ pub fn device_name() -> String {
 }
 
 /// Plattformunabhängige Grundversion ohne Systemereignisse.
+#[cfg(not(windows))]
 struct GenericSystem;
 
+#[cfg(not(windows))]
 impl SystemEvents for GenericSystem {
     fn boot_time(&self) -> DateTime<Utc> {
         let secs = i64::try_from(sysinfo::System::boot_time()).unwrap_or(0);
