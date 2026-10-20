@@ -2,12 +2,14 @@
 import { formatClock, formatDate, reviewItems } from '@timelog/app-core';
 import { Body, Button, Notice, Screen, Section } from '../ui/components';
 import { useMobile } from '../ui/context';
+import { CalendarSuggestionsSection } from './Extras';
 
 export function ReviewScreen() {
   const { core, days, t, go } = useMobile();
   const items = reviewItems(days);
   return (
     <Screen title={t.m('review.title')}>
+      <CalendarSuggestionsSection />
       {items.length === 0 ? <Body muted>{t.t('review.empty')}</Body> : null}
       {items.map((item) => {
         const from = formatClock(item.from, item.tz);

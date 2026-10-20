@@ -19,6 +19,7 @@ export type Route =
   | { name: 'review' }
   | { name: 'overview' }
   | { name: 'absences' }
+  | { name: 'reports' }
   | { name: 'settings' }
   | { name: 'setup' };
 
@@ -26,6 +27,8 @@ export type Route =
 export interface PlatformActions {
   shareFile(name: string, mime: string, data: Blob | string): Promise<void>;
   requestNotifications(): Promise<boolean>;
+  /** Adresse im Browser öffnen (Kalender-Anmeldung) */
+  openUrl(url: string): Promise<void>;
 }
 
 export interface MobileContextValue {

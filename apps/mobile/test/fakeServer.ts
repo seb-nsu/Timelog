@@ -38,6 +38,8 @@ export interface FakeServer {
   /** Access-Token sofort ungültig machen (simuliert Ablauf nach 15 min) */
   expireAccess: () => void;
   addLaptopEvent: (e: Json & { id: string }) => void;
+  /** Zusätzliche Antworten je „METHODE /pfad“ (Projekte, Kalender, Orte); Funktion erhält den Body */
+  extra: Record<string, unknown>;
 }
 
 export const USER_KEY = Buffer.alloc(32, 7).toString('base64');
@@ -78,6 +80,7 @@ export function fakeServer(clock: () => number = Date.now): FakeServer {
     refreshTokens: new Set(),
     orgAccount: false,
     totpRequired: false,
+    extra: {},
     expireAccess: () => {
       validAccess = new Set();
     },
@@ -270,6 +273,10 @@ export function fakeServer(clock: () => number = Date.now): FakeServer {
         const password = (body as { password?: string } | undefined)?.password;
         if (password !== 'geheim-geheim') return error(401, 'invalid_credentials');
         return json({ mode: 'deleted' });
+      }
+      const extra = server.extra[`${method} ${path}`];
+      if (extra !== undefined) {
+        return json(typeof extra === 'function' ? (extra as (b: unknown) => unknown)(body) : extra);
       }
       return error(404, 'not_found');
     },

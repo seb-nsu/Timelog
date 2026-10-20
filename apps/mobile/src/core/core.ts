@@ -694,11 +694,29 @@ export class MobileCore {
       normalizeForHmac(current.fingerprint),
     );
     const id = this.uuid();
-    nets.networks.push({ id, scope: 'user', kind: 'fingerprint', label: name, fingerprintHmac });
+    nets.networks.push({
+      id,
+      scope: 'user',
+      kind: 'fingerprint',
+      label: name,
+      location: 'office',
+      fingerprintHmac,
+    });
     await this.store.set(K.networks, nets);
     await this.configureNative(nets);
     this.emit();
     return { status: 'added', id, weak: weakOf(current.fingerprint, false) };
+  }
+
+  /** Ort und Standardprojekt eines eigenen Netzes ändern (nur mit Konto). */
+  async updateNetwork(
+    id: string,
+    body: { location?: 'office' | 'home' | 'other'; defaultProjectId?: string | null },
+  ): Promise<void> {
+    const api = await this.api();
+    await api.networks.update(id, body);
+    await this.refreshNetworks(api);
+    this.emit();
   }
 
   async removeNetwork(id: string): Promise<void> {
