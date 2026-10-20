@@ -57,6 +57,10 @@ export interface DesktopBackend {
   syncNow: () => Promise<void>;
   setTrayStatus: (text: string) => Promise<void>;
   autostart: { isEnabled: () => Promise<boolean>; set: (enabled: boolean) => Promise<void> };
+  /** Systembenachrichtigung; fragt beim ersten Mal nach der Erlaubnis. */
+  notify: (title: string, body: string) => Promise<void>;
+  /** Kleiner Zwischenspeicher je Gerät (z. B. gesendete Erinnerungen). */
+  storage: { get: (key: string) => string | null; set: (key: string, value: string) => void };
   /** Meldet Änderungen aus dem Rust-Kern; liefert eine Abmeldefunktion. */
   onChange: (listener: () => void) => () => void;
 }
@@ -87,7 +91,36 @@ export const profileSchema = z.object({
       }),
     )
     .optional(),
+  reminders: z
+    .object({
+      enabled: z.object({
+        end_forgotten: z.boolean(),
+        over_10h: z.boolean(),
+        break_missing: z.boolean(),
+      }),
+      quietFrom: z.string(),
+      quietTo: z.string(),
+    })
+    .optional(),
 });
+
+/** `localStorage` des Webviews; ohne Zugriff (z. B. gesperrt) bleibt nichts gespeichert. */
+export const webStorage: DesktopBackend['storage'] = {
+  get: (key) => {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  set: (key, value) => {
+    try {
+      localStorage.setItem(key, value);
+    } catch {
+      // nicht speicherbar: Erinnerung kommt höchstens erneut
+    }
+  },
+};
 
 type Invoke = <T>(cmd: string, args?: Record<string, unknown>) => Promise<T>;
 
@@ -113,6 +146,7 @@ export async function createTauriBackend(): Promise<DesktopBackend> {
   const { invoke } = await import('@tauri-apps/api/core');
   const { listen } = await import('@tauri-apps/api/event');
   const autostart = await import('@tauri-apps/plugin-autostart');
+  const notification = await import('@tauri-apps/plugin-notification');
   const call: Invoke = (cmd, args) => invoke(cmd, args);
   const done = async (p: Promise<unknown>) => {
     await p;
@@ -140,6 +174,12 @@ export async function createTauriBackend(): Promise<DesktopBackend> {
       isEnabled: () => autostart.isEnabled(),
       set: (enabled) => (enabled ? autostart.enable() : autostart.disable()),
     },
+    notify: async (title, body) => {
+      let granted = await notification.isPermissionGranted();
+      if (!granted) granted = (await notification.requestPermission()) === 'granted';
+      if (granted) notification.sendNotification({ title, body });
+    },
+    storage: webStorage,
     onChange: (listener) => {
       const unlisten = listen('timelog://changed', () => {
         listener();

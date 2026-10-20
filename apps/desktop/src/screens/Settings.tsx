@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useState } from 'react';
 import type { AppState } from '../backend.js';
 import { useBackend, useT } from '../context.js';
 import { AddCurrentNetwork } from './NetworkStep.js';
+import { ReminderForm } from './ReminderForm.js';
 import { TargetForm } from './TargetForm.js';
 
 type Week = [number, number, number, number, number, number, number];
@@ -13,10 +14,12 @@ export function Settings({
   state,
   profile,
   onLogout,
+  onSaved,
 }: {
   state: AppState;
   profile: Profile | undefined;
   onLogout: () => void;
+  onSaved: () => void;
 }) {
   const backend = useBackend();
   const { t } = useT();
@@ -96,6 +99,11 @@ export function Settings({
           </ul>
         )}
         <AddCurrentNetwork onAdded={loadNetworks} />
+      </section>
+
+      <section className="card">
+        <h2>{t('settings.reminders')}</h2>
+        <ReminderForm initial={profile?.reminders} onSaved={onSaved} />
       </section>
 
       <section className="card">

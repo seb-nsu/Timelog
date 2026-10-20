@@ -10,6 +10,7 @@ import { Settings } from './screens/Settings.js';
 import { Setup } from './screens/Setup.js';
 import { Status } from './screens/Status.js';
 import { useDesktop } from './useDesktop.js';
+import { useReminders } from './useReminders.js';
 
 type Page = 'status' | 'log' | 'review' | 'settings';
 const PAGES: readonly Page[] = ['status', 'log', 'review', 'settings'];
@@ -31,6 +32,8 @@ export function App({
   const { state, profile, data, days, reload } = useDesktop(backend, now);
   const [page, setPage] = useState<Page>('status');
   const { t } = translator;
+  const active = state?.loggedIn === true && state.setupDone;
+  useReminders(backend, active ? days : [], profile, now, state?.tracker.timezone, translator);
 
   let content;
   if (!state) {
@@ -67,7 +70,9 @@ export function App({
         {page === 'status' && <Status state={state} days={days} now={now} />}
         {page === 'log' && <DayLog days={days} events={data.events} today={today} tz={tz} />}
         {page === 'review' && <Review days={days} />}
-        {page === 'settings' && <Settings state={state} profile={profile} onLogout={reload} />}
+        {page === 'settings' && (
+          <Settings state={state} profile={profile} onLogout={reload} onSaved={reload} />
+        )}
       </>
     );
   }

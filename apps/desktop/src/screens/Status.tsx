@@ -1,5 +1,5 @@
 import { formatBalance, formatClock, formatMinutes, todaySummary } from '@timelog/app-core';
-import { computeBalance, type WorkDay } from '@timelog/rules';
+import { HINT_WARNINGS, type Warning, computeBalance, type WorkDay } from '@timelog/rules';
 import { useEffect } from 'react';
 import type { AppState } from '../backend.js';
 import { useBackend, useT } from '../context.js';
@@ -14,7 +14,8 @@ export function SyncLine({ state }: { state: AppState }) {
 
 export function Status({ state, days, now }: { state: AppState; days: WorkDay[]; now: string }) {
   const backend = useBackend();
-  const { t } = useT();
+  const tr = useT();
+  const { t } = tr;
   const tz = state.tracker.timezone;
   const summary = todaySummary(days, now, tz);
   const month = summary.date.slice(0, 7);
@@ -22,6 +23,14 @@ export function Status({ state, days, now }: { state: AppState; days: WorkDay[];
     days.filter((d) => d.date.startsWith(month) && d.date <= summary.date),
   );
   const net = formatMinutes(summary.netMinutes);
+  // Hinweise zum Arbeitszeitgesetz für heute (aus dem Regelwerk)
+  const legal: readonly Warning[] = [...HINT_WARNINGS, 'break_violation', 'break_placement'];
+  const hints = [
+    ...new Set([
+      ...(summary.day?.warnings ?? []),
+      ...(summary.day?.sessions.flatMap((s) => s.warnings) ?? []),
+    ]),
+  ].filter((w) => legal.includes(w));
   const since = summary.since ? formatClock(summary.since, tz) : undefined;
 
   // Tray-Text aus derselben Berechnung
@@ -54,6 +63,16 @@ export function Status({ state, days, now }: { state: AppState; days: WorkDay[];
           </div>
         </dl>
       </section>
+      {hints.length > 0 && (
+        <section className="card" aria-labelledby="hints">
+          <h2 id="hints">{t('status.hints')}</h2>
+          <ul className="warnings">
+            {hints.map((w) => (
+              <li key={w}>{tr.warning(w)}</li>
+            ))}
+          </ul>
+        </section>
+      )}
       <button
         type="button"
         className="primary"

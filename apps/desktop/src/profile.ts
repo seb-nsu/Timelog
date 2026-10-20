@@ -1,5 +1,5 @@
 // Profil (Bundesland, Sollzeiten, Abwesenheiten) vom Server holen und lokal zwischenspeichern.
-import type { Profile } from '@timelog/app-core';
+import { type Profile, remindersFromAccount } from '@timelog/app-core';
 import { addDays, localDate } from '@timelog/rules';
 import type { DesktopBackend } from './backend.js';
 
@@ -18,6 +18,7 @@ export async function refreshProfile(backend: DesktopBackend, now = Date.now()):
     timezone: settings.timezone,
     targetSchedule: target.schedule,
     absences: absences.map(({ date, kind, minutes }) => ({ date, kind, minutes })),
+    reminders: remindersFromAccount(settings.settings.notifications),
   };
   await backend.setProfile(profile);
   return profile;

@@ -217,3 +217,78 @@ describe('invokeFetch', () => {
     expect(await res.json()).toEqual({ ok: true });
   });
 });
+
+describe('Erinnerungen', () => {
+  it('meldet „Pause fehlt“ einmal und zeigt den Hinweis im Status', async () => {
+    const start = '2026-10-15T05:00:00Z';
+    const now = '2026-10-15T12:30:00Z'; // 14:30, seit 07:00 ohne Pause
+    const backend = fakeBackend(
+      {},
+      {
+        events: [boot('b1', start)],
+        spans: [{ id: 's1', start, end: now, open: true }],
+      },
+    );
+    const { unmount } = render(<App locale="de" backend={backend} clock={clock(now)} />);
+    expect(
+      await screen.findByRole('heading', { name: 'Hinweise zum Arbeitszeitgesetz' }),
+    ).toBeTruthy();
+    await waitFor(() => {
+      expect(backend.notifications.map(([title]) => title)).toContain('Pause fehlt');
+    });
+    unmount();
+    // Zweiter Start am selben Tag: keine Wiederholung
+    const count = backend.notifications.length;
+    render(<App locale="de" backend={backend} clock={clock(now)} />);
+    await screen.findByText('Arbeitszeit läuft');
+    expect(backend.notifications).toHaveLength(count);
+  });
+
+  it('speichert Erinnerungen und Ruhezeit in den Kontoeinstellungen', async () => {
+    const backend = fakeBackend();
+    render(<App locale="de" backend={backend} clock={clock('2026-10-15T09:00:00Z')} />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Einstellungen' }));
+    await userEvent.click(screen.getByLabelText('„Über 10 Stunden“'));
+    const from = screen.getByLabelText('Ruhezeit von');
+    await userEvent.clear(from);
+    await userEvent.type(from, '21:00');
+    const form = screen.getByRole('group', { name: 'Erinnerungen' }).closest('form');
+    if (!form) throw new Error('Formular fehlt');
+    await userEvent.click(within(form).getByRole('button', { name: 'Speichern' }));
+    await waitFor(() => {
+      expect(backend.calls.requests).toContainEqual(
+        expect.stringContaining(
+          '"notifications":{"forgotEnd":true,"over10h":false,"breakViolation":true,"confirmDay":true,"quietHours":{"from":"21:00","to":"07:00"}}',
+        ),
+      );
+    });
+  });
+});
+
+describe('Barrierefreiheit', () => {
+  it('Status, Protokoll, Prüfliste und Einstellungen ohne kritische axe-Befunde', async () => {
+    const axe = (await import('axe-core')).default;
+    const backend = fakeBackend(
+      {},
+      {
+        events: [boot('b1', '2026-10-15T06:00:00Z')],
+        spans: [
+          { id: 's1', start: '2026-10-15T06:00:00Z', end: '2026-10-15T09:00:00Z', open: true },
+        ],
+      },
+    );
+    const { container } = render(
+      <App locale="de" backend={backend} clock={clock('2026-10-15T09:00:00Z')} />,
+    );
+    await screen.findByText('Arbeitszeit läuft');
+    for (const page of ['Status', 'Tagesprotokoll', 'Zu prüfen', 'Einstellungen']) {
+      await userEvent.click(screen.getByRole('button', { name: new RegExp(`^${page}`) }));
+      // Farbkontrast lässt sich in jsdom nicht messen; dafür gilt styles.css (AA geprüft).
+      const result = await axe.run(container, { rules: { 'color-contrast': { enabled: false } } });
+      const serious = result.violations.filter(
+        (v) => v.impact === 'critical' || v.impact === 'serious',
+      );
+      expect(serious.map((v) => `${page}: ${v.id}`)).toEqual([]);
+    }
+  });
+});

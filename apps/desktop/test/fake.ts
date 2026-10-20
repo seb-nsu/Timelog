@@ -5,6 +5,8 @@ import { vi } from 'vitest';
 import type { AppState, DesktopBackend } from '../src/backend.js';
 
 export interface Fake extends DesktopBackend {
+  notifications: [string, string][];
+  stored: Map<string, string>;
   calls: {
     manual: string[];
     ranges: [string, string, string][];
@@ -67,7 +69,21 @@ export function fakeBackend(
     );
   };
 
+  const stored = new Map<string, string>();
+  const notifications: [string, string][] = [];
   const fake: Fake = {
+    notifications,
+    stored,
+    notify: (title, body) => {
+      notifications.push([title, body]);
+      return Promise.resolve();
+    },
+    storage: {
+      get: (key) => stored.get(key) ?? null,
+      set: (key, value) => {
+        stored.set(key, value);
+      },
+    },
     calls,
     data,
     state: {
