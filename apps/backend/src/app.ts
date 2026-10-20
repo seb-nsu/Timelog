@@ -28,6 +28,7 @@ import { authRoutes } from './routes/auth.js';
 import { correctionRoutes } from './routes/corrections.js';
 import { privacyRoutes } from './routes/privacy.js';
 import { profileRoutes } from './routes/profile.js';
+import { promptRoutes } from './routes/prompts.js';
 import { daysRoutes } from './routes/days.js';
 import { deviceRoutes } from './routes/devices.js';
 import { eventRoutes } from './routes/events.js';
@@ -230,6 +231,7 @@ export async function buildApp(options: AppOptions): Promise<App> {
         correctionRoutes(scope, ctx);
         profileRoutes(scope, ctx);
         privacyRoutes(scope, ctx);
+        promptRoutes(scope, ctx);
         membershipRoutes(scope, ctx);
         void scope.register(
           (org, _o, next) => {

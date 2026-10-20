@@ -9,6 +9,7 @@ import {
   events,
   organizations,
   presenceSpans,
+  pushPrompts,
   refreshTokens,
   users,
   workDays,
@@ -102,6 +103,9 @@ export async function purgeExpired(db: Db, nowMs: number): Promise<PurgeResult> 
       .where(lt(authTokens.expiresAt, old))
       .returning({ id: authTokens.id });
     result.deletedTokens = rt.length + at.length;
+
+    // Rückfragen sind nur Benachrichtigungsprotokoll: nach 90 Tagen weg
+    await tx.delete(pushPrompts).where(lt(pushPrompts.createdAt, new Date(nowMs - 90 * DAY_MS)));
     return result;
   });
 }

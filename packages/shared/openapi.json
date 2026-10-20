@@ -18,7 +18,9 @@
   "paths": {
     "/api/v1/auth/register": {
       "post": {
-        "tags": ["auth"],
+        "tags": [
+          "auth"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -69,7 +71,11 @@
                     ]
                   }
                 },
-                "required": ["email", "password", "name"]
+                "required": [
+                  "email",
+                  "password",
+                  "name"
+                ]
               }
             }
           }
@@ -84,10 +90,14 @@
                   "properties": {
                     "ok": {
                       "type": "boolean",
-                      "enum": [true]
+                      "enum": [
+                        true
+                      ]
                     }
                   },
-                  "required": ["ok"],
+                  "required": [
+                    "ok"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -98,7 +108,9 @@
     },
     "/api/v1/auth/verify": {
       "post": {
-        "tags": ["auth"],
+        "tags": [
+          "auth"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -112,7 +124,9 @@
                     "maxLength": 200
                   }
                 },
-                "required": ["token"]
+                "required": [
+                  "token"
+                ]
               }
             }
           }
@@ -127,10 +141,14 @@
                   "properties": {
                     "ok": {
                       "type": "boolean",
-                      "enum": [true]
+                      "enum": [
+                        true
+                      ]
                     }
                   },
-                  "required": ["ok"],
+                  "required": [
+                    "ok"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -141,7 +159,9 @@
     },
     "/api/v1/auth/login": {
       "post": {
-        "tags": ["auth"],
+        "tags": [
+          "auth"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -174,7 +194,10 @@
                     "properties": {
                       "kind": {
                         "type": "string",
-                        "enum": ["desktop", "mobile"]
+                        "enum": [
+                          "desktop",
+                          "mobile"
+                        ]
                       },
                       "os": {
                         "type": "string",
@@ -187,10 +210,18 @@
                         "maxLength": 100
                       }
                     },
-                    "required": ["kind", "os", "name"]
+                    "required": [
+                      "kind",
+                      "os",
+                      "name"
+                    ]
                   }
                 },
-                "required": ["email", "password", "device"]
+                "required": [
+                  "email",
+                  "password",
+                  "device"
+                ]
               }
             }
           }
@@ -240,7 +271,9 @@
     },
     "/api/v1/auth/refresh": {
       "post": {
-        "tags": ["auth"],
+        "tags": [
+          "auth"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -254,7 +287,9 @@
                     "maxLength": 200
                   }
                 },
-                "required": ["refreshToken"]
+                "required": [
+                  "refreshToken"
+                ]
               }
             }
           }
@@ -304,7 +339,9 @@
     },
     "/api/v1/auth/logout": {
       "post": {
-        "tags": ["auth"],
+        "tags": [
+          "auth"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -318,7 +355,9 @@
                     "maxLength": 200
                   }
                 },
-                "required": ["refreshToken"]
+                "required": [
+                  "refreshToken"
+                ]
               }
             }
           }
@@ -333,10 +372,14 @@
                   "properties": {
                     "ok": {
                       "type": "boolean",
-                      "enum": [true]
+                      "enum": [
+                        true
+                      ]
                     }
                   },
-                  "required": ["ok"],
+                  "required": [
+                    "ok"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -347,7 +390,9 @@
     },
     "/api/v1/auth/password-reset": {
       "post": {
-        "tags": ["auth"],
+        "tags": [
+          "auth"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -362,7 +407,9 @@
                     "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
                   }
                 },
-                "required": ["email"]
+                "required": [
+                  "email"
+                ]
               }
             }
           }
@@ -377,10 +424,14 @@
                   "properties": {
                     "ok": {
                       "type": "boolean",
-                      "enum": [true]
+                      "enum": [
+                        true
+                      ]
                     }
                   },
-                  "required": ["ok"],
+                  "required": [
+                    "ok"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -391,7 +442,9 @@
     },
     "/api/v1/auth/password-reset/confirm": {
       "post": {
-        "tags": ["auth"],
+        "tags": [
+          "auth"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -410,7 +463,10 @@
                     "maxLength": 200
                   }
                 },
-                "required": ["token", "password"]
+                "required": [
+                  "token",
+                  "password"
+                ]
               }
             }
           }
@@ -425,10 +481,14 @@
                   "properties": {
                     "ok": {
                       "type": "boolean",
-                      "enum": [true]
+                      "enum": [
+                        true
+                      ]
                     }
                   },
-                  "required": ["ok"],
+                  "required": [
+                    "ok"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -439,7 +499,9 @@
     },
     "/api/v1/auth/totp/setup": {
       "post": {
-        "tags": ["auth"],
+        "tags": [
+          "auth"
+        ],
         "security": [
           {
             "bearer": []
@@ -460,7 +522,10 @@
                       "type": "string"
                     }
                   },
-                  "required": ["secret", "otpauthUrl"],
+                  "required": [
+                    "secret",
+                    "otpauthUrl"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -471,7 +536,9 @@
     },
     "/api/v1/auth/totp/verify": {
       "post": {
-        "tags": ["auth"],
+        "tags": [
+          "auth"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -484,7 +551,9 @@
                     "pattern": "^\\d{6}$"
                   }
                 },
-                "required": ["code"]
+                "required": [
+                  "code"
+                ]
               }
             }
           }
@@ -504,10 +573,14 @@
                   "properties": {
                     "ok": {
                       "type": "boolean",
-                      "enum": [true]
+                      "enum": [
+                        true
+                      ]
                     }
                   },
-                  "required": ["ok"],
+                  "required": [
+                    "ok"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -518,7 +591,9 @@
     },
     "/api/v1/auth/invite": {
       "get": {
-        "tags": ["auth"],
+        "tags": [
+          "auth"
+        ],
         "description": "Zeigt Organisation, Adresse und Rolle einer offenen Einladung.",
         "parameters": [
           {
@@ -548,10 +623,18 @@
                     },
                     "role": {
                       "type": "string",
-                      "enum": ["user", "manager", "admin"]
+                      "enum": [
+                        "user",
+                        "manager",
+                        "admin"
+                      ]
                     }
                   },
-                  "required": ["orgName", "email", "role"],
+                  "required": [
+                    "orgName",
+                    "email",
+                    "role"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -562,7 +645,9 @@
     },
     "/api/v1/auth/invite/accept": {
       "post": {
-        "tags": ["auth"],
+        "tags": [
+          "auth"
+        ],
         "description": "Nimmt eine Einladung an und legt das Firmenkonto an (Adresse gilt durch den Link als bestätigt).",
         "requestBody": {
           "required": true,
@@ -613,7 +698,11 @@
                     ]
                   }
                 },
-                "required": ["token", "name", "password"]
+                "required": [
+                  "token",
+                  "name",
+                  "password"
+                ]
               }
             }
           }
@@ -628,10 +717,14 @@
                   "properties": {
                     "ok": {
                       "type": "boolean",
-                      "enum": [true]
+                      "enum": [
+                        true
+                      ]
                     }
                   },
-                  "required": ["ok"],
+                  "required": [
+                    "ok"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -642,7 +735,9 @@
     },
     "/api/v1/auth/sso/{slug}": {
       "get": {
-        "tags": ["sso"],
+        "tags": [
+          "sso"
+        ],
         "description": "Welche SSO-Verfahren eine Organisation anbietet (für die Anmeldemaske).",
         "parameters": [
           {
@@ -670,18 +765,29 @@
                       "type": "array",
                       "items": {
                         "type": "string",
-                        "enum": ["oidc", "saml"]
+                        "enum": [
+                          "oidc",
+                          "saml"
+                        ]
                       }
                     },
                     "provider": {
                       "type": "string",
-                      "enum": ["entra", "google", "oidc"]
+                      "enum": [
+                        "entra",
+                        "google",
+                        "oidc"
+                      ]
                     },
                     "enforced": {
                       "type": "boolean"
                     }
                   },
-                  "required": ["orgName", "methods", "enforced"],
+                  "required": [
+                    "orgName",
+                    "methods",
+                    "enforced"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -692,13 +798,18 @@
     },
     "/api/v1/auth/sso/{slug}/start": {
       "get": {
-        "tags": ["sso"],
+        "tags": [
+          "sso"
+        ],
         "description": "Startet die SSO-Anmeldung und leitet zum IdP weiter. redirect muss zu ADMIN_URL, APP_URL oder SSO_REDIRECT_ORIGINS gehören.",
         "parameters": [
           {
             "schema": {
               "type": "string",
-              "enum": ["oidc", "saml"]
+              "enum": [
+                "oidc",
+                "saml"
+              ]
             },
             "in": "query",
             "name": "method",
@@ -732,7 +843,9 @@
     },
     "/api/v1/auth/sso/{slug}/oidc/callback": {
       "get": {
-        "tags": ["sso"],
+        "tags": [
+          "sso"
+        ],
         "description": "Rücksprung vom OIDC-IdP (redirect_uri).",
         "parameters": [
           {
@@ -781,7 +894,9 @@
     },
     "/api/v1/auth/sso/{slug}/saml/acs": {
       "post": {
-        "tags": ["sso"],
+        "tags": [
+          "sso"
+        ],
         "description": "Assertion Consumer Service (HTTP-POST-Binding) für SAML 2.0.",
         "requestBody": {
           "required": true,
@@ -800,7 +915,9 @@
                     "maxLength": 200
                   }
                 },
-                "required": ["SAMLResponse"]
+                "required": [
+                  "SAMLResponse"
+                ]
               }
             }
           }
@@ -825,7 +942,9 @@
     },
     "/api/v1/auth/sso/{slug}/saml/metadata": {
       "get": {
-        "tags": ["sso"],
+        "tags": [
+          "sso"
+        ],
         "description": "SAML-Metadaten des Service Providers (Entity-ID und ACS-URL) für den IdP.",
         "parameters": [
           {
@@ -847,7 +966,9 @@
     },
     "/api/v1/auth/sso/exchange": {
       "post": {
-        "tags": ["sso"],
+        "tags": [
+          "sso"
+        ],
         "description": "Tauscht den Einmal-Code aus dem SSO-Rücksprung gegen Tokens (gerätegebunden). SSO ersetzt TOTP für Manager und Admins.",
         "requestBody": {
           "required": true,
@@ -871,7 +992,10 @@
                     "properties": {
                       "kind": {
                         "type": "string",
-                        "enum": ["desktop", "mobile"]
+                        "enum": [
+                          "desktop",
+                          "mobile"
+                        ]
                       },
                       "os": {
                         "type": "string",
@@ -884,10 +1008,17 @@
                         "maxLength": 100
                       }
                     },
-                    "required": ["kind", "os", "name"]
+                    "required": [
+                      "kind",
+                      "os",
+                      "name"
+                    ]
                   }
                 },
-                "required": ["code", "device"]
+                "required": [
+                  "code",
+                  "device"
+                ]
               }
             }
           }
@@ -937,7 +1068,9 @@
     },
     "/api/v1/devices": {
       "get": {
-        "tags": ["devices"],
+        "tags": [
+          "devices"
+        ],
         "security": [
           {
             "bearer": []
@@ -963,7 +1096,10 @@
                           },
                           "kind": {
                             "type": "string",
-                            "enum": ["desktop", "mobile"]
+                            "enum": [
+                              "desktop",
+                              "mobile"
+                            ]
                           },
                           "os": {
                             "type": "string"
@@ -982,12 +1118,19 @@
                             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                           }
                         },
-                        "required": ["id", "kind", "os", "name"],
+                        "required": [
+                          "id",
+                          "kind",
+                          "os",
+                          "name"
+                        ],
                         "additionalProperties": false
                       }
                     }
                   },
-                  "required": ["devices"],
+                  "required": [
+                    "devices"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -996,7 +1139,9 @@
         }
       },
       "post": {
-        "tags": ["devices"],
+        "tags": [
+          "devices"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -1018,6 +1163,13 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 4096
+                  },
+                  "locale": {
+                    "type": "string",
+                    "enum": [
+                      "de",
+                      "en"
+                    ]
                   }
                 }
               }
@@ -1044,7 +1196,10 @@
                     },
                     "kind": {
                       "type": "string",
-                      "enum": ["desktop", "mobile"]
+                      "enum": [
+                        "desktop",
+                        "mobile"
+                      ]
                     },
                     "os": {
                       "type": "string"
@@ -1063,7 +1218,12 @@
                       "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                     }
                   },
-                  "required": ["id", "kind", "os", "name"],
+                  "required": [
+                    "id",
+                    "kind",
+                    "os",
+                    "name"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -1074,7 +1234,9 @@
     },
     "/api/v1/devices/{id}": {
       "delete": {
-        "tags": ["devices"],
+        "tags": [
+          "devices"
+        ],
         "parameters": [
           {
             "schema": {
@@ -1102,10 +1264,14 @@
                   "properties": {
                     "ok": {
                       "type": "boolean",
-                      "enum": [true]
+                      "enum": [
+                        true
+                      ]
                     }
                   },
-                  "required": ["ok"],
+                  "required": [
+                    "ok"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -1116,7 +1282,9 @@
     },
     "/api/v1/events/batch": {
       "post": {
-        "tags": ["events"],
+        "tags": [
+          "events"
+        ],
         "description": "Bis 500 Ereignisse, max. 256 KB; idempotent über (user_id, id).",
         "requestBody": {
           "required": true,
@@ -1155,7 +1323,14 @@
                         },
                         "source": {
                           "type": "string",
-                          "enum": ["system", "wifi", "lan", "geofence", "shortcut", "user"]
+                          "enum": [
+                            "system",
+                            "wifi",
+                            "lan",
+                            "geofence",
+                            "shortcut",
+                            "user"
+                          ]
                         },
                         "ts": {
                           "type": "string",
@@ -1190,15 +1365,26 @@
                           "type": "array",
                           "items": {
                             "type": "string",
-                            "enum": ["update_restart"]
+                            "enum": [
+                              "update_restart"
+                            ]
                           }
                         }
                       },
-                      "required": ["id", "type", "source", "ts", "tz", "createdAt"]
+                      "required": [
+                        "id",
+                        "type",
+                        "source",
+                        "ts",
+                        "tz",
+                        "createdAt"
+                      ]
                     }
                   }
                 },
-                "required": ["events"]
+                "required": [
+                  "events"
+                ]
               }
             }
           }
@@ -1227,7 +1413,10 @@
                       "maximum": 9007199254740991
                     }
                   },
-                  "required": ["accepted", "duplicates"],
+                  "required": [
+                    "accepted",
+                    "duplicates"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -1238,7 +1427,9 @@
     },
     "/api/v1/events": {
       "get": {
-        "tags": ["events"],
+        "tags": [
+          "events"
+        ],
         "parameters": [
           {
             "schema": {
@@ -1307,7 +1498,14 @@
                           },
                           "source": {
                             "type": "string",
-                            "enum": ["system", "wifi", "lan", "geofence", "shortcut", "user"]
+                            "enum": [
+                              "system",
+                              "wifi",
+                              "lan",
+                              "geofence",
+                              "shortcut",
+                              "user"
+                            ]
                           },
                           "ts": {
                             "type": "string",
@@ -1342,7 +1540,9 @@
                             "type": "array",
                             "items": {
                               "type": "string",
-                              "enum": ["update_restart"]
+                              "enum": [
+                                "update_restart"
+                              ]
                             }
                           }
                         },
@@ -1365,7 +1565,10 @@
                       "maximum": 9007199254740991
                     }
                   },
-                  "required": ["events", "nextCursor"],
+                  "required": [
+                    "events",
+                    "nextCursor"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -1376,7 +1579,9 @@
     },
     "/api/v1/presence": {
       "put": {
-        "tags": ["presence"],
+        "tags": [
+          "presence"
+        ],
         "description": "Offene Aktiv-Spanne anlegen bzw. verlängern, abgeschlossene Spannen nachreichen.",
         "requestBody": {
           "required": true,
@@ -1411,11 +1616,18 @@
                           "type": "boolean"
                         }
                       },
-                      "required": ["id", "start", "end", "open"]
+                      "required": [
+                        "id",
+                        "start",
+                        "end",
+                        "open"
+                      ]
                     }
                   }
                 },
-                "required": ["spans"]
+                "required": [
+                  "spans"
+                ]
               }
             }
           }
@@ -1435,10 +1647,14 @@
                   "properties": {
                     "ok": {
                       "type": "boolean",
-                      "enum": [true]
+                      "enum": [
+                        true
+                      ]
                     }
                   },
-                  "required": ["ok"],
+                  "required": [
+                    "ok"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -1447,7 +1663,9 @@
         }
       },
       "get": {
-        "tags": ["presence"],
+        "tags": [
+          "presence"
+        ],
         "parameters": [
           {
             "schema": {
@@ -1502,7 +1720,10 @@
                           },
                           "deviceKind": {
                             "type": "string",
-                            "enum": ["desktop", "mobile"]
+                            "enum": [
+                              "desktop",
+                              "mobile"
+                            ]
                           },
                           "start": {
                             "type": "string",
@@ -1518,7 +1739,14 @@
                             "type": "boolean"
                           }
                         },
-                        "required": ["id", "deviceId", "deviceKind", "start", "end", "open"],
+                        "required": [
+                          "id",
+                          "deviceId",
+                          "deviceKind",
+                          "start",
+                          "end",
+                          "open"
+                        ],
                         "additionalProperties": false
                       }
                     },
@@ -1528,7 +1756,10 @@
                       "maximum": 9007199254740991
                     }
                   },
-                  "required": ["spans", "nextCursor"],
+                  "required": [
+                    "spans",
+                    "nextCursor"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -1539,7 +1770,9 @@
     },
     "/api/v1/days": {
       "get": {
-        "tags": ["days"],
+        "tags": [
+          "days"
+        ],
         "description": "Berechnete Arbeitstage im Zeitraum (höchstens 93 Tage); freigegebene Monate als Snapshot.",
         "parameters": [
           {
@@ -1659,13 +1892,22 @@
                                       },
                                       "source": {
                                         "type": "string",
-                                        "enum": ["standby", "net_gap", "manual"]
+                                        "enum": [
+                                          "standby",
+                                          "net_gap",
+                                          "manual"
+                                        ]
                                       },
                                       "countsLegally": {
                                         "type": "boolean"
                                       }
                                     },
-                                    "required": ["from", "to", "source", "countsLegally"],
+                                    "required": [
+                                      "from",
+                                      "to",
+                                      "source",
+                                      "countsLegally"
+                                    ],
                                     "additionalProperties": false
                                   }
                                 },
@@ -1777,7 +2019,12 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": ["open", "unchecked", "auto", "confirmed"]
+                            "enum": [
+                              "open",
+                              "unchecked",
+                              "auto",
+                              "confirmed"
+                            ]
                           },
                           "corrected": {
                             "type": "boolean"
@@ -1828,7 +2075,10 @@
                       "maximum": 9007199254740991
                     }
                   },
-                  "required": ["days", "balanceMinutes"],
+                  "required": [
+                    "days",
+                    "balanceMinutes"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -1839,7 +2089,9 @@
     },
     "/api/v1/status": {
       "get": {
-        "tags": ["days"],
+        "tags": [
+          "days"
+        ],
         "description": "Aktueller Zustand für Tray und Widget.",
         "security": [
           {
@@ -1948,13 +2200,22 @@
                                     },
                                     "source": {
                                       "type": "string",
-                                      "enum": ["standby", "net_gap", "manual"]
+                                      "enum": [
+                                        "standby",
+                                        "net_gap",
+                                        "manual"
+                                      ]
                                     },
                                     "countsLegally": {
                                       "type": "boolean"
                                     }
                                   },
-                                  "required": ["from", "to", "source", "countsLegally"],
+                                  "required": [
+                                    "from",
+                                    "to",
+                                    "source",
+                                    "countsLegally"
+                                  ],
                                   "additionalProperties": false
                                 }
                               },
@@ -2066,7 +2327,12 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": ["open", "unchecked", "auto", "confirmed"]
+                          "enum": [
+                            "open",
+                            "unchecked",
+                            "auto",
+                            "confirmed"
+                          ]
                         },
                         "corrected": {
                           "type": "boolean"
@@ -2119,7 +2385,11 @@
                       }
                     }
                   },
-                  "required": ["date", "running", "toReview"],
+                  "required": [
+                    "date",
+                    "running",
+                    "toReview"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -2130,7 +2400,9 @@
     },
     "/api/v1/days/{date}": {
       "patch": {
-        "tags": ["corrections"],
+        "tags": [
+          "corrections"
+        ],
         "description": "Korrektur: erzeugt ein manual_*-Ereignis und eine corrections-Zeile. reason ist bei Firmenkonten Pflicht.",
         "requestBody": {
           "required": true,
@@ -2143,7 +2415,9 @@
                     "properties": {
                       "field": {
                         "type": "string",
-                        "enum": ["start"]
+                        "enum": [
+                          "start"
+                        ]
                       },
                       "time": {
                         "type": "string",
@@ -2156,14 +2430,19 @@
                         "maxLength": 500
                       }
                     },
-                    "required": ["field", "time"]
+                    "required": [
+                      "field",
+                      "time"
+                    ]
                   },
                   {
                     "type": "object",
                     "properties": {
                       "field": {
                         "type": "string",
-                        "enum": ["end"]
+                        "enum": [
+                          "end"
+                        ]
                       },
                       "time": {
                         "type": "string",
@@ -2176,14 +2455,19 @@
                         "maxLength": 500
                       }
                     },
-                    "required": ["field", "time"]
+                    "required": [
+                      "field",
+                      "time"
+                    ]
                   },
                   {
                     "type": "object",
                     "properties": {
                       "field": {
                         "type": "string",
-                        "enum": ["break"]
+                        "enum": [
+                          "break"
+                        ]
                       },
                       "from": {
                         "type": "string",
@@ -2201,14 +2485,20 @@
                         "maxLength": 500
                       }
                     },
-                    "required": ["field", "from", "to"]
+                    "required": [
+                      "field",
+                      "from",
+                      "to"
+                    ]
                   },
                   {
                     "type": "object",
                     "properties": {
                       "field": {
                         "type": "string",
-                        "enum": ["work"]
+                        "enum": [
+                          "work"
+                        ]
                       },
                       "from": {
                         "type": "string",
@@ -2226,7 +2516,11 @@
                         "maxLength": 500
                       }
                     },
-                    "required": ["field", "from", "to"]
+                    "required": [
+                      "field",
+                      "from",
+                      "to"
+                    ]
                   }
                 ]
               }
@@ -2344,13 +2638,22 @@
                                     },
                                     "source": {
                                       "type": "string",
-                                      "enum": ["standby", "net_gap", "manual"]
+                                      "enum": [
+                                        "standby",
+                                        "net_gap",
+                                        "manual"
+                                      ]
                                     },
                                     "countsLegally": {
                                       "type": "boolean"
                                     }
                                   },
-                                  "required": ["from", "to", "source", "countsLegally"],
+                                  "required": [
+                                    "from",
+                                    "to",
+                                    "source",
+                                    "countsLegally"
+                                  ],
                                   "additionalProperties": false
                                 }
                               },
@@ -2462,7 +2765,12 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": ["open", "unchecked", "auto", "confirmed"]
+                          "enum": [
+                            "open",
+                            "unchecked",
+                            "auto",
+                            "confirmed"
+                          ]
                         },
                         "corrected": {
                           "type": "boolean"
@@ -2507,7 +2815,9 @@
                       "additionalProperties": false
                     }
                   },
-                  "required": ["eventId"],
+                  "required": [
+                    "eventId"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -2518,7 +2828,9 @@
     },
     "/api/v1/days/{date}/confirm": {
       "post": {
-        "tags": ["corrections"],
+        "tags": [
+          "corrections"
+        ],
         "description": "Bestätigt alle noch nicht bestätigten Sitzungen des Tages.",
         "parameters": [
           {
@@ -2551,7 +2863,9 @@
                       "maximum": 9007199254740991
                     }
                   },
-                  "required": ["confirmed"],
+                  "required": [
+                    "confirmed"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -2562,7 +2876,9 @@
     },
     "/api/v1/sessions/{id}/confirm": {
       "post": {
-        "tags": ["corrections"],
+        "tags": [
+          "corrections"
+        ],
         "description": "Sitzung (per Start-Ereignis-ID) bestätigen: zählt dann zur Arbeitszeit.",
         "parameters": [
           {
@@ -2595,7 +2911,9 @@
                       "maximum": 9007199254740991
                     }
                   },
-                  "required": ["confirmed"],
+                  "required": [
+                    "confirmed"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -2606,7 +2924,9 @@
     },
     "/api/v1/sessions/{id}/reject": {
       "post": {
-        "tags": ["corrections"],
+        "tags": [
+          "corrections"
+        ],
         "description": "Sitzung verwerfen: zählt gar nicht.",
         "parameters": [
           {
@@ -2639,7 +2959,9 @@
                       "maximum": 9007199254740991
                     }
                   },
-                  "required": ["confirmed"],
+                  "required": [
+                    "confirmed"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -2650,7 +2972,9 @@
     },
     "/api/v1/settings": {
       "get": {
-        "tags": ["settings"],
+        "tags": [
+          "settings"
+        ],
         "security": [
           {
             "bearer": []
@@ -2721,7 +3045,13 @@
                               "type": "boolean"
                             }
                           },
-                          "required": ["boot", "shutdown", "network", "geofence", "standbyBreaks"],
+                          "required": [
+                            "boot",
+                            "shutdown",
+                            "network",
+                            "geofence",
+                            "standbyBreaks"
+                          ],
                           "additionalProperties": false
                         },
                         "notifications": {
@@ -2743,6 +3073,36 @@
                               "default": true,
                               "type": "boolean"
                             },
+                            "confirmEnd": {
+                              "default": true,
+                              "type": "boolean"
+                            },
+                            "weekReview": {
+                              "type": "object",
+                              "properties": {
+                                "enabled": {
+                                  "default": true,
+                                  "type": "boolean"
+                                },
+                                "weekday": {
+                                  "default": 5,
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 6
+                                },
+                                "time": {
+                                  "default": "15:00",
+                                  "type": "string",
+                                  "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                                }
+                              },
+                              "required": [
+                                "enabled",
+                                "weekday",
+                                "time"
+                              ],
+                              "additionalProperties": false
+                            },
                             "quietHours": {
                               "type": "object",
                               "properties": {
@@ -2757,7 +3117,10 @@
                                   "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
                                 }
                               },
-                              "required": ["from", "to"],
+                              "required": [
+                                "from",
+                                "to"
+                              ],
                               "additionalProperties": false
                             }
                           },
@@ -2766,6 +3129,8 @@
                             "over10h",
                             "breakViolation",
                             "confirmDay",
+                            "confirmEnd",
+                            "weekReview",
                             "quietHours"
                           ],
                           "additionalProperties": false
@@ -2789,11 +3154,22 @@
                           "maxLength": 50
                         }
                       },
-                      "required": ["triggers", "notifications", "workdays", "localOnly"],
+                      "required": [
+                        "triggers",
+                        "notifications",
+                        "workdays",
+                        "localOnly"
+                      ],
                       "additionalProperties": false
                     }
                   },
-                  "required": ["name", "email", "timezone", "state", "settings"],
+                  "required": [
+                    "name",
+                    "email",
+                    "timezone",
+                    "state",
+                    "settings"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -2802,7 +3178,9 @@
         }
       },
       "put": {
-        "tags": ["settings"],
+        "tags": [
+          "settings"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -2887,6 +3265,31 @@
                           "confirmDay": {
                             "default": true,
                             "type": "boolean"
+                          },
+                          "confirmEnd": {
+                            "default": true,
+                            "type": "boolean"
+                          },
+                          "weekReview": {
+                            "default": {},
+                            "type": "object",
+                            "properties": {
+                              "enabled": {
+                                "default": true,
+                                "type": "boolean"
+                              },
+                              "weekday": {
+                                "default": 5,
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 6
+                              },
+                              "time": {
+                                "default": "15:00",
+                                "type": "string",
+                                "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                              }
+                            }
                           },
                           "quietHours": {
                             "default": {},
@@ -3001,7 +3404,13 @@
                               "type": "boolean"
                             }
                           },
-                          "required": ["boot", "shutdown", "network", "geofence", "standbyBreaks"],
+                          "required": [
+                            "boot",
+                            "shutdown",
+                            "network",
+                            "geofence",
+                            "standbyBreaks"
+                          ],
                           "additionalProperties": false
                         },
                         "notifications": {
@@ -3023,6 +3432,36 @@
                               "default": true,
                               "type": "boolean"
                             },
+                            "confirmEnd": {
+                              "default": true,
+                              "type": "boolean"
+                            },
+                            "weekReview": {
+                              "type": "object",
+                              "properties": {
+                                "enabled": {
+                                  "default": true,
+                                  "type": "boolean"
+                                },
+                                "weekday": {
+                                  "default": 5,
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 6
+                                },
+                                "time": {
+                                  "default": "15:00",
+                                  "type": "string",
+                                  "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                                }
+                              },
+                              "required": [
+                                "enabled",
+                                "weekday",
+                                "time"
+                              ],
+                              "additionalProperties": false
+                            },
                             "quietHours": {
                               "type": "object",
                               "properties": {
@@ -3037,7 +3476,10 @@
                                   "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
                                 }
                               },
-                              "required": ["from", "to"],
+                              "required": [
+                                "from",
+                                "to"
+                              ],
                               "additionalProperties": false
                             }
                           },
@@ -3046,6 +3488,8 @@
                             "over10h",
                             "breakViolation",
                             "confirmDay",
+                            "confirmEnd",
+                            "weekReview",
                             "quietHours"
                           ],
                           "additionalProperties": false
@@ -3069,11 +3513,22 @@
                           "maxLength": 50
                         }
                       },
-                      "required": ["triggers", "notifications", "workdays", "localOnly"],
+                      "required": [
+                        "triggers",
+                        "notifications",
+                        "workdays",
+                        "localOnly"
+                      ],
                       "additionalProperties": false
                     }
                   },
-                  "required": ["name", "email", "timezone", "state", "settings"],
+                  "required": [
+                    "name",
+                    "email",
+                    "timezone",
+                    "state",
+                    "settings"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -3084,7 +3539,9 @@
     },
     "/api/v1/networks": {
       "get": {
-        "tags": ["networks"],
+        "tags": [
+          "networks"
+        ],
         "security": [
           {
             "bearer": []
@@ -3110,11 +3567,18 @@
                           },
                           "scope": {
                             "type": "string",
-                            "enum": ["user", "org"]
+                            "enum": [
+                              "user",
+                              "org"
+                            ]
                           },
                           "kind": {
                             "type": "string",
-                            "enum": ["ssid", "fingerprint", "geofence"]
+                            "enum": [
+                              "ssid",
+                              "fingerprint",
+                              "geofence"
+                            ]
                           },
                           "label": {
                             "type": "string"
@@ -3138,7 +3602,12 @@
                             "type": "number"
                           }
                         },
-                        "required": ["id", "scope", "kind", "label"],
+                        "required": [
+                          "id",
+                          "scope",
+                          "kind",
+                          "label"
+                        ],
                         "additionalProperties": false
                       }
                     },
@@ -3152,11 +3621,16 @@
                           "type": "string"
                         }
                       },
-                      "required": ["user"],
+                      "required": [
+                        "user"
+                      ],
                       "additionalProperties": false
                     }
                   },
-                  "required": ["networks", "keys"],
+                  "required": [
+                    "networks",
+                    "keys"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -3165,7 +3639,9 @@
         }
       },
       "put": {
-        "tags": ["networks"],
+        "tags": [
+          "networks"
+        ],
         "description": "Ersetzt die eigenen Arbeitsnetze. BSSID und Netzwerk-Kennung werden nur als HMAC gespeichert.",
         "requestBody": {
           "required": true,
@@ -3184,7 +3660,9 @@
                           "properties": {
                             "kind": {
                               "type": "string",
-                              "enum": ["ssid"]
+                              "enum": [
+                                "ssid"
+                              ]
                             },
                             "label": {
                               "type": "string",
@@ -3201,14 +3679,20 @@
                               "pattern": "^([0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2}$"
                             }
                           },
-                          "required": ["kind", "label", "ssid"]
+                          "required": [
+                            "kind",
+                            "label",
+                            "ssid"
+                          ]
                         },
                         {
                           "type": "object",
                           "properties": {
                             "kind": {
                               "type": "string",
-                              "enum": ["fingerprint"]
+                              "enum": [
+                                "fingerprint"
+                              ]
                             },
                             "label": {
                               "type": "string",
@@ -3221,14 +3705,20 @@
                               "maxLength": 512
                             }
                           },
-                          "required": ["kind", "label", "fingerprint"]
+                          "required": [
+                            "kind",
+                            "label",
+                            "fingerprint"
+                          ]
                         },
                         {
                           "type": "object",
                           "properties": {
                             "kind": {
                               "type": "string",
-                              "enum": ["geofence"]
+                              "enum": [
+                                "geofence"
+                              ]
                             },
                             "label": {
                               "type": "string",
@@ -3251,13 +3741,21 @@
                               "maximum": 1000
                             }
                           },
-                          "required": ["kind", "label", "lat", "lng", "radius"]
+                          "required": [
+                            "kind",
+                            "label",
+                            "lat",
+                            "lng",
+                            "radius"
+                          ]
                         }
                       ]
                     }
                   }
                 },
-                "required": ["networks"]
+                "required": [
+                  "networks"
+                ]
               }
             }
           }
@@ -3277,10 +3775,14 @@
                   "properties": {
                     "ok": {
                       "type": "boolean",
-                      "enum": [true]
+                      "enum": [
+                        true
+                      ]
                     }
                   },
-                  "required": ["ok"],
+                  "required": [
+                    "ok"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -3289,7 +3791,9 @@
         }
       },
       "post": {
-        "tags": ["networks"],
+        "tags": [
+          "networks"
+        ],
         "description": "Fügt ein eigenes Arbeitsnetz hinzu (z. B. „aktuelles Netz übernehmen“). Kennungen werden nur als HMAC gespeichert.",
         "requestBody": {
           "required": true,
@@ -3302,7 +3806,9 @@
                     "properties": {
                       "kind": {
                         "type": "string",
-                        "enum": ["ssid"]
+                        "enum": [
+                          "ssid"
+                        ]
                       },
                       "label": {
                         "type": "string",
@@ -3319,14 +3825,20 @@
                         "pattern": "^([0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2}$"
                       }
                     },
-                    "required": ["kind", "label", "ssid"]
+                    "required": [
+                      "kind",
+                      "label",
+                      "ssid"
+                    ]
                   },
                   {
                     "type": "object",
                     "properties": {
                       "kind": {
                         "type": "string",
-                        "enum": ["fingerprint"]
+                        "enum": [
+                          "fingerprint"
+                        ]
                       },
                       "label": {
                         "type": "string",
@@ -3339,14 +3851,20 @@
                         "maxLength": 512
                       }
                     },
-                    "required": ["kind", "label", "fingerprint"]
+                    "required": [
+                      "kind",
+                      "label",
+                      "fingerprint"
+                    ]
                   },
                   {
                     "type": "object",
                     "properties": {
                       "kind": {
                         "type": "string",
-                        "enum": ["geofence"]
+                        "enum": [
+                          "geofence"
+                        ]
                       },
                       "label": {
                         "type": "string",
@@ -3369,7 +3887,13 @@
                         "maximum": 1000
                       }
                     },
-                    "required": ["kind", "label", "lat", "lng", "radius"]
+                    "required": [
+                      "kind",
+                      "label",
+                      "lat",
+                      "lng",
+                      "radius"
+                    ]
                   }
                 ]
               }
@@ -3396,11 +3920,18 @@
                     },
                     "scope": {
                       "type": "string",
-                      "enum": ["user", "org"]
+                      "enum": [
+                        "user",
+                        "org"
+                      ]
                     },
                     "kind": {
                       "type": "string",
-                      "enum": ["ssid", "fingerprint", "geofence"]
+                      "enum": [
+                        "ssid",
+                        "fingerprint",
+                        "geofence"
+                      ]
                     },
                     "label": {
                       "type": "string"
@@ -3424,7 +3955,12 @@
                       "type": "number"
                     }
                   },
-                  "required": ["id", "scope", "kind", "label"],
+                  "required": [
+                    "id",
+                    "scope",
+                    "kind",
+                    "label"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -3435,7 +3971,9 @@
     },
     "/api/v1/networks/{id}": {
       "delete": {
-        "tags": ["networks"],
+        "tags": [
+          "networks"
+        ],
         "description": "Entfernt ein eigenes Arbeitsnetz. Firmen-Netze verwaltet nur der Admin.",
         "parameters": [
           {
@@ -3464,10 +4002,14 @@
                   "properties": {
                     "ok": {
                       "type": "boolean",
-                      "enum": [true]
+                      "enum": [
+                        true
+                      ]
                     }
                   },
-                  "required": ["ok"],
+                  "required": [
+                    "ok"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -3478,7 +4020,9 @@
     },
     "/api/v1/target-hours": {
       "get": {
-        "tags": ["target-hours"],
+        "tags": [
+          "target-hours"
+        ],
         "security": [
           {
             "bearer": []
@@ -3546,12 +4090,17 @@
                             "maxItems": 7
                           }
                         },
-                        "required": ["validFrom", "minutesByWeekday"],
+                        "required": [
+                          "validFrom",
+                          "minutesByWeekday"
+                        ],
                         "additionalProperties": false
                       }
                     }
                   },
-                  "required": ["schedule"],
+                  "required": [
+                    "schedule"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -3560,7 +4109,9 @@
         }
       },
       "put": {
-        "tags": ["target-hours"],
+        "tags": [
+          "target-hours"
+        ],
         "description": "Setzt die Sollzeiten je Wochentag (0 = Sonntag) ab einem Datum (Teilzeit-Wechsel).",
         "requestBody": {
           "required": true,
@@ -3618,7 +4169,10 @@
                     "maxItems": 7
                   }
                 },
-                "required": ["validFrom", "minutesByWeekday"]
+                "required": [
+                  "validFrom",
+                  "minutesByWeekday"
+                ]
               }
             }
           }
@@ -3638,10 +4192,14 @@
                   "properties": {
                     "ok": {
                       "type": "boolean",
-                      "enum": [true]
+                      "enum": [
+                        true
+                      ]
                     }
                   },
-                  "required": ["ok"],
+                  "required": [
+                    "ok"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -3652,7 +4210,9 @@
     },
     "/api/v1/absences": {
       "get": {
-        "tags": ["absences"],
+        "tags": [
+          "absences"
+        ],
         "parameters": [
           {
             "schema": {
@@ -3700,7 +4260,12 @@
                           },
                           "kind": {
                             "type": "string",
-                            "enum": ["vacation", "sick", "holiday", "other"]
+                            "enum": [
+                              "vacation",
+                              "sick",
+                              "holiday",
+                              "other"
+                            ]
                           },
                           "minutes": {
                             "type": "integer",
@@ -3712,12 +4277,18 @@
                             "maxLength": 500
                           }
                         },
-                        "required": ["date", "kind", "minutes"],
+                        "required": [
+                          "date",
+                          "kind",
+                          "minutes"
+                        ],
                         "additionalProperties": false
                       }
                     }
                   },
-                  "required": ["absences"],
+                  "required": [
+                    "absences"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -3726,7 +4297,9 @@
         }
       },
       "put": {
-        "tags": ["absences"],
+        "tags": [
+          "absences"
+        ],
         "description": "Ersetzt alle Abwesenheiten im Zeitraum.",
         "requestBody": {
           "required": true,
@@ -3758,7 +4331,12 @@
                         },
                         "kind": {
                           "type": "string",
-                          "enum": ["vacation", "sick", "holiday", "other"]
+                          "enum": [
+                            "vacation",
+                            "sick",
+                            "holiday",
+                            "other"
+                          ]
                         },
                         "minutes": {
                           "type": "integer",
@@ -3770,11 +4348,19 @@
                           "maxLength": 500
                         }
                       },
-                      "required": ["date", "kind", "minutes"]
+                      "required": [
+                        "date",
+                        "kind",
+                        "minutes"
+                      ]
                     }
                   }
                 },
-                "required": ["from", "to", "absences"]
+                "required": [
+                  "from",
+                  "to",
+                  "absences"
+                ]
               }
             }
           }
@@ -3794,10 +4380,14 @@
                   "properties": {
                     "ok": {
                       "type": "boolean",
-                      "enum": [true]
+                      "enum": [
+                        true
+                      ]
                     }
                   },
-                  "required": ["ok"],
+                  "required": [
+                    "ok"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -3808,7 +4398,9 @@
     },
     "/api/v1/holidays": {
       "get": {
-        "tags": ["absences"],
+        "tags": [
+          "absences"
+        ],
         "description": "Gesetzliche Feiertage im Bundesland des Nutzers.",
         "parameters": [
           {
@@ -3870,12 +4462,18 @@
                             "type": "string"
                           }
                         },
-                        "required": ["date", "name"],
+                        "required": [
+                          "date",
+                          "name"
+                        ],
                         "additionalProperties": false
                       }
                     }
                   },
-                  "required": ["state", "holidays"],
+                  "required": [
+                    "state",
+                    "holidays"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -3886,7 +4484,9 @@
     },
     "/api/v1/export": {
       "get": {
-        "tags": ["export"],
+        "tags": [
+          "export"
+        ],
         "description": "Export als CSV (DATEV-tauglich vorbereitet, Semikolon, UTF-8 mit BOM) oder PDF. Pause = erkannte Pausen + Auffüllung.",
         "parameters": [
           {
@@ -3913,7 +4513,10 @@
             "schema": {
               "default": "csv",
               "type": "string",
-              "enum": ["csv", "pdf"]
+              "enum": [
+                "csv",
+                "pdf"
+              ]
             },
             "in": "query",
             "name": "format",
@@ -3934,7 +4537,9 @@
     },
     "/api/v1/me/export": {
       "get": {
-        "tags": ["privacy"],
+        "tags": [
+          "privacy"
+        ],
         "description": "Datenauskunft und Datenübertragbarkeit (Art. 15/20 DSGVO): alle eigenen Daten als JSON.",
         "security": [
           {
@@ -3950,7 +4555,9 @@
     },
     "/api/v1/me": {
       "delete": {
-        "tags": ["privacy"],
+        "tags": [
+          "privacy"
+        ],
         "description": "Kontolöschung (Art. 17 DSGVO). Privatkonto: sofort alles gelöscht. Firmenkonto: sofort anonymisiert, Löschung nach Aufbewahrungsfrist durch den nächtlichen Job.",
         "requestBody": {
           "required": true,
@@ -3965,7 +4572,9 @@
                     "maxLength": 200
                   }
                 },
-                "required": ["password"]
+                "required": [
+                  "password"
+                ]
               }
             }
           }
@@ -3985,10 +4594,312 @@
                   "properties": {
                     "mode": {
                       "type": "string",
-                      "enum": ["deleted", "anonymized"]
+                      "enum": [
+                        "deleted",
+                        "anonymized"
+                      ]
                     }
                   },
-                  "required": ["mode"],
+                  "required": [
+                    "mode"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/prompts": {
+      "get": {
+        "tags": [
+          "prompts"
+        ],
+        "description": "Offene Rückfragen: Arbeitsende bestätigen (3 Tage), Ende fehlt (3 Tage), Wochenrückblick (7 Tage). Erledigte (Sitzung entschieden, Ende ergänzt) und ausgeblendete fehlen.",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "prompts": {
+                      "type": "array",
+                      "items": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "end_confirm"
+                                ]
+                              },
+                              "ref": {
+                                "type": "string"
+                              },
+                              "createdAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              },
+                              "payload": {
+                                "type": "object",
+                                "properties": {
+                                  "sessionId": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  },
+                                  "date": {
+                                    "type": "string",
+                                    "format": "date",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                  },
+                                  "end": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                  },
+                                  "tz": {
+                                    "type": "string"
+                                  },
+                                  "endSource": {
+                                    "type": "string",
+                                    "maxLength": 40
+                                  }
+                                },
+                                "required": [
+                                  "sessionId",
+                                  "date",
+                                  "tz"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "ref",
+                              "createdAt",
+                              "payload"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "end_missing"
+                                ]
+                              },
+                              "ref": {
+                                "type": "string"
+                              },
+                              "createdAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              },
+                              "payload": {
+                                "type": "object",
+                                "properties": {
+                                  "sessionId": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  },
+                                  "date": {
+                                    "type": "string",
+                                    "format": "date",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                  },
+                                  "end": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                  },
+                                  "tz": {
+                                    "type": "string"
+                                  },
+                                  "endSource": {
+                                    "type": "string",
+                                    "maxLength": 40
+                                  }
+                                },
+                                "required": [
+                                  "sessionId",
+                                  "date",
+                                  "tz"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "ref",
+                              "createdAt",
+                              "payload"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "week_review"
+                                ]
+                              },
+                              "ref": {
+                                "type": "string"
+                              },
+                              "createdAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              },
+                              "payload": {
+                                "type": "object",
+                                "properties": {
+                                  "week": {
+                                    "type": "string",
+                                    "pattern": "^\\d{4}-W\\d{2}$"
+                                  },
+                                  "from": {
+                                    "type": "string",
+                                    "format": "date",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                  },
+                                  "to": {
+                                    "type": "string",
+                                    "format": "date",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                  },
+                                  "netMinutes": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "balanceMinutes": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "openDays": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "legalHints": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "week",
+                                  "from",
+                                  "to",
+                                  "netMinutes",
+                                  "balanceMinutes",
+                                  "openDays",
+                                  "legalHints"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "ref",
+                              "createdAt",
+                              "payload"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "prompts"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/prompts/dismiss": {
+      "post": {
+        "tags": [
+          "prompts"
+        ],
+        "description": "Blendet eine Rückfrage auf allen Geräten aus.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "end_confirm",
+                      "end_missing",
+                      "week_review"
+                    ]
+                  },
+                  "ref": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "kind",
+                  "ref"
+                ]
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -3999,7 +4910,9 @@
     },
     "/api/v1/orgs": {
       "post": {
-        "tags": ["org"],
+        "tags": [
+          "org"
+        ],
         "description": "Legt eine Firmen-Organisation an; das eigene Konto wird ihr Admin. Danach Token erneuern (/auth/refresh) und TOTP einrichten.",
         "requestBody": {
           "required": true,
@@ -4018,7 +4931,10 @@
                     "pattern": "^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$"
                   }
                 },
-                "required": ["name", "slug"]
+                "required": [
+                  "name",
+                  "slug"
+                ]
               }
             }
           }
@@ -4042,7 +4958,9 @@
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     }
                   },
-                  "required": ["orgId"],
+                  "required": [
+                    "orgId"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -4053,7 +4971,9 @@
     },
     "/api/v1/approvals": {
       "get": {
-        "tags": ["approvals"],
+        "tags": [
+          "approvals"
+        ],
         "description": "Eigene Monatsfreigaben (Firmenkonto).",
         "security": [
           {
@@ -4079,7 +4999,11 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": ["submitted", "approved", "rejected"]
+                            "enum": [
+                              "submitted",
+                              "approved",
+                              "rejected"
+                            ]
                           },
                           "submittedAt": {
                             "type": "string",
@@ -4095,12 +5019,17 @@
                             "type": "string"
                           }
                         },
-                        "required": ["month", "status"],
+                        "required": [
+                          "month",
+                          "status"
+                        ],
                         "additionalProperties": false
                       }
                     }
                   },
-                  "required": ["approvals"],
+                  "required": [
+                    "approvals"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -4111,7 +5040,9 @@
     },
     "/api/v1/approvals/{month}": {
       "post": {
-        "tags": ["approvals"],
+        "tags": [
+          "approvals"
+        ],
         "description": "Reicht einen Monat zur Freigabe ein (auch erneut nach Zurückweisung). Freigegebene Monate sind gesperrt.",
         "parameters": [
           {
@@ -4143,7 +5074,11 @@
                     },
                     "status": {
                       "type": "string",
-                      "enum": ["submitted", "approved", "rejected"]
+                      "enum": [
+                        "submitted",
+                        "approved",
+                        "rejected"
+                      ]
                     },
                     "submittedAt": {
                       "type": "string",
@@ -4159,7 +5094,10 @@
                       "type": "string"
                     }
                   },
-                  "required": ["month", "status"],
+                  "required": [
+                    "month",
+                    "status"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -4170,7 +5108,9 @@
     },
     "/api/v1/org/me": {
       "get": {
-        "tags": ["org"],
+        "tags": [
+          "org"
+        ],
         "security": [
           {
             "bearer": []
@@ -4200,7 +5140,11 @@
                         },
                         "role": {
                           "type": "string",
-                          "enum": ["user", "manager", "admin"]
+                          "enum": [
+                            "user",
+                            "manager",
+                            "admin"
+                          ]
                         },
                         "teamId": {
                           "type": "string",
@@ -4208,7 +5152,12 @@
                           "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                         }
                       },
-                      "required": ["id", "name", "email", "role"],
+                      "required": [
+                        "id",
+                        "name",
+                        "email",
+                        "role"
+                      ],
                       "additionalProperties": false
                     },
                     "org": {
@@ -4227,10 +5176,17 @@
                         },
                         "plan": {
                           "type": "string",
-                          "enum": ["private", "company"]
+                          "enum": [
+                            "private",
+                            "company"
+                          ]
                         }
                       },
-                      "required": ["id", "name", "plan"],
+                      "required": [
+                        "id",
+                        "name",
+                        "plan"
+                      ],
                       "additionalProperties": false
                     },
                     "managedTeamIds": {
@@ -4242,7 +5198,11 @@
                       }
                     }
                   },
-                  "required": ["user", "org", "managedTeamIds"],
+                  "required": [
+                    "user",
+                    "org",
+                    "managedTeamIds"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -4253,7 +5213,9 @@
     },
     "/api/v1/org/config": {
       "get": {
-        "tags": ["org"],
+        "tags": [
+          "org"
+        ],
         "security": [
           {
             "bearer": []
@@ -4346,7 +5308,11 @@
                           "properties": {
                             "provider": {
                               "type": "string",
-                              "enum": ["entra", "google", "oidc"]
+                              "enum": [
+                                "entra",
+                                "google",
+                                "oidc"
+                              ]
                             },
                             "issuer": {
                               "type": "string",
@@ -4362,7 +5328,12 @@
                               "pattern": "^SSO_[A-Z0-9_]{1,64}$"
                             }
                           },
-                          "required": ["provider", "issuer", "clientId", "clientSecretEnv"],
+                          "required": [
+                            "provider",
+                            "issuer",
+                            "clientId",
+                            "clientSecretEnv"
+                          ],
                           "additionalProperties": false
                         },
                         "saml": {
@@ -4386,7 +5357,10 @@
                               "maxLength": 200
                             }
                           },
-                          "required": ["entryPoint", "idpCert"],
+                          "required": [
+                            "entryPoint",
+                            "idpCert"
+                          ],
                           "additionalProperties": false
                         },
                         "enforced": {
@@ -4407,7 +5381,11 @@
                           }
                         }
                       },
-                      "required": ["enforced", "autoProvision", "allowedDomains"],
+                      "required": [
+                        "enforced",
+                        "autoProvision",
+                        "allowedDomains"
+                      ],
                       "additionalProperties": false
                     }
                   },
@@ -4427,7 +5405,9 @@
         }
       },
       "put": {
-        "tags": ["org"],
+        "tags": [
+          "org"
+        ],
         "description": "Regelwerk-Parameter (z. B. shutdownBonusMin, standbyBreakMin), Aufbewahrungsfrist und SSO. Änderungen am Regelwerk erhöhen rules_config_version und wirken nur auf nicht freigegebene Monate.",
         "requestBody": {
           "required": true,
@@ -4503,7 +5483,11 @@
                         "properties": {
                           "provider": {
                             "type": "string",
-                            "enum": ["entra", "google", "oidc"]
+                            "enum": [
+                              "entra",
+                              "google",
+                              "oidc"
+                            ]
                           },
                           "issuer": {
                             "type": "string",
@@ -4519,7 +5503,12 @@
                             "pattern": "^SSO_[A-Z0-9_]{1,64}$"
                           }
                         },
-                        "required": ["provider", "issuer", "clientId", "clientSecretEnv"]
+                        "required": [
+                          "provider",
+                          "issuer",
+                          "clientId",
+                          "clientSecretEnv"
+                        ]
                       },
                       "saml": {
                         "type": "object",
@@ -4542,7 +5531,10 @@
                             "maxLength": 200
                           }
                         },
-                        "required": ["entryPoint", "idpCert"]
+                        "required": [
+                          "entryPoint",
+                          "idpCert"
+                        ]
                       },
                       "enforced": {
                         "default": false,
@@ -4660,7 +5652,11 @@
                           "properties": {
                             "provider": {
                               "type": "string",
-                              "enum": ["entra", "google", "oidc"]
+                              "enum": [
+                                "entra",
+                                "google",
+                                "oidc"
+                              ]
                             },
                             "issuer": {
                               "type": "string",
@@ -4676,7 +5672,12 @@
                               "pattern": "^SSO_[A-Z0-9_]{1,64}$"
                             }
                           },
-                          "required": ["provider", "issuer", "clientId", "clientSecretEnv"],
+                          "required": [
+                            "provider",
+                            "issuer",
+                            "clientId",
+                            "clientSecretEnv"
+                          ],
                           "additionalProperties": false
                         },
                         "saml": {
@@ -4700,7 +5701,10 @@
                               "maxLength": 200
                             }
                           },
-                          "required": ["entryPoint", "idpCert"],
+                          "required": [
+                            "entryPoint",
+                            "idpCert"
+                          ],
                           "additionalProperties": false
                         },
                         "enforced": {
@@ -4721,7 +5725,11 @@
                           }
                         }
                       },
-                      "required": ["enforced", "autoProvision", "allowedDomains"],
+                      "required": [
+                        "enforced",
+                        "autoProvision",
+                        "allowedDomains"
+                      ],
                       "additionalProperties": false
                     }
                   },
@@ -4743,7 +5751,9 @@
     },
     "/api/v1/org/members": {
       "get": {
-        "tags": ["org"],
+        "tags": [
+          "org"
+        ],
         "description": "Admin: alle Mitglieder mit E-Mail und Rolle. Manager: nur Name und Team der Mitglieder eigener Teams.",
         "security": [
           {
@@ -4781,7 +5791,11 @@
                           },
                           "role": {
                             "type": "string",
-                            "enum": ["user", "manager", "admin"]
+                            "enum": [
+                              "user",
+                              "manager",
+                              "admin"
+                            ]
                           },
                           "active": {
                             "type": "boolean"
@@ -4790,12 +5804,17 @@
                             "type": "boolean"
                           }
                         },
-                        "required": ["id", "name"],
+                        "required": [
+                          "id",
+                          "name"
+                        ],
                         "additionalProperties": false
                       }
                     }
                   },
-                  "required": ["members"],
+                  "required": [
+                    "members"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -4806,7 +5825,9 @@
     },
     "/api/v1/org/members/{id}": {
       "patch": {
-        "tags": ["org"],
+        "tags": [
+          "org"
+        ],
         "description": "Rolle und Team eines Mitglieds ändern.",
         "requestBody": {
           "required": true,
@@ -4817,7 +5838,11 @@
                 "properties": {
                   "role": {
                     "type": "string",
-                    "enum": ["user", "manager", "admin"]
+                    "enum": [
+                      "user",
+                      "manager",
+                      "admin"
+                    ]
                   },
                   "teamId": {
                     "anyOf": [
@@ -4879,7 +5904,11 @@
                     },
                     "role": {
                       "type": "string",
-                      "enum": ["user", "manager", "admin"]
+                      "enum": [
+                        "user",
+                        "manager",
+                        "admin"
+                      ]
                     },
                     "active": {
                       "type": "boolean"
@@ -4888,7 +5917,10 @@
                       "type": "boolean"
                     }
                   },
-                  "required": ["id", "name"],
+                  "required": [
+                    "id",
+                    "name"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -4899,7 +5931,9 @@
     },
     "/api/v1/org/members/{id}/deactivate": {
       "post": {
-        "tags": ["org"],
+        "tags": [
+          "org"
+        ],
         "description": "Deaktiviert ein Mitglied: Anmeldung und Geräte gesperrt. Die Daten bleiben bis zum Ende der Aufbewahrungsfrist.",
         "parameters": [
           {
@@ -4928,10 +5962,14 @@
                   "properties": {
                     "ok": {
                       "type": "boolean",
-                      "enum": [true]
+                      "enum": [
+                        true
+                      ]
                     }
                   },
-                  "required": ["ok"],
+                  "required": [
+                    "ok"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -4942,7 +5980,9 @@
     },
     "/api/v1/org/teams": {
       "get": {
-        "tags": ["org"],
+        "tags": [
+          "org"
+        ],
         "description": "Admin: alle Teams. Manager: die eigenen Teams.",
         "security": [
           {
@@ -4981,12 +6021,18 @@
                             "maximum": 9007199254740991
                           }
                         },
-                        "required": ["id", "name", "memberCount"],
+                        "required": [
+                          "id",
+                          "name",
+                          "memberCount"
+                        ],
                         "additionalProperties": false
                       }
                     }
                   },
-                  "required": ["teams"],
+                  "required": [
+                    "teams"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -4995,7 +6041,9 @@
         }
       },
       "post": {
-        "tags": ["org"],
+        "tags": [
+          "org"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -5021,7 +6069,9 @@
                     ]
                   }
                 },
-                "required": ["name"]
+                "required": [
+                  "name"
+                ]
               }
             }
           }
@@ -5058,7 +6108,11 @@
                       "maximum": 9007199254740991
                     }
                   },
-                  "required": ["id", "name", "memberCount"],
+                  "required": [
+                    "id",
+                    "name",
+                    "memberCount"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -5069,7 +6123,9 @@
     },
     "/api/v1/org/teams/{id}": {
       "patch": {
-        "tags": ["org"],
+        "tags": [
+          "org"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -5143,7 +6199,11 @@
                       "maximum": 9007199254740991
                     }
                   },
-                  "required": ["id", "name", "memberCount"],
+                  "required": [
+                    "id",
+                    "name",
+                    "memberCount"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -5152,7 +6212,9 @@
         }
       },
       "delete": {
-        "tags": ["org"],
+        "tags": [
+          "org"
+        ],
         "description": "Löscht ein Team; seine Mitglieder sind danach keinem Team zugeordnet.",
         "parameters": [
           {
@@ -5181,10 +6243,14 @@
                   "properties": {
                     "ok": {
                       "type": "boolean",
-                      "enum": [true]
+                      "enum": [
+                        true
+                      ]
                     }
                   },
-                  "required": ["ok"],
+                  "required": [
+                    "ok"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -5195,7 +6261,9 @@
     },
     "/api/v1/org/invite": {
       "post": {
-        "tags": ["org"],
+        "tags": [
+          "org"
+        ],
         "description": "Lädt eine Person per E-Mail ein (Link 7 Tage gültig). Eine frühere offene Einladung an dieselbe Adresse wird ersetzt.",
         "requestBody": {
           "required": true,
@@ -5213,7 +6281,11 @@
                   "role": {
                     "default": "user",
                     "type": "string",
-                    "enum": ["user", "manager", "admin"]
+                    "enum": [
+                      "user",
+                      "manager",
+                      "admin"
+                    ]
                   },
                   "teamId": {
                     "type": "string",
@@ -5221,7 +6293,9 @@
                     "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                   }
                 },
-                "required": ["email"]
+                "required": [
+                  "email"
+                ]
               }
             }
           }
@@ -5249,7 +6323,11 @@
                     },
                     "role": {
                       "type": "string",
-                      "enum": ["user", "manager", "admin"]
+                      "enum": [
+                        "user",
+                        "manager",
+                        "admin"
+                      ]
                     },
                     "teamId": {
                       "type": "string",
@@ -5267,7 +6345,13 @@
                       "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                     }
                   },
-                  "required": ["id", "email", "role", "expiresAt", "createdAt"],
+                  "required": [
+                    "id",
+                    "email",
+                    "role",
+                    "expiresAt",
+                    "createdAt"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -5278,7 +6362,9 @@
     },
     "/api/v1/org/invitations": {
       "get": {
-        "tags": ["org"],
+        "tags": [
+          "org"
+        ],
         "security": [
           {
             "bearer": []
@@ -5307,7 +6393,11 @@
                           },
                           "role": {
                             "type": "string",
-                            "enum": ["user", "manager", "admin"]
+                            "enum": [
+                              "user",
+                              "manager",
+                              "admin"
+                            ]
                           },
                           "teamId": {
                             "type": "string",
@@ -5325,12 +6415,20 @@
                             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                           }
                         },
-                        "required": ["id", "email", "role", "expiresAt", "createdAt"],
+                        "required": [
+                          "id",
+                          "email",
+                          "role",
+                          "expiresAt",
+                          "createdAt"
+                        ],
                         "additionalProperties": false
                       }
                     }
                   },
-                  "required": ["invitations"],
+                  "required": [
+                    "invitations"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -5341,7 +6439,9 @@
     },
     "/api/v1/org/invitations/{id}": {
       "delete": {
-        "tags": ["org"],
+        "tags": [
+          "org"
+        ],
         "parameters": [
           {
             "schema": {
@@ -5369,10 +6469,14 @@
                   "properties": {
                     "ok": {
                       "type": "boolean",
-                      "enum": [true]
+                      "enum": [
+                        true
+                      ]
                     }
                   },
-                  "required": ["ok"],
+                  "required": [
+                    "ok"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -5383,7 +6487,9 @@
     },
     "/api/v1/org/networks": {
       "get": {
-        "tags": ["org"],
+        "tags": [
+          "org"
+        ],
         "description": "Firmen-Arbeitsnetze; sie gelten automatisch für alle Mitglieder.",
         "security": [
           {
@@ -5410,11 +6516,18 @@
                           },
                           "scope": {
                             "type": "string",
-                            "enum": ["user", "org"]
+                            "enum": [
+                              "user",
+                              "org"
+                            ]
                           },
                           "kind": {
                             "type": "string",
-                            "enum": ["ssid", "fingerprint", "geofence"]
+                            "enum": [
+                              "ssid",
+                              "fingerprint",
+                              "geofence"
+                            ]
                           },
                           "label": {
                             "type": "string"
@@ -5438,7 +6551,12 @@
                             "type": "number"
                           }
                         },
-                        "required": ["id", "scope", "kind", "label"],
+                        "required": [
+                          "id",
+                          "scope",
+                          "kind",
+                          "label"
+                        ],
                         "additionalProperties": false
                       }
                     },
@@ -5452,11 +6570,16 @@
                           "type": "string"
                         }
                       },
-                      "required": ["user"],
+                      "required": [
+                        "user"
+                      ],
                       "additionalProperties": false
                     }
                   },
-                  "required": ["networks", "keys"],
+                  "required": [
+                    "networks",
+                    "keys"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -5465,7 +6588,9 @@
         }
       },
       "post": {
-        "tags": ["org"],
+        "tags": [
+          "org"
+        ],
         "description": "Fügt ein Firmen-Arbeitsnetz hinzu. Netzwerk-Kennung (Standard) und BSSID werden nur als HMAC mit dem Organisationsschlüssel gespeichert.",
         "requestBody": {
           "required": true,
@@ -5478,7 +6603,9 @@
                     "properties": {
                       "kind": {
                         "type": "string",
-                        "enum": ["ssid"]
+                        "enum": [
+                          "ssid"
+                        ]
                       },
                       "label": {
                         "type": "string",
@@ -5495,14 +6622,20 @@
                         "pattern": "^([0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2}$"
                       }
                     },
-                    "required": ["kind", "label", "ssid"]
+                    "required": [
+                      "kind",
+                      "label",
+                      "ssid"
+                    ]
                   },
                   {
                     "type": "object",
                     "properties": {
                       "kind": {
                         "type": "string",
-                        "enum": ["fingerprint"]
+                        "enum": [
+                          "fingerprint"
+                        ]
                       },
                       "label": {
                         "type": "string",
@@ -5515,14 +6648,20 @@
                         "maxLength": 512
                       }
                     },
-                    "required": ["kind", "label", "fingerprint"]
+                    "required": [
+                      "kind",
+                      "label",
+                      "fingerprint"
+                    ]
                   },
                   {
                     "type": "object",
                     "properties": {
                       "kind": {
                         "type": "string",
-                        "enum": ["geofence"]
+                        "enum": [
+                          "geofence"
+                        ]
                       },
                       "label": {
                         "type": "string",
@@ -5545,7 +6684,13 @@
                         "maximum": 1000
                       }
                     },
-                    "required": ["kind", "label", "lat", "lng", "radius"]
+                    "required": [
+                      "kind",
+                      "label",
+                      "lat",
+                      "lng",
+                      "radius"
+                    ]
                   }
                 ]
               }
@@ -5572,11 +6717,18 @@
                     },
                     "scope": {
                       "type": "string",
-                      "enum": ["user", "org"]
+                      "enum": [
+                        "user",
+                        "org"
+                      ]
                     },
                     "kind": {
                       "type": "string",
-                      "enum": ["ssid", "fingerprint", "geofence"]
+                      "enum": [
+                        "ssid",
+                        "fingerprint",
+                        "geofence"
+                      ]
                     },
                     "label": {
                       "type": "string"
@@ -5600,7 +6752,12 @@
                       "type": "number"
                     }
                   },
-                  "required": ["id", "scope", "kind", "label"],
+                  "required": [
+                    "id",
+                    "scope",
+                    "kind",
+                    "label"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -5611,7 +6768,9 @@
     },
     "/api/v1/org/networks/{id}": {
       "delete": {
-        "tags": ["org"],
+        "tags": [
+          "org"
+        ],
         "parameters": [
           {
             "schema": {
@@ -5639,10 +6798,14 @@
                   "properties": {
                     "ok": {
                       "type": "boolean",
-                      "enum": [true]
+                      "enum": [
+                        true
+                      ]
                     }
                   },
-                  "required": ["ok"],
+                  "required": [
+                    "ok"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -5653,7 +6816,9 @@
     },
     "/api/v1/org/audit": {
       "get": {
-        "tags": ["org"],
+        "tags": [
+          "org"
+        ],
         "description": "Audit-Log der Organisation, neueste zuerst.",
         "parameters": [
           {
@@ -5722,7 +6887,11 @@
                             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                           }
                         },
-                        "required": ["id", "action", "createdAt"],
+                        "required": [
+                          "id",
+                          "action",
+                          "createdAt"
+                        ],
                         "additionalProperties": false
                       }
                     },
@@ -5732,7 +6901,9 @@
                       "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                     }
                   },
-                  "required": ["entries"],
+                  "required": [
+                    "entries"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -5743,7 +6914,9 @@
     },
     "/api/v1/org/members/{id}/days": {
       "get": {
-        "tags": ["org"],
+        "tags": [
+          "org"
+        ],
         "description": "Je Tag nur Beginn, Ende, Pausensumme, Auffüllung, Netto, Status und Warnungen – keine Sitzungen, Quellen, Ereignisse oder Geräte. Freigegebene Monate als Snapshot.",
         "parameters": [
           {
@@ -5827,7 +7000,12 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": ["open", "unchecked", "auto", "confirmed"]
+                            "enum": [
+                              "open",
+                              "unchecked",
+                              "auto",
+                              "confirmed"
+                            ]
                           },
                           "warnings": {
                             "type": "array",
@@ -5864,7 +7042,9 @@
                       }
                     }
                   },
-                  "required": ["days"],
+                  "required": [
+                    "days"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -5875,7 +7055,9 @@
     },
     "/api/v1/org/members/{id}/target-hours": {
       "get": {
-        "tags": ["org"],
+        "tags": [
+          "org"
+        ],
         "parameters": [
           {
             "schema": {
@@ -5955,12 +7137,17 @@
                             "maxItems": 7
                           }
                         },
-                        "required": ["validFrom", "minutesByWeekday"],
+                        "required": [
+                          "validFrom",
+                          "minutesByWeekday"
+                        ],
                         "additionalProperties": false
                       }
                     }
                   },
-                  "required": ["schedule"],
+                  "required": [
+                    "schedule"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -5969,7 +7156,9 @@
         }
       },
       "put": {
-        "tags": ["org"],
+        "tags": [
+          "org"
+        ],
         "description": "Sollzeiten eines Mitglieds je Wochentag (0 = Sonntag) ab einem Datum.",
         "requestBody": {
           "required": true,
@@ -6027,7 +7216,10 @@
                     "maxItems": 7
                   }
                 },
-                "required": ["validFrom", "minutesByWeekday"]
+                "required": [
+                  "validFrom",
+                  "minutesByWeekday"
+                ]
               }
             }
           }
@@ -6059,10 +7251,14 @@
                   "properties": {
                     "ok": {
                       "type": "boolean",
-                      "enum": [true]
+                      "enum": [
+                        true
+                      ]
                     }
                   },
-                  "required": ["ok"],
+                  "required": [
+                    "ok"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -6073,7 +7269,9 @@
     },
     "/api/v1/org/members/{id}/days/{date}": {
       "patch": {
-        "tags": ["org"],
+        "tags": [
+          "org"
+        ],
         "description": "Admin-Korrektur mit Pflicht-Begründung: erzeugt manual_*-Ereignis und corrections-Zeile (Autor = Admin). Ist der Monat freigegeben, wird die Freigabe zurückgesetzt (wieder „eingereicht“) und muss neu erteilt werden.",
         "requestBody": {
           "required": true,
@@ -6086,7 +7284,9 @@
                     "properties": {
                       "field": {
                         "type": "string",
-                        "enum": ["start"]
+                        "enum": [
+                          "start"
+                        ]
                       },
                       "time": {
                         "type": "string",
@@ -6099,14 +7299,19 @@
                         "maxLength": 500
                       }
                     },
-                    "required": ["field", "time"]
+                    "required": [
+                      "field",
+                      "time"
+                    ]
                   },
                   {
                     "type": "object",
                     "properties": {
                       "field": {
                         "type": "string",
-                        "enum": ["end"]
+                        "enum": [
+                          "end"
+                        ]
                       },
                       "time": {
                         "type": "string",
@@ -6119,14 +7324,19 @@
                         "maxLength": 500
                       }
                     },
-                    "required": ["field", "time"]
+                    "required": [
+                      "field",
+                      "time"
+                    ]
                   },
                   {
                     "type": "object",
                     "properties": {
                       "field": {
                         "type": "string",
-                        "enum": ["break"]
+                        "enum": [
+                          "break"
+                        ]
                       },
                       "from": {
                         "type": "string",
@@ -6144,14 +7354,20 @@
                         "maxLength": 500
                       }
                     },
-                    "required": ["field", "from", "to"]
+                    "required": [
+                      "field",
+                      "from",
+                      "to"
+                    ]
                   },
                   {
                     "type": "object",
                     "properties": {
                       "field": {
                         "type": "string",
-                        "enum": ["work"]
+                        "enum": [
+                          "work"
+                        ]
                       },
                       "from": {
                         "type": "string",
@@ -6169,7 +7385,11 @@
                         "maxLength": 500
                       }
                     },
-                    "required": ["field", "from", "to"]
+                    "required": [
+                      "field",
+                      "from",
+                      "to"
+                    ]
                   }
                 ]
               }
@@ -6297,13 +7517,22 @@
                                     },
                                     "source": {
                                       "type": "string",
-                                      "enum": ["standby", "net_gap", "manual"]
+                                      "enum": [
+                                        "standby",
+                                        "net_gap",
+                                        "manual"
+                                      ]
                                     },
                                     "countsLegally": {
                                       "type": "boolean"
                                     }
                                   },
-                                  "required": ["from", "to", "source", "countsLegally"],
+                                  "required": [
+                                    "from",
+                                    "to",
+                                    "source",
+                                    "countsLegally"
+                                  ],
                                   "additionalProperties": false
                                 }
                               },
@@ -6415,7 +7644,12 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": ["open", "unchecked", "auto", "confirmed"]
+                          "enum": [
+                            "open",
+                            "unchecked",
+                            "auto",
+                            "confirmed"
+                          ]
                         },
                         "corrected": {
                           "type": "boolean"
@@ -6460,7 +7694,9 @@
                       "additionalProperties": false
                     }
                   },
-                  "required": ["eventId"],
+                  "required": [
+                    "eventId"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -6471,7 +7707,9 @@
     },
     "/api/v1/org/approvals": {
       "get": {
-        "tags": ["org"],
+        "tags": [
+          "org"
+        ],
         "description": "Freigabestatus eines Monats für alle sichtbaren Mitglieder (Manager: eigene Teams, ohne sich selbst).",
         "parameters": [
           {
@@ -6486,7 +7724,12 @@
           {
             "schema": {
               "type": "string",
-              "enum": ["none", "submitted", "approved", "rejected"]
+              "enum": [
+                "none",
+                "submitted",
+                "approved",
+                "rejected"
+              ]
             },
             "in": "query",
             "name": "status",
@@ -6530,7 +7773,12 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": ["none", "submitted", "approved", "rejected"]
+                            "enum": [
+                              "none",
+                              "submitted",
+                              "approved",
+                              "rejected"
+                            ]
                           },
                           "submittedAt": {
                             "type": "string",
@@ -6551,12 +7799,19 @@
                             "type": "string"
                           }
                         },
-                        "required": ["userId", "name", "month", "status"],
+                        "required": [
+                          "userId",
+                          "name",
+                          "month",
+                          "status"
+                        ],
                         "additionalProperties": false
                       }
                     }
                   },
-                  "required": ["approvals"],
+                  "required": [
+                    "approvals"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -6567,7 +7822,9 @@
     },
     "/api/v1/org/approvals/{userId}/{month}": {
       "get": {
-        "tags": ["org"],
+        "tags": [
+          "org"
+        ],
         "parameters": [
           {
             "schema": {
@@ -6624,7 +7881,12 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": ["none", "submitted", "approved", "rejected"]
+                          "enum": [
+                            "none",
+                            "submitted",
+                            "approved",
+                            "rejected"
+                          ]
                         },
                         "submittedAt": {
                           "type": "string",
@@ -6645,7 +7907,12 @@
                           "type": "string"
                         }
                       },
-                      "required": ["userId", "name", "month", "status"],
+                      "required": [
+                        "userId",
+                        "name",
+                        "month",
+                        "status"
+                      ],
                       "additionalProperties": false
                     },
                     "days": {
@@ -6685,7 +7952,12 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": ["open", "unchecked", "auto", "confirmed"]
+                            "enum": [
+                              "open",
+                              "unchecked",
+                              "auto",
+                              "confirmed"
+                            ]
                           },
                           "warnings": {
                             "type": "array",
@@ -6748,11 +8020,21 @@
                           "maximum": 9007199254740991
                         }
                       },
-                      "required": ["netMinutes", "breakTopUpMin", "uncheckedDays", "openDays"],
+                      "required": [
+                        "netMinutes",
+                        "breakTopUpMin",
+                        "uncheckedDays",
+                        "openDays"
+                      ],
                       "additionalProperties": false
                     }
                   },
-                  "required": ["approval", "days", "snapshot", "totals"],
+                  "required": [
+                    "approval",
+                    "days",
+                    "snapshot",
+                    "totals"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -6763,7 +8045,9 @@
     },
     "/api/v1/org/approvals/{userId}/{month}/approve": {
       "post": {
-        "tags": ["org"],
+        "tags": [
+          "org"
+        ],
         "description": "Gibt einen eingereichten Monat frei: Die Arbeitstage werden als Snapshot gespeichert und danach nie neu berechnet.",
         "requestBody": {
           "required": true,
@@ -6835,7 +8119,12 @@
                     },
                     "status": {
                       "type": "string",
-                      "enum": ["none", "submitted", "approved", "rejected"]
+                      "enum": [
+                        "none",
+                        "submitted",
+                        "approved",
+                        "rejected"
+                      ]
                     },
                     "submittedAt": {
                       "type": "string",
@@ -6856,7 +8145,12 @@
                       "type": "string"
                     }
                   },
-                  "required": ["userId", "name", "month", "status"],
+                  "required": [
+                    "userId",
+                    "name",
+                    "month",
+                    "status"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -6867,7 +8161,9 @@
     },
     "/api/v1/org/approvals/{userId}/{month}/reject": {
       "post": {
-        "tags": ["org"],
+        "tags": [
+          "org"
+        ],
         "description": "Weist einen eingereichten Monat mit Kommentar zurück; das Mitglied kann korrigieren und erneut einreichen.",
         "requestBody": {
           "required": true,
@@ -6882,7 +8178,9 @@
                     "maxLength": 1000
                   }
                 },
-                "required": ["comment"]
+                "required": [
+                  "comment"
+                ]
               }
             }
           }
@@ -6940,7 +8238,12 @@
                     },
                     "status": {
                       "type": "string",
-                      "enum": ["none", "submitted", "approved", "rejected"]
+                      "enum": [
+                        "none",
+                        "submitted",
+                        "approved",
+                        "rejected"
+                      ]
                     },
                     "submittedAt": {
                       "type": "string",
@@ -6961,7 +8264,12 @@
                       "type": "string"
                     }
                   },
-                  "required": ["userId", "name", "month", "status"],
+                  "required": [
+                    "userId",
+                    "name",
+                    "month",
+                    "status"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -6972,7 +8280,9 @@
     },
     "/api/v1/org/export": {
       "get": {
-        "tags": ["org"],
+        "tags": [
+          "org"
+        ],
         "description": "Monatsexport aller (bzw. eines Teams) Mitglieder als CSV oder PDF; freigegebene Monate aus dem Snapshot.",
         "parameters": [
           {
@@ -6988,7 +8298,10 @@
             "schema": {
               "default": "csv",
               "type": "string",
-              "enum": ["csv", "pdf"]
+              "enum": [
+                "csv",
+                "pdf"
+              ]
             },
             "in": "query",
             "name": "format",

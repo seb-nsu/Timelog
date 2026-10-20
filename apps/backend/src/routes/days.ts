@@ -57,6 +57,8 @@ function buildSchedule(rows: (typeof targetHours.$inferSelect)[]): TargetSchedul
 interface Computed {
   days: WorkDay[];
   timezone: string;
+  /** Wirksames Regelwerk des Nutzers (Organisation, Bundesland, Sollzeiten) */
+  config: RulesConfig;
 }
 
 /** Lädt alle Eingaben des Nutzers und berechnet die Arbeitstage mit dem Regelwerk. */
@@ -68,7 +70,7 @@ export async function computeUserDays(
   nowMs: number,
 ): Promise<Computed> {
   const [user] = await tx.select().from(users).where(eq(users.id, userId));
-  if (!user) return { days: [], timezone: 'Europe/Berlin' };
+  if (!user) return { days: [], timezone: 'Europe/Berlin', config: resolveConfig() };
   const org = user.orgId
     ? (await tx.select().from(organizations).where(eq(organizations.id, user.orgId)))[0]
     : undefined;
@@ -124,7 +126,11 @@ export async function computeUserDays(
     config,
     new Date(nowMs).toISOString(),
   );
-  return { days: days.filter((d) => d.date >= from && d.date <= to), timezone: user.timezone };
+  return {
+    days: days.filter((d) => d.date >= from && d.date <= to),
+    timezone: user.timezone,
+    config,
+  };
 }
 
 /** Monate (JJJJ-MM) zwischen zwei Daten, jeweils einschließlich. */
@@ -180,7 +186,7 @@ export async function loadDays(
   const live = computed.days.filter((d) => !frozen.has(d.date.slice(0, 7)));
   const fromSnapshots = [...frozen.values()].flat().filter((d) => d.date >= from && d.date <= to);
   const days = [...live, ...fromSnapshots].sort((a, b) => a.date.localeCompare(b.date));
-  return { days, timezone: computed.timezone, approvedMonths: [...frozen.keys()].sort() };
+  return { ...computed, days, approvedMonths: [...frozen.keys()].sort() };
 }
 
 export function daysRoutes(app: App, ctx: AppContext): void {

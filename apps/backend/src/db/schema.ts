@@ -130,6 +130,8 @@ export const devices = pgTable(
     os: text('os').notNull(),
     name: text('name').notNull(),
     pushToken: text('push_token'),
+    /** Sprache der Push-Texte (de/en), vom Gerät gemeldet. */
+    locale: text('locale'),
     lastSeenAt: tstz('last_seen_at'),
     revokedAt: tstz('revoked_at'),
     createdAt: createdAt(),
@@ -343,3 +345,29 @@ export const ssoRequests = pgTable('sso_requests', {
   expiresAt: tstz('expires_at').notNull(),
   createdAt: createdAt(),
 });
+
+/**
+ * Rückfragen per Push (Arbeitsende bestätigen, Ende fehlt, Wochenrückblick). Der Primärschlüssel
+ * macht den Job idempotent: höchstens eine Rückfrage je Nutzer, Art und Bezug (Sitzung bzw. Woche).
+ * payload enthält nur Datum, Uhrzeiten und Summen – keine Namen oder E-Mails.
+ */
+export const pushPrompts = pgTable(
+  'push_prompts',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    kind: text('kind', { enum: ['end_confirm', 'end_missing', 'week_review'] }).notNull(),
+    ref: text('ref').notNull(),
+    payload: jsonb('payload').notNull(),
+    createdAt: createdAt(),
+    sentAt: tstz('sent_at'),
+    /** Anzahl Geräte, an die der Push zugestellt wurde. */
+    sentTo: integer('sent_to').notNull().default(0),
+    dismissedAt: tstz('dismissed_at'),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.kind, t.ref] }),
+    index('push_prompts_user_created').on(t.userId, t.createdAt),
+  ],
+);
