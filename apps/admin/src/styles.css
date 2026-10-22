@@ -99,14 +99,30 @@ h3 {
   gap: 0.5rem;
 }
 
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-group h2 {
+  margin: 0 0 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
 nav ul {
   list-style: none;
   margin: 0;
-  padding: 0.5rem 1rem;
+  padding: 0;
   display: flex;
   flex-wrap: wrap;
   gap: 0.25rem;
-  border-bottom: 1px solid var(--border);
 }
 
 nav button[aria-current='page'] {

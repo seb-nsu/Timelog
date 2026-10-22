@@ -33,19 +33,23 @@ type Page =
   | 'audit'
   | 'calendar';
 
-const PAGES: { id: Page; label: string; adminOnly: boolean }[] = [
-  { id: 'approvals', label: 'Freigaben', adminOnly: false },
-  { id: 'leave', label: 'Urlaub', adminOnly: false },
-  { id: 'members', label: 'Mitglieder', adminOnly: false },
-  { id: 'teams', label: 'Teams', adminOnly: false },
-  { id: 'projects', label: 'Projekte', adminOnly: true },
-  { id: 'networks', label: 'Firmen-Netze', adminOnly: true },
-  { id: 'homeOffice', label: 'Homeoffice', adminOnly: true },
-  { id: 'settings', label: 'Einstellungen', adminOnly: true },
-  { id: 'export', label: 'Export', adminOnly: true },
-  { id: 'payroll', label: 'Lohn', adminOnly: true },
-  { id: 'audit', label: 'Audit-Log', adminOnly: true },
-  { id: 'calendar', label: 'Mein Kalender', adminOnly: false },
+// Navigation in Gruppen: Tagesgeschäft im Team zuerst, Firmen-Einrichtung, dann Auswertung und Lohn.
+const GROUPS = ['Team', 'Firma', 'Auswertung & Lohn', 'Mein Konto'] as const;
+type Group = (typeof GROUPS)[number];
+
+const PAGES: { id: Page; label: string; adminOnly: boolean; group: Group }[] = [
+  { id: 'approvals', label: 'Freigaben', adminOnly: false, group: 'Team' },
+  { id: 'leave', label: 'Urlaub', adminOnly: false, group: 'Team' },
+  { id: 'members', label: 'Mitglieder', adminOnly: false, group: 'Team' },
+  { id: 'teams', label: 'Teams', adminOnly: false, group: 'Team' },
+  { id: 'settings', label: 'Einstellungen', adminOnly: true, group: 'Firma' },
+  { id: 'projects', label: 'Projekte', adminOnly: true, group: 'Firma' },
+  { id: 'networks', label: 'Firmen-Netze', adminOnly: true, group: 'Firma' },
+  { id: 'export', label: 'Export', adminOnly: true, group: 'Auswertung & Lohn' },
+  { id: 'payroll', label: 'Lohn', adminOnly: true, group: 'Auswertung & Lohn' },
+  { id: 'homeOffice', label: 'Homeoffice', adminOnly: true, group: 'Auswertung & Lohn' },
+  { id: 'audit', label: 'Audit-Log', adminOnly: true, group: 'Auswertung & Lohn' },
+  { id: 'calendar', label: 'Mein Kalender', adminOnly: false, group: 'Mein Konto' },
 ];
 
 type State =
@@ -250,22 +254,32 @@ function Shell({
         </p>
       </header>
       <nav aria-label="Bereiche">
-        <ul>
-          {pages.map((p) => (
-            <li key={p.id}>
-              <button
-                type="button"
-                aria-current={page === p.id ? 'page' : undefined}
-                onClick={() => {
-                  setMessage('');
-                  setPage(p.id);
-                }}
-              >
-                {p.label}
-              </button>
-            </li>
-          ))}
-        </ul>
+        {GROUPS.map((g, i) => {
+          const items = pages.filter((p) => p.group === g);
+          if (items.length === 0) return null;
+          const id = `nav-${String(i)}`;
+          return (
+            <div key={g} className="nav-group">
+              <h2 id={id}>{g}</h2>
+              <ul aria-labelledby={id}>
+                {items.map((p) => (
+                  <li key={p.id}>
+                    <button
+                      type="button"
+                      aria-current={page === p.id ? 'page' : undefined}
+                      onClick={() => {
+                        setMessage('');
+                        setPage(p.id);
+                      }}
+                    >
+                      {p.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
       </nav>
       <main id="main" tabIndex={-1}>
         {page === 'approvals' && <Approvals />}
