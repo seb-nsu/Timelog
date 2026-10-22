@@ -1,6 +1,7 @@
 // Bindeglied zwischen lokal gespeicherten Daten und dem Regelwerk. Fachlich rechnet nur @timelog/rules.
 import {
   type Absence,
+  type AbsenceKind,
   type Break,
   type DeviceKind,
   type EventFlag,
@@ -266,4 +267,18 @@ export function eventsOfDay(events: readonly LocalEvent[], date: string): LocalE
   return events
     .filter((e) => localDate(Date.parse(e.ts), e.tz) === date)
     .sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts));
+}
+
+/**
+ * Neue Abwesenheiten für einen Zeitraum: je Tag die Sollzeit, Tage ohne Sollzeit bleiben frei.
+ * Mit `minutes` gilt dieser Wert für jeden Tag des Zeitraums.
+ */
+export function absencesFor(
+  targets: readonly { date: string; targetMinutes: number }[],
+  kind: AbsenceKind,
+  minutes?: number,
+): Absence[] {
+  return targets
+    .filter((d) => minutes !== undefined || d.targetMinutes > 0)
+    .map((d) => ({ date: d.date, kind, minutes: minutes ?? d.targetMinutes }));
 }
