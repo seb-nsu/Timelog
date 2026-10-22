@@ -356,6 +356,10 @@ export const settingsSchema = z.object({
   personnelNumber: z.string().max(50).optional(),
   /** Projekte und Tätigkeiten (Privatkonto; bei Firmenkonten schaltet der Admin). */
   projects: z.boolean().default(false),
+  /** Zusatzfunktion Kalender-Anbindung in der Oberfläche zeigen (Firma: nur wenn erlaubt). */
+  calendar: z.boolean().default(false),
+  /** Zusatzfunktion Arbeitsort und Homeoffice-Nachweis in der Oberfläche zeigen. */
+  homeOffice: z.boolean().default(false),
 });
 export type Settings = z.infer<typeof settingsSchema>;
 
