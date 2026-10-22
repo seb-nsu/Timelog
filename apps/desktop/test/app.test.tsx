@@ -73,14 +73,17 @@ describe('Tagesprotokoll', () => {
       },
     );
     render(<App locale="de" backend={backend} clock={clock('2026-10-15T09:00:00Z')} />);
-    await userEvent.click(await screen.findByRole('button', { name: 'Tagesprotokoll' }));
-    expect(
-      screen.getByRole('button', { name: 'Tagesprotokoll' }).getAttribute('aria-current'),
-    ).toBe('page');
-    await userEvent.click(screen.getByRole('button', { name: 'Vorheriger Tag' }));
-    expect(screen.getByText('Mi., 14.10.2026')).toBeTruthy();
-    const log = screen.getAllByRole('list')[0];
-    expect(log && within(log).getByText(/Hochgefahren/)).toBeTruthy();
+    await userEvent.click(await screen.findByRole('button', { name: 'Zeiten' }));
+    expect(screen.getByRole('button', { name: 'Zeiten' }).getAttribute('aria-current')).toBe(
+      'page',
+    );
+    // Tag aus der Tagesliste öffnen
+    await userEvent.click(await screen.findByRole('button', { name: 'Mi., 14.10.2026' }));
+    expect(screen.getByRole('heading', { name: 'Mi., 14.10.2026' })).toBeTruthy();
+    expect(screen.getByText('08:00–17:05 · 8:35 h')).toBeTruthy();
+    const details = screen.getByText(/Ereignisprotokoll/).closest('details');
+    if (!details) throw new Error('Ereignisprotokoll fehlt');
+    expect(within(details).getByText(/Hochgefahren/)).toBeTruthy();
     await userEvent.click(screen.getByRole('button', { name: 'War Arbeit: Pause 12:00–12:30' }));
     expect(backend.calls.ranges).toEqual([
       ['manual_work', '2026-10-14T10:00:00.000Z', '2026-10-14T10:30:00.000Z'],
@@ -90,6 +93,66 @@ describe('Tagesprotokoll', () => {
     expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Nächster Tag' }).disabled).toBe(
       true,
     );
+  });
+});
+
+describe('Zeiten', () => {
+  const workday = () =>
+    fakeBackend(
+      {},
+      {
+        events: [
+          boot('b1', '2026-10-14T06:00:00Z'),
+          {
+            id: 'x',
+            type: 'shutdown',
+            source: 'system',
+            ts: '2026-10-14T15:00:00Z',
+            tz,
+            createdAt: '2026-10-14T15:00:00Z',
+          },
+        ],
+        spans: [
+          { id: 's1', start: '2026-10-14T06:00:00Z', end: '2026-10-14T15:00:00Z', open: false },
+        ],
+      },
+    );
+
+  it('korrigiert das Ende eines Tages mit Begründung', async () => {
+    const backend = workday();
+    backend.responses['PATCH /api/v1/days/2026-10-14'] = {
+      eventId: '44444444-4444-4444-8444-444444444444',
+    };
+    render(<App locale="de" backend={backend} clock={clock('2026-10-15T09:00:00Z')} />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Zeiten' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Mi., 14.10.2026' }));
+    await userEvent.selectOptions(screen.getByLabelText('Was korrigieren?'), 'end');
+    await userEvent.type(screen.getByLabelText('Uhrzeit'), '17:30');
+    await userEvent.type(screen.getByLabelText('Begründung'), 'Meeting im Büro');
+    await userEvent.click(screen.getByRole('button', { name: 'Korrektur speichern' }));
+    expect(await screen.findByText(/^Korrektur gespeichert/)).toBeTruthy();
+    expect(backend.calls.requests).toContain(
+      'PATCH /api/v1/days/2026-10-14 {"field":"end","time":"2026-10-14T15:30:00.000Z","reason":"Meeting im Büro"}',
+    );
+    // Zurück in die Woche
+    await userEvent.click(screen.getByRole('button', { name: /Zurück zur Übersicht/ }));
+    expect(screen.getByRole('heading', { name: /^KW 42/ })).toBeTruthy();
+  });
+
+  it('exportiert den Zeitraum; Zusatzfunktionen bleiben ohne Einschalten unsichtbar', async () => {
+    const backend = workday();
+    backend.responses['GET /api/v1/export'] = 'Datum;Netto';
+    render(<App locale="de" backend={backend} clock={clock('2026-10-15T09:00:00Z')} />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Zeiten' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Monat' }));
+    expect(screen.getByRole('heading', { name: 'Oktober 2026' })).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: 'CSV exportieren' }));
+    expect(await screen.findByText('Export erstellt.')).toBeTruthy();
+    expect(backend.calls.requests).toContainEqual(expect.stringMatching(/^GET \/api\/v1\/export/));
+    expect(screen.queryByRole('button', { name: 'Auswertung' })).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Mi., 14.10.2026' }));
+    expect(screen.queryByText('Arbeitsort')).toBeNull();
+    expect(screen.queryByText('Projekte an diesem Tag')).toBeNull();
   });
 });
 
@@ -115,9 +178,11 @@ describe('Zu prüfen', () => {
       },
     );
     render(<App locale="de" backend={backend} clock={clock('2026-10-19T07:00:00Z')} />);
-    await userEvent.click(await screen.findByRole('button', { name: /Zu prüfen/ }));
-    expect(screen.getByText(/Arbeit an einem Tag ohne Sollzeit/)).toBeTruthy();
-    await userEvent.click(screen.getByRole('button', { name: 'Bestätigen: Sitzung 10:00–12:05' }));
+    // „Zu prüfen“ steht direkt auf Heute
+    expect(await screen.findByText(/Arbeit an einem Tag ohne Sollzeit/)).toBeTruthy();
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Bestätigen: Arbeitszeit 10:00–12:05' }),
+    );
     expect(backend.calls.decisions).toEqual([['sat', true]]);
   });
 });
@@ -165,7 +230,7 @@ describe('Einrichtung', () => {
     expect(screen.getByText('Kein Arbeitsnetz erkannt')).toBeTruthy();
     await userEvent.click(screen.getByRole('button', { name: 'Fertig' }));
     expect(backend.finishSetup).toHaveBeenCalled();
-    expect(await screen.findByRole('button', { name: 'Status' })).toBeTruthy();
+    expect(await screen.findByRole('button', { name: 'Heute' })).toBeTruthy();
   });
 
   it('zeigt Anmeldefehler verständlich an', async () => {
@@ -189,6 +254,7 @@ describe('Einstellungen', () => {
     const backend = fakeBackend();
     render(<App locale="de" backend={backend} clock={clock('2026-10-15T09:00:00Z')} />);
     await userEvent.click(await screen.findByRole('button', { name: 'Einstellungen' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Erkennung' }));
     expect(await screen.findByText('Noch kein Arbeitsnetz hinterlegt.')).toBeTruthy();
     const box = screen.getByLabelText('Beim Anmelden am Computer starten');
     await waitFor(() => {
@@ -196,6 +262,7 @@ describe('Einstellungen', () => {
     });
     await userEvent.click(box);
     expect(backend.autostart.set).toHaveBeenCalledWith(false);
+    await userEvent.click(screen.getByRole('button', { name: 'Konto' }));
     await userEvent.click(screen.getByRole('button', { name: 'Abmelden' }));
     expect(backend.logout).toHaveBeenCalled();
   });
@@ -248,6 +315,7 @@ describe('Erinnerungen', () => {
     const backend = fakeBackend();
     render(<App locale="de" backend={backend} clock={clock('2026-10-15T09:00:00Z')} />);
     await userEvent.click(await screen.findByRole('button', { name: 'Einstellungen' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Benachrichtigungen' }));
     await userEvent.click(screen.getByLabelText('„Über 10 Stunden“'));
     const from = screen.getByLabelText('Ruhezeit von');
     await userEvent.clear(from);
@@ -272,11 +340,11 @@ describe('Erinnerungen', () => {
   });
 });
 
-describe('Urlaub', () => {
-  it('zeigt Konto und Überstunden, stellt einen Antrag mit halbem Tag und storniert', async () => {
+describe('Abwesenheit', () => {
+  it('Firmenkonto: Konto und Überstunden, Antrag mit halbem Tag, stornieren', async () => {
     const backend = fakeBackend();
     render(<App locale="de" backend={backend} clock={clock('2026-10-15T09:00:00Z')} />);
-    await userEvent.click(await screen.findByRole('button', { name: 'Urlaub' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Abwesenheit' }));
     expect(await screen.findByText('Urlaubskonto 2026')).toBeTruthy();
     expect(screen.getByText('14,5 Tage')).toBeTruthy();
     expect(screen.getByText(/Rechtsprechung des BAG/)).toBeTruthy();
@@ -300,17 +368,39 @@ describe('Urlaub', () => {
     expect(await screen.findByText('Antrag storniert.')).toBeTruthy();
   });
 
+  it('Privatkonto: Krankheit direkt eintragen, ohne Urlaubs- und Überstundenkonto', async () => {
+    const backend = fakeBackend();
+    const leave = backend.responses['GET /api/v1/leave'] as Record<string, unknown>;
+    backend.responses['GET /api/v1/leave'] = { ...leave, managed: false };
+    backend.responses['GET /api/v1/settings'] = backend.responses['PUT /api/v1/settings'];
+    backend.responses['PUT /api/v1/absences'] = { ok: true };
+    render(<App locale="de" backend={backend} clock={clock('2026-10-15T09:00:00Z')} />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Abwesenheit' }));
+    expect(await screen.findByText('Keine Abwesenheiten eingetragen.')).toBeTruthy();
+    expect(screen.queryByText('Urlaubskonto 2026')).toBeNull();
+    expect(screen.queryByRole('option', { name: 'Überstundenabbau' })).toBeNull();
+    await userEvent.selectOptions(screen.getByLabelText('Art'), 'sick');
+    const from = screen.getByLabelText('Von');
+    await userEvent.clear(from);
+    await userEvent.type(from, '2026-10-12');
+    await userEvent.click(screen.getByRole('button', { name: 'Eintragen' }));
+    expect(await screen.findByText('Eingetragen.')).toBeTruthy();
+    expect(backend.calls.requests).toContain(
+      'PUT /api/v1/absences {"from":"2026-10-12","to":"2026-10-15","absences":[{"date":"2026-10-12","kind":"sick","minutes":480},{"date":"2026-10-13","kind":"sick","minutes":480},{"date":"2026-10-14","kind":"sick","minutes":480},{"date":"2026-10-15","kind":"sick","minutes":480}]}',
+    );
+  });
+
   it('englische Texte', async () => {
     const backend = fakeBackend();
     render(<App locale="en" backend={backend} clock={clock('2026-10-15T09:00:00Z')} />);
-    await userEvent.click(await screen.findByRole('button', { name: 'Leave' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Absence' }));
     expect(await screen.findByText('Leave account 2026')).toBeTruthy();
     expect(screen.getByText('14.5 days')).toBeTruthy();
   });
 });
 
 describe('Barrierefreiheit', () => {
-  it('Status, Protokoll, Prüfliste und Einstellungen ohne kritische axe-Befunde', async () => {
+  it('Heute, Zeiten, Abwesenheit und Einstellungen ohne kritische axe-Befunde', async () => {
     const axe = (await import('axe-core')).default;
     const backend = fakeBackend(
       {},
@@ -325,14 +415,7 @@ describe('Barrierefreiheit', () => {
       <App locale="de" backend={backend} clock={clock('2026-10-15T09:00:00Z')} />,
     );
     await screen.findByText('Arbeitszeit läuft');
-    for (const page of [
-      'Status',
-      'Tagesprotokoll',
-      'Zu prüfen',
-      'Wochenrückblick',
-      'Urlaub',
-      'Einstellungen',
-    ]) {
+    for (const page of ['Heute', 'Zeiten', 'Abwesenheit', 'Einstellungen']) {
       await userEvent.click(screen.getByRole('button', { name: new RegExp(`^${page}`) }));
       // Farbkontrast lässt sich in jsdom nicht messen; dafür gilt styles.css (AA geprüft).
       const result = await axe.run(container, { rules: { 'color-contrast': { enabled: false } } });

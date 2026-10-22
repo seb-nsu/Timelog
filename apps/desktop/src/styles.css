@@ -270,3 +270,58 @@ caption {
   text-align: left;
   font-weight: 600;
 }
+
+/* Checkbox direkt vor ihrer Beschriftung statt an den Rand geschoben */
+.check,
+.row:has(> input[type='checkbox']:first-child) {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: flex-start;
+}
+
+.subnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+/* Karte in Karte (z. B. Kalender unter Zusatzfunktionen) ohne zweiten Rahmen */
+.card .card {
+  padding: 0;
+  background: none;
+}
+
+.days {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.days li {
+  display: grid;
+  grid-template-columns: 9rem 8rem 1fr;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.review-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+details summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.screen > button.link,
+.days li > button.link {
+  align-self: flex-start;
+  justify-self: start;
+  text-align: left;
+}

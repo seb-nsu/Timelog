@@ -34,11 +34,11 @@ const weekData: LocalData = {
 };
 const sunday = '2026-10-18T10:00:00Z';
 
-describe('Wochenrückblick', () => {
+describe('Zeiten: Woche', () => {
   it('ohne Verbindung: Summen aus den Gerätedaten, bestätigt nur unproblematische Tage', async () => {
     const backend = fakeBackend({}, weekData);
     render(<App locale="de" backend={backend} clock={clock(sunday)} />);
-    await userEvent.click(await screen.findByRole('button', { name: 'Wochenrückblick' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Zeiten' }));
     expect(
       await screen.findByRole('heading', { name: 'KW 42: Mo., 12.10.2026 – So., 18.10.2026' }),
     ).toBeTruthy();
@@ -46,19 +46,20 @@ describe('Wochenrückblick', () => {
       screen.getByText('Ohne Verbindung: berechnet aus den Daten dieses Geräts.'),
     ).toBeTruthy();
     // Der Samstag zählt erst nach Bestätigung
-    expect(screen.getAllByText('8:35 h')).toHaveLength(2);
+    expect(screen.getByText('8:35 h')).toBeTruthy();
     expect(screen.getByText('+0:35 h')).toBeTruthy();
-    const open = screen.getByRole('region', { name: 'Offene Tage' });
-    expect(within(open).getByRole('button', { name: 'Sa., 17.10.2026 öffnen' })).toBeTruthy();
-    const hints = screen.getByRole('region', { name: 'Hinweise zum Arbeitszeitgesetz' });
-    expect(within(hints).getByText('Keine Hinweise.')).toBeTruthy();
+    // Tagesliste mit Prüfhinweis am Samstag
+    const list = screen.getByRole('region', { name: 'Tage' });
+    const saturday = within(list).getByRole('button', { name: 'Sa., 17.10.2026' });
+    expect(saturday.closest('li')?.textContent).toContain('bitte bestätigen');
+    expect(screen.queryByRole('region', { name: 'Hinweise zum Arbeitszeitgesetz' })).toBeNull();
 
     await userEvent.click(screen.getByRole('button', { name: 'Woche bestätigen' }));
     expect(backend.calls.decisions).toEqual([['mon', true]]);
     expect(await screen.findByText('Bestätigte Tage: 1.')).toBeTruthy();
 
-    // Offener Tag führt ins Tagesprotokoll
-    await userEvent.click(within(open).getByRole('button', { name: 'Sa., 17.10.2026 öffnen' }));
+    // Ein Tag der Liste führt ins Tagesprotokoll
+    await userEvent.click(within(list).getByRole('button', { name: 'Sa., 17.10.2026' }));
     expect(screen.getByRole('heading', { name: 'Sa., 17.10.2026' })).toBeTruthy();
   });
 
@@ -70,7 +71,7 @@ describe('Wochenrückblick', () => {
     };
     backend.responses['POST /api/v1/days/2026-10-12/confirm'] = { confirmed: 1 };
     render(<App locale="en" backend={backend} clock={clock(sunday)} />);
-    await userEvent.click(await screen.findByRole('button', { name: 'Week review' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Times' }));
     await userEvent.click(await screen.findByRole('button', { name: 'Confirm week' }));
     await waitFor(() => {
       expect(backend.calls.requests).toContain('POST /api/v1/days/2026-10-12/confirm {}');
@@ -151,9 +152,9 @@ describe('Rückfragen', () => {
     });
     await userEvent.click(within(card).getByRole('button', { name: 'Korrigieren' }));
     expect(screen.getByRole('heading', { name: 'Mi., 14.10.2026' })).toBeTruthy();
-    expect(
-      screen.getByRole('button', { name: 'Tagesprotokoll' }).getAttribute('aria-current'),
-    ).toBe('page');
+    expect(screen.getByRole('button', { name: 'Zeiten' }).getAttribute('aria-current')).toBe(
+      'page',
+    );
     expect(backend.notifications).toEqual([]);
   });
 
@@ -216,7 +217,7 @@ describe('Rückfragen', () => {
 });
 
 describe('Barrierefreiheit', () => {
-  it('Wochenrückblick und Rückfragen ohne kritische axe-Befunde', async () => {
+  it('Zeiten und Rückfragen ohne kritische axe-Befunde', async () => {
     const axe = (await import('axe-core')).default;
     const backend = fakeBackend({}, weekData);
     backend.responses['GET /api/v1/prompts'] = {
@@ -231,7 +232,7 @@ describe('Barrierefreiheit', () => {
     };
     const { container } = render(<App locale="de" backend={backend} clock={clock(sunday)} />);
     await screen.findByRole('article', { name: 'Arbeitsende fehlt' });
-    await userEvent.click(screen.getByRole('button', { name: 'Wochenrückblick' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Zeiten' }));
     await screen.findByRole('button', { name: 'Woche bestätigen' });
     // Farbkontrast lässt sich in jsdom nicht messen; dafür gilt styles.css (AA geprüft).
     const result = await axe.run(container, { rules: { 'color-contrast': { enabled: false } } });
