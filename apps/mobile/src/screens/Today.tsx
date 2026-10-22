@@ -1,21 +1,20 @@
-// Heute: Status, Netto, Saldo, ArbZG-Hinweise, Start/Stopp und Übertragungsstand.
+// Heute: Status, Netto, Saldo, ArbZG-Hinweise, Start/Stopp, alles zu Prüfende und Übertragungsstand.
 import {
   formatBalance,
   formatClock,
   formatMinutes,
   periodDays,
-  reviewItems,
   todaySummary,
 } from '@timelog/app-core';
 import { addDays, weekday } from '@timelog/rules';
 import { Body, Big, Button, Notice, Row, Screen, Section } from '../ui/components';
 import { useMobile } from '../ui/context';
+import { ReviewSection } from './Review';
 
 export function TodayScreen() {
-  const { core, state, days, now, t, go } = useMobile();
+  const { core, state, days, now, t } = useMobile();
   const tz = state.timezone;
   const today = todaySummary(days, now, tz);
-  const reviewCount = reviewItems(days).length;
   const monday = addDays(today.date, -((weekday(today.date) + 6) % 7));
   const week = periodDays(days, state.profile, monday, addDays(monday, 6), today.date);
   const net = formatMinutes(today.netMinutes);
@@ -53,15 +52,7 @@ export function TodayScreen() {
         </Section>
       ) : null}
 
-      {reviewCount > 0 ? (
-        <Button
-          variant="secondary"
-          label={t.m('today.reviewBanner', { count: reviewCount })}
-          onPress={() => {
-            go({ name: 'review' });
-          }}
-        />
-      ) : null}
+      <ReviewSection />
 
       <Section>
         <Body muted>

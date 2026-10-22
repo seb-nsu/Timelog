@@ -1,5 +1,5 @@
 // Projekte, Arbeitsort, Kalender und Auswertung. Alles braucht ein Konto (die Aufteilung rechnet der
-// Server mit @timelog/rules); ohne Konto bzw. bei ausgeschalteten Projekten bleiben die Bereiche weg.
+// Server mit @timelog/rules); ohne Konto bzw. ohne eingeschaltete Zusatzfunktion bleiben die Bereiche weg.
 import {
   formatClock,
   formatDate,
@@ -83,7 +83,11 @@ export function DayExtrasSection({ date }: { date: string }) {
   const list = useServer((api) => api.projects.list(), []);
   const day = useServer((api) => api.projects.day(date), [date]);
   const year = Number(date.slice(0, 4));
-  const locs = useServer((api) => api.locations.year(year), [year]);
+  const showLocation = state.settings.homeOffice;
+  const locs = useServer(
+    (api) => (showLocation ? api.locations.year(year) : Promise.resolve(undefined)),
+    [year, showLocation],
+  );
   const projects = list.data?.projects ?? [];
   const loc = locs.data?.days.find((d) => d.date === date);
   const locked = day.data?.locked === true;
@@ -98,7 +102,6 @@ export function DayExtrasSection({ date }: { date: string }) {
     }
   };
 
-  if (!locs.data) return null;
   return (
     <>
       {list.data?.enabled && day.data ? (
@@ -150,30 +153,32 @@ export function DayExtrasSection({ date }: { date: string }) {
             : null}
         </Section>
       ) : null}
-      <Section title={t.t('location.title')}>
-        <Choice<string>
-          label={t.t('location.title')}
-          value={loc?.source === 'manual' ? (loc.location ?? NONE) : NONE}
-          options={[
-            {
-              value: NONE,
-              label:
-                loc?.source === 'auto' && loc.location
-                  ? `${t.t('location.auto')}: ${t.t(`location.${loc.location}`)}`
-                  : t.t('location.auto'),
-            },
-            ...LOCATIONS.map((l) => ({ value: l, label: t.t(`location.${l}`) })),
-          ]}
-          onChange={(v) => {
-            if (locked) return;
-            void run(async (api) => {
-              await api.locations.set(date, v === NONE ? null : (v as WorkLocation));
-              locs.reload();
-            });
-          }}
-        />
-        {loc?.source === 'manual' ? <Body muted>{t.t('location.manual')}</Body> : null}
-      </Section>
+      {locs.data ? (
+        <Section title={t.t('location.title')}>
+          <Choice<string>
+            label={t.t('location.title')}
+            value={loc?.source === 'manual' ? (loc.location ?? NONE) : NONE}
+            options={[
+              {
+                value: NONE,
+                label:
+                  loc?.source === 'auto' && loc.location
+                    ? `${t.t('location.auto')}: ${t.t(`location.${loc.location}`)}`
+                    : t.t('location.auto'),
+              },
+              ...LOCATIONS.map((l) => ({ value: l, label: t.t(`location.${l}`) })),
+            ]}
+            onChange={(v) => {
+              if (locked) return;
+              void run(async (api) => {
+                await api.locations.set(date, v === NONE ? null : (v as WorkLocation));
+                locs.reload();
+              });
+            }}
+          />
+          {loc?.source === 'manual' ? <Body muted>{t.t('location.manual')}</Body> : null}
+        </Section>
+      ) : null}
       {msg ? <Notice tone={msg.tone}>{msg.text}</Notice> : null}
     </>
   );
@@ -477,14 +482,16 @@ export function NetworkExtras({ network }: { network: NetworksResponse['networks
   const projects = list.data;
   return (
     <>
-      <Choice<WorkLocation>
-        label={t.t('location.ofNetwork', { label: network.label })}
-        value={network.location}
-        options={LOCATIONS.map((l) => ({ value: l, label: t.t(`location.${l}`) }))}
-        onChange={(location) => {
-          void core.updateNetwork(network.id, { location });
-        }}
-      />
+      {state.settings.homeOffice ? (
+        <Choice<WorkLocation>
+          label={t.t('location.ofNetwork', { label: network.label })}
+          value={network.location}
+          options={LOCATIONS.map((l) => ({ value: l, label: t.t(`location.${l}`) }))}
+          onChange={(location) => {
+            void core.updateNetwork(network.id, { location });
+          }}
+        />
+      ) : null}
       {projects?.enabled ? (
         <Choice<string>
           label={`${t.t('projects.defaultProject')} (${network.label})`}
@@ -521,7 +528,11 @@ export function ReportsScreen() {
     (api) => (valid && enabled ? api.projects.report({ from, to }) : Promise.resolve(undefined)),
     [from, to, valid, enabled],
   );
-  const locs = useServer((api) => api.locations.year(year), [year]);
+  const showLocation = state.settings.homeOffice;
+  const locs = useServer(
+    (api) => (showLocation ? api.locations.year(year) : Promise.resolve(undefined)),
+    [year, showLocation],
+  );
   const months = monthNames(t.tag);
 
   const share = async (

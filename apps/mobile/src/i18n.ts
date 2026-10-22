@@ -6,9 +6,8 @@ import type { ReminderKind } from './core/reminders';
 
 const de = {
   'tab.today': 'Heute',
-  'tab.log': 'Protokoll',
-  'tab.review': 'Prüfen',
-  'tab.overview': 'Übersicht',
+  'tab.times': 'Zeiten',
+  'tab.absence': 'Abwesenheit',
   'tab.settings': 'Einstellungen',
   'tab.badge': '{label}, {count} offen',
 
@@ -33,7 +32,7 @@ const de = {
   'today.retryAt': 'Neuer Versuch um {time}',
 
   'log.title': 'Tagesprotokoll',
-  'log.sessions': 'Sitzungen',
+  'log.sessions': 'Arbeitszeiten',
   'log.session': '{from}–{to}',
   'log.open': 'läuft',
   'log.noEnd': 'Ende fehlt',
@@ -59,8 +58,8 @@ const de = {
   'log.reasonRequired': 'Für dieses Konto ist eine Begründung nötig.',
   'log.invalidTime': 'Bitte Uhrzeit als HH:MM eingeben.',
   'log.invalidRange': '„Bis“ muss nach „Von“ liegen.',
-  'log.confirmDay': 'Tag abschließen',
-  'log.dayConfirmed': 'Tag abgeschlossen.',
+  'log.confirmDay': 'Tag bestätigen',
+  'log.dayConfirmed': 'Tag bestätigt.',
   'log.manual': 'Manuell geändert – gesperrt für die Automatik',
   'log.target': 'Soll {target}',
   'log.absence': 'Abwesenheit: {kind}',
@@ -70,10 +69,10 @@ const de = {
   'review.confirm': 'Bestätigen',
   'review.reject': 'Verwerfen',
   'review.openDay': 'Tag öffnen',
-  'review.confirmHint': 'Zählt die Sitzung {from}–{to} als Arbeitszeit.',
-  'review.rejectHint': 'Die Sitzung {from}–{to} zählt nicht als Arbeitszeit.',
+  'review.confirmHint': 'Zählt {from}–{to} als Arbeitszeit.',
+  'review.rejectHint': '{from}–{to} zählt nicht als Arbeitszeit.',
 
-  'overview.title': 'Übersicht',
+  'overview.title': 'Zeiten',
   'overview.week': 'Woche',
   'overview.month': 'Monat',
   'overview.prev': 'Vorheriger Zeitraum',
@@ -88,7 +87,7 @@ const de = {
   'overview.dayRow': '{date}: netto {net}, Soll {target}',
   'overview.exportNeedsAccount': 'Export ist mit Konto verfügbar.',
 
-  'absences.title': 'Abwesenheiten',
+  'absences.title': 'Abwesenheit',
   'absences.empty': 'Keine Abwesenheiten eingetragen.',
   'absences.add': 'Abwesenheit eintragen',
   'absences.from': 'Von (JJJJ-MM-TT)',
@@ -99,7 +98,7 @@ const de = {
   'absences.invalid': 'Bitte gültige Daten eingeben (Von ≤ Bis, höchstens 366 Tage).',
   'absences.saved': 'Gespeichert.',
   'absences.weekendSkipped': 'Tage ohne Sollzeit werden übersprungen.',
-  'absences.useLeave': 'Urlaub und Überstundenabbau bitte als Antrag stellen (Übersicht → Urlaub).',
+  'absences.useLeave': 'Urlaub und Überstundenabbau bitte oben als Antrag stellen.',
   'overview.leave': 'Urlaub und Überstunden',
   'leave.needsAccount': 'Urlaubs- und Überstundenkonto gibt es mit Konto.',
   'leave.dateHint': 'JJJJ-MM-TT',
@@ -241,9 +240,8 @@ export type MobileKey = keyof typeof de;
 
 const en: Record<MobileKey, string> = {
   'tab.today': 'Today',
-  'tab.log': 'Log',
-  'tab.review': 'Review',
-  'tab.overview': 'Overview',
+  'tab.times': 'Times',
+  'tab.absence': 'Absence',
   'tab.settings': 'Settings',
   'tab.badge': '{label}, {count} open',
 
@@ -268,7 +266,7 @@ const en: Record<MobileKey, string> = {
   'today.retryAt': 'Retrying at {time}',
 
   'log.title': 'Day log',
-  'log.sessions': 'Sessions',
+  'log.sessions': 'Working times',
   'log.session': '{from}–{to}',
   'log.open': 'running',
   'log.noEnd': 'end missing',
@@ -308,7 +306,7 @@ const en: Record<MobileKey, string> = {
   'review.confirmHint': 'Counts the session {from}–{to} as working time.',
   'review.rejectHint': 'The session {from}–{to} does not count as working time.',
 
-  'overview.title': 'Overview',
+  'overview.title': 'Times',
   'overview.week': 'Week',
   'overview.month': 'Month',
   'overview.prev': 'Previous period',
@@ -323,7 +321,7 @@ const en: Record<MobileKey, string> = {
   'overview.dayRow': '{date}: net {net}, target {target}',
   'overview.exportNeedsAccount': 'Export requires an account.',
 
-  'absences.title': 'Absences',
+  'absences.title': 'Absence',
   'absences.empty': 'No absences recorded.',
   'absences.add': 'Add absence',
   'absences.from': 'From (YYYY-MM-DD)',
@@ -334,7 +332,7 @@ const en: Record<MobileKey, string> = {
   'absences.invalid': 'Please enter valid dates (from ≤ to, at most 366 days).',
   'absences.saved': 'Saved.',
   'absences.weekendSkipped': 'Days without target hours are skipped.',
-  'absences.useLeave': 'Please request vacation and time off in lieu (Overview → Leave).',
+  'absences.useLeave': 'Please request vacation and time off in lieu above.',
   'overview.leave': 'Leave and overtime',
   'leave.needsAccount': 'Leave and overtime accounts need an account.',
   'leave.dateHint': 'YYYY-MM-DD',

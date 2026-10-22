@@ -1,30 +1,21 @@
-// Oberfläche der Handy-App: Einrichtungsassistent beim ersten Start, danach fünf Reiter.
+// Oberfläche der Handy-App: Einrichtungsassistent beim ersten Start, danach vier Reiter.
 import { reviewItems } from '@timelog/app-core';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AbsencesScreen } from './screens/Absences';
+import { AbsenceScreen } from './screens/Absences';
 import { DayLogScreen } from './screens/DayLog';
-import { LeaveScreen } from './screens/Leave';
 import { ReportsScreen } from './screens/Extras';
 import { OverviewScreen } from './screens/Overview';
-import { ReviewScreen } from './screens/Review';
 import { SettingsScreen } from './screens/Settings';
 import { SetupScreen } from './screens/Setup';
 import { TodayScreen } from './screens/Today';
-import { WeekScreen } from './screens/Week';
 import { MobileProvider, type MobileProviderProps, type Route, useMobile } from './ui/context';
 import { TOUCH, useTheme } from './ui/theme';
 
-type Tab = 'today' | 'log' | 'review' | 'overview' | 'settings';
+type Tab = 'today' | 'times' | 'absence' | 'settings';
 
 function tabOf(route: Route): Tab {
-  if (
-    route.name === 'absences' ||
-    route.name === 'week' ||
-    route.name === 'leave' ||
-    route.name === 'reports'
-  )
-    return 'overview';
+  if (route.name === 'log' || route.name === 'week' || route.name === 'reports') return 'times';
   if (route.name === 'setup') return 'settings';
   return route.name;
 }
@@ -39,18 +30,14 @@ function Content() {
       return (
         <DayLogScreen key={route.date ?? 'today'} {...(route.date ? { date: route.date } : {})} />
       );
-    case 'review':
-      return <ReviewScreen />;
-    case 'overview':
+    case 'times':
       return <OverviewScreen />;
     case 'week':
       return (
-        <WeekScreen key={route.date ?? 'week'} {...(route.date ? { date: route.date } : {})} />
+        <OverviewScreen key={route.date ?? 'week'} {...(route.date ? { date: route.date } : {})} />
       );
-    case 'absences':
-      return <AbsencesScreen />;
-    case 'leave':
-      return <LeaveScreen />;
+    case 'absence':
+      return <AbsenceScreen />;
     case 'reports':
       return <ReportsScreen />;
     case 'settings':
@@ -67,9 +54,8 @@ function TabBar() {
   const reviewCount = reviewItems(days).length;
   const tabs: { name: Tab; label: string }[] = [
     { name: 'today', label: t.m('tab.today') },
-    { name: 'log', label: t.m('tab.log') },
-    { name: 'review', label: t.m('tab.review') },
-    { name: 'overview', label: t.m('tab.overview') },
+    { name: 'times', label: t.m('tab.times') },
+    { name: 'absence', label: t.m('tab.absence') },
     { name: 'settings', label: t.m('tab.settings') },
   ];
   return (
@@ -86,7 +72,7 @@ function TabBar() {
     >
       {tabs.map((tab) => {
         const selected = tab.name === active;
-        const badge = tab.name === 'review' && reviewCount > 0;
+        const badge = tab.name === 'today' && reviewCount > 0;
         const label = badge
           ? t.m('tab.badge', { label: tab.label, count: reviewCount })
           : tab.label;

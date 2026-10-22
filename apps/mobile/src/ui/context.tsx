@@ -13,15 +13,15 @@ import {
 import type { MobileCore, MobileState } from '../core/core';
 import { type MobileTranslator, createMobileTranslator } from '../i18n';
 
+// Vier Reiter: Heute (inkl. „Zu prüfen“), Zeiten (mit Tag, Woche und Auswertung), Abwesenheit, Einstellungen.
+// `week` öffnet Zeiten in der Woche des Datums (z. B. aus dem Wochenrückblick-Push).
 export type Route =
   | { name: 'today' }
+  | { name: 'times' }
   | { name: 'log'; date?: string }
-  | { name: 'review' }
   | { name: 'week'; date?: string }
-  | { name: 'overview' }
-  | { name: 'absences' }
-  | { name: 'leave' }
   | { name: 'reports' }
+  | { name: 'absence' }
   | { name: 'settings' }
   | { name: 'setup' };
 

@@ -1,5 +1,6 @@
-// Einstellungen: Konto, Arbeitsnetze, Automatik (Android: Netz/Akku/WLAN-Name, iOS: Kurzbefehl/
-// Geofence), Sollzeiten, Benachrichtigungen, Geräte, Datenauskunft und Löschen.
+// Einstellungen in fünf Bereichen statt einer langen Liste: Arbeitszeit (Sollzeiten), Erkennung
+// (Arbeitsnetze, Automatik: Android Netz/Akku/WLAN-Name, iOS Kurzbefehl/Geofence), Benachrichtigungen,
+// Zusatzfunktionen (Projekte, Kalender, Homeoffice; standardmäßig aus) und Konto (Geräte, Datenauskunft, Löschen).
 import type { DeviceResponse, NetworksResponse, Settings } from '@timelog/shared';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
@@ -11,22 +12,70 @@ import { LoginForm, ProfileForm } from './forms';
 
 type Msg = { tone: 'success' | 'error' | 'warning' | 'info'; text: string } | null;
 
+type Part = 'work' | 'detection' | 'notifications' | 'extras' | 'account';
+const PARTS: readonly Part[] = ['work', 'detection', 'notifications', 'extras', 'account'];
+
 export function SettingsScreen() {
   const { t } = useMobile();
+  const [part, setPart] = useState<Part>('work');
   return (
     <Screen title={t.m('settings.title')}>
-      <AccountSection />
-      <NetworkSection />
-      <DetectionSection />
-      <ProjectsSection />
-      <CalendarSection />
-      <Section title={t.m('settings.profile')}>
-        <ProfileForm />
-      </Section>
-      <NotificationSection />
-      <DevicesSection />
-      <PrivacySection />
+      <Choice<Part>
+        label={t.t('settings.sections')}
+        value={part}
+        onChange={setPart}
+        options={PARTS.map((p) => ({ value: p, label: t.t(`settings.section.${p}`) }))}
+      />
+      {part === 'work' ? (
+        <Section title={t.m('settings.profile')}>
+          <ProfileForm />
+        </Section>
+      ) : null}
+      {part === 'detection' ? (
+        <>
+          <NetworkSection />
+          <DetectionSection />
+        </>
+      ) : null}
+      {part === 'notifications' ? <NotificationSection /> : null}
+      {part === 'extras' ? <ExtrasSection /> : null}
+      {part === 'account' ? (
+        <>
+          <AccountSection />
+          <DevicesSection />
+          <PrivacySection />
+        </>
+      ) : null}
     </Screen>
+  );
+}
+
+/** Zusatzfunktionen: Projekte (eigener Schalter bzw. von der Firma), Kalender und Homeoffice. */
+function ExtrasSection() {
+  const { core, state, t } = useMobile();
+  const set = (patch: Partial<Settings>) => core.saveSettings({ ...state.settings, ...patch });
+  return (
+    <>
+      <Body muted>{t.t('extras.hint')}</Body>
+      <ProjectsSection />
+      <Section title={t.t('extras.calendar')}>
+        <ToggleRow
+          label={t.t('extras.calendar')}
+          hint={t.t('extras.calendarHint')}
+          value={state.settings.calendar}
+          onValueChange={(v) => set({ calendar: v })}
+        />
+      </Section>
+      {state.settings.calendar ? <CalendarSection /> : null}
+      <Section title={t.t('extras.homeOffice')}>
+        <ToggleRow
+          label={t.t('extras.homeOffice')}
+          hint={t.t('extras.homeOfficeHint')}
+          value={state.settings.homeOffice}
+          onValueChange={(v) => set({ homeOffice: v })}
+        />
+      </Section>
+    </>
   );
 }
 

@@ -158,15 +158,25 @@ function withExtras(h: Harness): Sent {
   return sent;
 }
 
+/** Zusatzfunktionen Kalender und Homeoffice einschalten (Projekte schaltet der Server). */
+async function enableExtras(h: Harness) {
+  await h.core.saveSettings({ ...(await h.core.settings()), calendar: true, homeOffice: true });
+}
+
+async function openDay(user: ReturnType<typeof userEvent.setup>, day: RegExp) {
+  await user.press(await screen.findByRole('tab', { name: /^Zeiten/ }));
+  await user.press(await button(day));
+}
+
 describe('Projekte und Arbeitsort im Tagesprotokoll', () => {
   it('ordnet den Abschnitt einem Projekt zu und setzt den Ort von Hand', async () => {
     const h = await loggedIn();
     await h.core.finishSetup();
     const sent = withExtras(h);
+    await enableExtras(h);
     await show(h);
     const user = userEvent.setup();
-    await user.press(await screen.findByRole('tab', { name: 'Protokoll' }));
-    await user.press(await button('Vorheriger Tag'));
+    await openDay(user, /^Mi\., 14\.10\.2026/);
     expect(await screen.findByText('Projekte an diesem Tag')).toBeOnTheScreen();
     await user.press(screen.getByRole('radio', { name: 'Alpha' }));
     expect(await screen.findByLabelText('Alpha: 8:20 (von Hand)')).toBeOnTheScreen();
@@ -184,7 +194,7 @@ describe('Projekte und Arbeitsort im Tagesprotokoll', () => {
     await h.core.finishSetup();
     await show(h);
     const user = userEvent.setup();
-    await user.press(await screen.findByRole('tab', { name: 'Protokoll' }));
+    await openDay(user, /^Do\., 15\.10\.2026/);
     expect(screen.queryByText('Projekte an diesem Tag')).not.toBeOnTheScreen();
     expect(screen.queryByText('Arbeitsort')).not.toBeOnTheScreen();
   });
@@ -195,9 +205,11 @@ describe('Kalender', () => {
     const h = await loggedIn();
     await h.core.finishSetup();
     withExtras(h);
+    await enableExtras(h);
     const a = await show(h);
     const user = userEvent.setup();
     await user.press(await screen.findByRole('tab', { name: 'Einstellungen' }));
+    await user.press(await screen.findByRole('radio', { name: 'Zusatzfunktionen' }));
     await user.press(await button('Google Kalender verbinden'));
     expect(a.opened).toEqual(['https://accounts.google.com/o/oauth2/v2/auth?state=xyz']);
 
@@ -206,7 +218,7 @@ describe('Kalender', () => {
       providers: [{ provider: 'google', configured: true }],
       connections: [{ provider: 'google', status: 'active', entries: 2 }],
     };
-    await user.press(await screen.findByRole('tab', { name: /^Prüfen/ }));
+    await user.press(await screen.findByRole('tab', { name: /^Heute/ }));
     expect(await screen.findByText(/Laut Kalender ganztägig abwesend/)).toBeOnTheScreen();
     expect(h.server.absences).toHaveLength(0);
     await user.press(await button('Als Urlaub eintragen'));
@@ -222,9 +234,11 @@ describe('Einstellungen und Auswertung', () => {
     const h = await loggedIn();
     await h.core.finishSetup();
     const sent = withExtras(h);
+    await enableExtras(h);
     const a = await show(h);
     const user = userEvent.setup();
     await user.press(await screen.findByRole('tab', { name: 'Einstellungen' }));
+    await user.press(await screen.findByRole('radio', { name: 'Zusatzfunktionen' }));
     await user.type(await screen.findByLabelText('Name'), 'Beta');
     await user.type(
       screen.getByLabelText('Kalender-Stichwörter (durch Komma getrennt)'),
@@ -233,7 +247,7 @@ describe('Einstellungen und Auswertung', () => {
     await user.press(await button('Projekt anlegen'));
     expect(sent.projects).toEqual([{ name: 'Beta', keywords: ['beta'] }]);
 
-    await user.press(await screen.findByRole('tab', { name: 'Übersicht' }));
+    await user.press(await screen.findByRole('tab', { name: 'Zeiten' }));
     await user.press(await button('Auswertung'));
     expect(await screen.findByText('Projektzeiten')).toBeOnTheScreen();
     expect(screen.getByLabelText('Alpha: 8:20')).toBeOnTheScreen();
@@ -250,9 +264,11 @@ describe('Einstellungen und Auswertung', () => {
     const h = await loggedIn();
     await h.core.finishSetup();
     withExtras(h);
+    await enableExtras(h);
     await show(h, 'en');
     const user = userEvent.setup();
     await user.press(await screen.findByRole('tab', { name: 'Settings' }));
+    await user.press(await screen.findByRole('radio', { name: 'Extras' }));
     expect(await screen.findByText('Track projects and activities')).toBeOnTheScreen();
     expect(await button('Connect Google Calendar')).toBeOnTheScreen();
     for (const el of screen.getAllByRole('button')) expect(el).toHaveAccessibleName();
