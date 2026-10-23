@@ -1,0 +1,24 @@
+{
+  "name": "Manuell Start und Stopp live",
+  "events": [
+    ["09:00", "manual_start"],
+    ["13:00", "manual_end"]
+  ],
+  "expect": [
+    {
+      "date": "2026-10-14",
+      "start": "09:00",
+      "end": "13:00",
+      "breaksMin": 0,
+      "workMin": 240,
+      "topUpMin": 0,
+      "netMin": 240,
+      "pendingMin": 0,
+      "absenceMin": 0,
+      "targetMin": 480,
+      "status": "auto",
+      "corrected": false,
+      "warnings": []
+    }
+  ]
+}

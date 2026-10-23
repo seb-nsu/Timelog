@@ -1,0 +1,9 @@
+**/node_modules
+**/dist
+**/.turbo
+**/coverage
+.git
+.claude
+.env
+apps/desktop/src-tauri/target
+apps/desktop/src-tauri/gen

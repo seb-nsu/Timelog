@@ -1,0 +1,13 @@
+{
+  "name": "net_lost allein",
+  "events": [
+    [
+      "09:00",
+      "net_lost",
+      {
+        "device": "H"
+      }
+    ]
+  ],
+  "expect": []
+}

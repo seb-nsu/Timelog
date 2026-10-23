@@ -1,0 +1,53 @@
+{
+  "name": "Ruhezeit unter 11 h",
+  "events": [
+    [
+      "13:00",
+      "boot",
+      {
+        "date": "2026-10-13"
+      }
+    ],
+    [
+      "21:55",
+      "shutdown",
+      {
+        "date": "2026-10-13"
+      }
+    ],
+    ["07:30", "boot"],
+    ["16:00", "shutdown"]
+  ],
+  "expect": [
+    {
+      "date": "2026-10-13",
+      "start": "13:00",
+      "end": "22:00",
+      "breaksMin": 0,
+      "workMin": 540,
+      "topUpMin": 30,
+      "netMin": 510,
+      "pendingMin": 0,
+      "absenceMin": 0,
+      "targetMin": 480,
+      "status": "unchecked",
+      "corrected": false,
+      "warnings": ["break_placement", "break_violation"]
+    },
+    {
+      "date": "2026-10-14",
+      "start": "07:30",
+      "end": "16:05",
+      "breaksMin": 0,
+      "workMin": 515,
+      "topUpMin": 30,
+      "netMin": 485,
+      "pendingMin": 0,
+      "absenceMin": 0,
+      "targetMin": 480,
+      "status": "unchecked",
+      "corrected": false,
+      "warnings": ["break_placement", "break_violation", "rest_under_11h"]
+    }
+  ]
+}

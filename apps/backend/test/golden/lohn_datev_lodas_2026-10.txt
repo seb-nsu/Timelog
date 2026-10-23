@@ -1,0 +1,22 @@
+[Allgemein]
+Ziel=LODAS
+Version_SST=1.0
+BeraterNr=1234567
+MandantenNr=12345
+Datumsformat=TT/MM/JJJJ
+Feldtrennzeichen=;
+Zahlenkomma=,
+Kommentarzeichen=*
+* TimeLog: Bewegungsdaten 2026-10 aus freigegebenen Monaten
+
+[Satzbeschreibung]
+1;u_lod_bwd_buchung_standard;abrechnung_zeitraum#bwd;bs_wert_butab#bwd;bs_nr#bwd;la_eigene#bwd;pnr#bwd;
+2;u_lod_bwd_buchung_kalendarium;abrechnung_zeitraum#bwd;kalendertag#bwd;kalenderwoche#bwd;wochentag#kal;pnr#bwd;stunden_pro_tag#bwd;la_eigene#bwd;as_kal#bwd;
+
+[Bewegungsdaten]
+1;01/10/2026;80,42;01;100;00007;
+1;01/10/2026;164,50;01;100;00042;
+2;01/10/2026;05;41;Mo;00042;8,00;300;U;
+2;01/10/2026;06;41;Di;00042;4,00;300;U;
+2;01/10/2026;20;43;Di;00042;8,00;400;K;
+2;01/10/2026;21;43;Mi;00042;8,00;310;F;

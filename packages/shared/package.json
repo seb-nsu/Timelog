@@ -1,0 +1,26 @@
+{
+  "name": "@timelog/shared",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Geteilte Typen, Zod-Schemas und API-Client",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@timelog/rules": "workspace:*",
+    "zod": "^4.6.7"
+  }
+}

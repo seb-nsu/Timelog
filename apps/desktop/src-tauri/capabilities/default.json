@@ -1,0 +1,14 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Rechte des Hauptfensters: nur Ereignisse und die eigenen Befehle.",
+  "windows": ["main"],
+  "permissions": [
+    "core:event:default",
+    "core:app:default",
+    "autostart:allow-enable",
+    "autostart:allow-disable",
+    "autostart:allow-is-enabled",
+    "notification:default"
+  ]
+}

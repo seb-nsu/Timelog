@@ -1,0 +1,44 @@
+{
+  "name": "Ende nachträglich auf 16:00 korrigiert",
+  "events": [
+    [
+      "08:00",
+      "net_connected",
+      {
+        "device": "H"
+      }
+    ],
+    [
+      "16:00",
+      "manual_end",
+      {
+        "device": "H",
+        "createdAt": "2026-10-14 17:30"
+      }
+    ],
+    [
+      "17:00",
+      "net_lost",
+      {
+        "device": "H"
+      }
+    ]
+  ],
+  "expect": [
+    {
+      "date": "2026-10-14",
+      "start": "08:00",
+      "end": "16:00",
+      "breaksMin": 0,
+      "workMin": 480,
+      "topUpMin": 30,
+      "netMin": 450,
+      "pendingMin": 0,
+      "absenceMin": 0,
+      "targetMin": 480,
+      "status": "unchecked",
+      "corrected": true,
+      "warnings": ["break_placement", "break_violation"]
+    }
+  ]
+}

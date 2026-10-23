@@ -1,0 +1,59 @@
+# Beispiel für den Betrieb auf einem eigenen Server (Docker Compose): PostgreSQL 16, Backend und
+# Caddy als TLS-Reverse-Proxy. Werte kommen aus deploy/.env (Vorlage: .env.example im Wurzel-
+# verzeichnis). Start aus dem Repository-Wurzelverzeichnis:
+#   docker compose -f deploy/compose.prod.yml --env-file deploy/.env up -d --build
+# Details: docs/BETRIEB.md
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-timelog}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD fehlt}
+      POSTGRES_DB: ${POSTGRES_DB:-timelog}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-timelog}']
+      interval: 10s
+      retries: 10
+
+  backend:
+    build:
+      context: ..
+      dockerfile: apps/backend/Dockerfile
+    image: timelog-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      DATABASE_URL: postgres://${POSTGRES_USER:-timelog}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-timelog}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET fehlt}
+      TOTP_ENCRYPTION_KEY: ${TOTP_ENCRYPTION_KEY:?TOTP_ENCRYPTION_KEY fehlt}
+      NETWORK_HMAC_SECRET: ${NETWORK_HMAC_SECRET:?NETWORK_HMAC_SECRET fehlt}
+      APP_URL: ${APP_URL:?APP_URL fehlt}
+      SMTP_URL: ${SMTP_URL:?SMTP_URL fehlt}
+      MAIL_FROM: ${MAIL_FROM:-TimeLog <no-reply@localhost>}
+      TRUST_PROXY: 'true'
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on: [backend]
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      API_DOMAIN: ${API_DOMAIN:?API_DOMAIN fehlt}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

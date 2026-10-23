@@ -1,0 +1,98 @@
+{
+  "comment": "Gemeinsame Testfälle für src/fingerprint.ts (Jest) und NetworkFingerprint.kt (JUnit). HMAC-Schlüssel: 32 Bytes mit Wert 7, Base64.",
+  "hmacKey": "BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc=",
+  "cases": [
+    {
+      "name": "Gateway-MAC bekannt (wie Desktop)",
+      "link": {
+        "gatewayMac": "AA-BB-CC-DD-EE-FF",
+        "gateways": ["192.168.1.1"],
+        "addresses": [],
+        "dnsServers": [],
+        "domains": null
+      },
+      "fingerprint": "gw=aa:bb:cc:dd:ee:ff",
+      "weak": false
+    },
+    {
+      "name": "Firmennetz mit Suchdomäne",
+      "link": {
+        "gateways": ["10.1.0.1"],
+        "addresses": [
+          { "address": "10.1.23.45", "prefixLength": 16 },
+          { "address": "169.254.3.4", "prefixLength": 16 }
+        ],
+        "dnsServers": ["10.1.0.11", "10.1.0.10", "fe80::1"],
+        "domains": "Corp.Example.com. intra.example.com"
+      },
+      "fingerprint": "v4;gw=10.1.0.1;net=10.1.0.0/16;dns=10.1.0.10,10.1.0.11;dom=corp.example.com,intra.example.com",
+      "weak": false
+    },
+    {
+      "name": "Heimrouter mit Werkseinstellung",
+      "link": {
+        "gateways": ["192.168.178.1", "192.168.178.1"],
+        "addresses": [{ "address": "192.168.178.27", "prefixLength": 24 }],
+        "dnsServers": ["192.168.178.1"],
+        "domains": "fritz.box"
+      },
+      "fingerprint": "v4;gw=192.168.178.1;net=192.168.178.0/24;dns=192.168.178.1;dom=fritz.box",
+      "weak": true
+    },
+    {
+      "name": "Router als DNS, keine Domäne",
+      "link": {
+        "gateways": ["192.168.0.1"],
+        "addresses": [{ "address": "192.168.0.99", "prefixLength": 24 }],
+        "dnsServers": ["192.168.0.1"],
+        "domains": ""
+      },
+      "fingerprint": "v4;gw=192.168.0.1;net=192.168.0.0/24;dns=192.168.0.1",
+      "weak": true
+    },
+    {
+      "name": "Eigener DNS-Server ohne Domäne",
+      "link": {
+        "gateways": ["172.16.4.1"],
+        "addresses": [{ "address": "172.16.5.200", "prefixLength": 22 }],
+        "dnsServers": ["172.16.4.53"],
+        "domains": null
+      },
+      "fingerprint": "v4;gw=172.16.4.1;net=172.16.4.0/22;dns=172.16.4.53",
+      "weak": false
+    },
+    {
+      "name": "Nur IPv6 bzw. ohne Gateway",
+      "link": {
+        "gateways": ["fe80::1", "0.0.0.0"],
+        "addresses": [{ "address": "10.0.0.5", "prefixLength": 8 }],
+        "dnsServers": ["10.0.0.1"],
+        "domains": "example.org"
+      },
+      "fingerprint": null,
+      "weak": false
+    },
+    {
+      "name": "Ungültige MAC fällt auf LinkProperties zurück",
+      "link": {
+        "gatewayMac": "00:00:00:00:00:00",
+        "gateways": ["10.20.30.1"],
+        "addresses": [{ "address": "10.20.30.40", "prefixLength": 32 }],
+        "dnsServers": [],
+        "domains": null
+      },
+      "fingerprint": "v4;gw=10.20.30.1;net=10.20.30.40/32",
+      "weak": true
+    }
+  ],
+  "hmac": [
+    {
+      "value": "aa:bb:cc:dd:ee:ff",
+      "hex": "f95add76ac958697fe5b1c17d1f8161f351a9f1a92ae6eaaef29381ad211ab98"
+    },
+    {
+      "value": "V4;GW=10.1.0.1;NET=10.1.0.0/16;DNS=10.1.0.10,10.1.0.11;DOM=corp.example.com,intra.example.com ",
+      "hex": "3dbd89e5666528a924bb73296153a3be29f8ba9126ec1b974488bdb5bdedeec9"
+    }
+  ]
+}

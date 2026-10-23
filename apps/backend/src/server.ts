@@ -1,0 +1,74 @@
+import { buildApp } from './app.js';
+import { createDatabase, runMigrations } from './db/index.js';
+import { CalendarService, scheduleCalendarSync } from './calendar/service.js';
+import { calendarOptionsFrom, loadEnv } from './env.js';
+import { schedulePurge } from './jobs/purge.js';
+import { ConsoleMailer, type Mailer, SmtpMailer } from './mailer.js';
+import { createPushSender } from './push/config.js';
+import { schedulePrompts } from './push/prompts.js';
+
+const env = loadEnv();
+const { db, pool } = createDatabase(env.DATABASE_URL);
+await runMigrations(db);
+
+let mailer: Mailer;
+if (env.SMTP_URL) mailer = new SmtpMailer(env.SMTP_URL, env.MAIL_FROM);
+else if (env.NODE_ENV === 'production') throw new Error('SMTP_URL fehlt');
+else mailer = new ConsoleMailer();
+
+const totpKey = Buffer.from(env.TOTP_ENCRYPTION_KEY, 'base64');
+const calendarService = new CalendarService(db, totpKey, calendarOptionsFrom(env));
+
+const app = await buildApp({
+  db,
+  mailer,
+  jwtSecret: env.JWT_SECRET,
+  totpKey,
+  calendarService,
+  homeOffice: {
+    perDayCents: env.HOME_OFFICE_DAY_CENTS,
+    maxPerYearCents: env.HOME_OFFICE_MAX_CENTS,
+  },
+  networkSecret: env.NETWORK_HMAC_SECRET,
+  appUrl: env.APP_URL,
+  ...(env.ADMIN_URL ? { adminUrl: env.ADMIN_URL } : {}),
+  apiUrl: env.API_URL,
+  corsOrigins: env.CORS_ORIGINS,
+  sso: { redirectOrigins: env.SSO_REDIRECT_ORIGINS },
+  logLevel: env.LOG_LEVEL,
+  trustProxy: env.TRUST_PROXY,
+});
+
+const stopPurge = schedulePurge(db, (msg) => {
+  app.log.info(msg);
+});
+
+const push = createPushSender(env, (msg) => {
+  app.log.info(msg);
+});
+const stopPrompts = env.PROMPTS_JOB
+  ? schedulePrompts({ db, sender: push.sender }, (msg) => {
+      app.log.info(msg);
+    })
+  : () => undefined;
+
+const stopCalendar = scheduleCalendarSync(
+  calendarService,
+  env.CALENDAR_SYNC_INTERVAL_MIN,
+  (msg) => {
+    app.log.info(msg);
+  },
+);
+
+const shutdown = async (): Promise<void> => {
+  stopPurge();
+  stopPrompts();
+  stopCalendar();
+  push.close();
+  await app.close();
+  await pool.end();
+};
+process.once('SIGINT', () => void shutdown());
+process.once('SIGTERM', () => void shutdown());
+
+await app.listen({ host: env.HOST, port: env.PORT });

@@ -1,0 +1,84 @@
+# Signierte Desktop-Pakete für Windows und macOS bauen und als Entwurf eines GitHub-Release
+# hochladen. Läuft nur manuell oder bei einem Tag `desktop-v*`, nie bei normalen Pushes.
+# Benötigte Secrets und Variablen: docs/RELEASE.md.
+name: Release Desktop
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['desktop-v*']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-desktop
+  cancel-in-progress: false
+
+jobs:
+  desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            args: ''
+          - os: macos-latest
+            args: '--target aarch64-apple-darwin'
+          - os: macos-latest
+            args: '--target x86_64-apple-darwin'
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ runner.os == 'macOS' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo run build --filter @timelog/desktop^...
+
+      - name: Signaturwerkzeug für Windows installieren
+        if: runner.os == 'Windows' && vars.WINDOWS_SIGN_COMMAND != ''
+        run: cargo install artifact-signing-cli --locked
+
+      - name: Release-Konfiguration erzeugen
+        env:
+          UPDATER_PUBKEY: ${{ vars.UPDATER_PUBKEY }}
+          UPDATER_ENDPOINT: ${{ vars.UPDATER_ENDPOINT }}
+          WINDOWS_SIGN_COMMAND: ${{ vars.WINDOWS_SIGN_COMMAND }}
+          REPOSITORY: ${{ github.repository }}
+        run: node apps/desktop/scripts/release-config.mjs apps/desktop/src-tauri/release.conf.json
+
+      - uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Update-Signatur (Pflicht für den Updater)
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # macOS: Developer-ID-Zertifikat und Notarisierung
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # Windows: Azure Artifact Signing
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        with:
+          projectPath: apps/desktop
+          tauriScript: pnpm tauri
+          args: ${{ matrix.args }} --config src-tauri/release.conf.json
+          tagName: desktop-v__VERSION__
+          releaseName: 'TimeLog Desktop __VERSION__'
+          releaseBody: 'Signierte Pakete für Windows (MSI) und macOS (DMG). Vor dem Veröffentlichen prüfen.'
+          releaseDraft: true
+          prerelease: false

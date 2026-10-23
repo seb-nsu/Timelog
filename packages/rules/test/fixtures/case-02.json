@@ -1,0 +1,5 @@
+{
+  "name": "Laptop lief < 5 min, kein boot",
+  "events": [["08:03", "shutdown"]],
+  "expect": []
+}

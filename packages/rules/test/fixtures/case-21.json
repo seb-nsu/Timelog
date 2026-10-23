@@ -1,0 +1,40 @@
+{
+  "name": "Laptop-Neustart und Handy-Netz",
+  "events": [
+    ["08:00", "boot"],
+    [
+      "08:30",
+      "net_connected",
+      {
+        "device": "H"
+      }
+    ],
+    ["12:00", "shutdown"],
+    ["12:03", "boot"],
+    [
+      "16:00",
+      "net_lost",
+      {
+        "device": "H"
+      }
+    ],
+    ["17:00", "shutdown"]
+  ],
+  "expect": [
+    {
+      "date": "2026-10-14",
+      "start": "08:00",
+      "end": "17:05",
+      "breaksMin": 0,
+      "workMin": 545,
+      "topUpMin": 45,
+      "netMin": 500,
+      "pendingMin": 0,
+      "absenceMin": 0,
+      "targetMin": 480,
+      "status": "unchecked",
+      "corrected": false,
+      "warnings": ["break_placement", "break_violation"]
+    }
+  ]
+}

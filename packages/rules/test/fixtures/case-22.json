@@ -1,0 +1,36 @@
+{
+  "name": "Sonntagsarbeit, unbestätigt",
+  "events": [
+    [
+      "10:00",
+      "boot",
+      {
+        "date": "2026-10-18"
+      }
+    ],
+    [
+      "12:00",
+      "shutdown",
+      {
+        "date": "2026-10-18"
+      }
+    ]
+  ],
+  "expect": [
+    {
+      "date": "2026-10-18",
+      "start": "10:00",
+      "end": "12:05",
+      "breaksMin": 0,
+      "workMin": 0,
+      "topUpMin": 0,
+      "netMin": 0,
+      "pendingMin": 125,
+      "absenceMin": 0,
+      "targetMin": 0,
+      "status": "unchecked",
+      "corrected": false,
+      "warnings": ["non_workday", "sunday_or_holiday"]
+    }
+  ]
+}
