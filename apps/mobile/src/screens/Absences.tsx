@@ -1,35 +1,35 @@
-// Abwesenheiten: Urlaub, Krank, Feiertag, Sonstiges. Ohne Minutenangabe zählt die Sollzeit des Tages.
-import { formatDate, formatMinutes, periodDays } from '@timelog/app-core';
-import type { Absence, AbsenceKind } from '@timelog/rules';
+// Abwesenheit: ein Bereich für Urlaub, Krankheit und Sonstiges. Firmenkonten stellen Urlaub und
+// Überstundenabbau als Antrag und sehen ihr Urlaubs- und Überstundenkonto; Privatkonten tragen direkt ein.
+// Ohne Minutenangabe zählt die Sollzeit des Tages; Feiertage kommen automatisch aus dem Bundesland.
+import { absencesFor, formatDate, formatMinutes, periodDays } from '@timelog/app-core';
+import type { AbsenceKind } from '@timelog/rules';
 import { ApiError } from '@timelog/shared';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { Body, Button, Choice, Field, Notice, Screen, Section } from '../ui/components';
 import { useMobile } from '../ui/context';
+import { LeaveSections, useLeave } from './Leave';
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
-const KINDS: AbsenceKind[] = ['vacation', 'sick', 'holiday', 'other'];
 const DAY_MS = 86_400_000;
+/** Bei Firmenkonten nur per Antrag (oben im Bereich). */
+const REQUEST_KINDS: readonly AbsenceKind[] = ['vacation', 'overtime'];
 
-/** Neue Einträge für den Zeitraum; Tage ohne Sollzeit überspringen, wenn keine Minuten angegeben sind. */
-export function absencesFor(
-  targets: readonly { date: string; targetMinutes: number }[],
-  kind: AbsenceKind,
-  minutes: number | undefined,
-): Absence[] {
-  return targets
-    .filter((d) => minutes !== undefined || d.targetMinutes > 0)
-    .map((d) => ({ date: d.date, kind, minutes: minutes ?? d.targetMinutes }));
-}
-
-export function AbsencesScreen() {
+export function AbsenceScreen() {
   const { core, state, days, t } = useMobile();
+  const leave = useLeave();
+  const managed = leave.overview?.managed === true;
+  const kinds: AbsenceKind[] = managed ? ['sick', 'other'] : ['vacation', 'sick', 'other'];
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
-  const [kind, setKind] = useState<AbsenceKind>('vacation');
+  const [chosen, setKind] = useState<AbsenceKind>('sick');
+  const kind = kinds.includes(chosen) ? chosen : 'sick';
   const [minutes, setMinutes] = useState('');
   const [message, setMessage] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
-  const list = [...(state.profile.absences ?? [])].sort((a, b) => b.date.localeCompare(a.date));
+  // Firmenkonten sehen Urlaub und Überstundenabbau unter „Anträge“
+  const list = [...(state.profile.absences ?? [])]
+    .filter((a) => a.kind !== 'holiday' && !(managed && REQUEST_KINDS.includes(a.kind)))
+    .sort((a, b) => b.date.localeCompare(a.date));
 
   const save = async () => {
     const end = to.trim() || from.trim();
@@ -71,6 +71,7 @@ export function AbsencesScreen() {
 
   return (
     <Screen title={t.m('absences.title')}>
+      {managed ? <LeaveSections leave={leave} /> : null}
       <Section title={t.m('absences.add')}>
         <Field
           label={t.m('absences.from')}
@@ -83,7 +84,7 @@ export function AbsencesScreen() {
           label={t.m('absences.kind')}
           value={kind}
           onChange={setKind}
-          options={KINDS.map((k) => ({ value: k, label: t.absence(k) }))}
+          options={kinds.map((k) => ({ value: k, label: t.absence(k) }))}
         />
         <Field
           label={t.m('absences.minutes')}

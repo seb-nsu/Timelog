@@ -74,6 +74,12 @@ function withExtras(): Fake {
     },
   );
   const r = backend.responses;
+  // Zusatzfunktionen eingeschaltet (sonst bleiben Kalender und Arbeitsort unsichtbar)
+  const account = r['GET /api/v1/settings'] as { settings: Record<string, unknown> };
+  r['GET /api/v1/settings'] = {
+    ...account,
+    settings: { ...account.settings, projects: true, calendar: true, homeOffice: true },
+  };
   r['GET /api/v1/projects'] = {
     enabled: true,
     canManage: true,
@@ -183,12 +189,21 @@ function withExtras(): Fake {
 
 const sent = (b: Fake, prefix: string) => b.calls.requests.filter((r) => r.startsWith(prefix));
 
+async function openDay(label: string) {
+  await userEvent.click(await screen.findByRole('button', { name: 'Zeiten' }));
+  await userEvent.click(await screen.findByRole('button', { name: label }));
+}
+
+async function openSettings(section: string) {
+  await userEvent.click(await screen.findByRole('button', { name: 'Einstellungen' }));
+  await userEvent.click(screen.getByRole('button', { name: section }));
+}
+
 describe('Tagesprotokoll: Projekte und Arbeitsort', () => {
   it('zeigt die Aufteilung, ordnet einen Abschnitt zu und setzt den Ort von Hand', async () => {
     const backend = withExtras();
     render(<App locale="de" backend={backend} clock={clock('2026-10-15T09:00:00Z')} />);
-    await userEvent.click(await screen.findByRole('button', { name: 'Tagesprotokoll' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Vorheriger Tag' }));
+    await openDay('Mi., 14.10.2026');
     expect(await screen.findByText('Alpha: 4:00 h')).toBeTruthy();
     expect(screen.getByText(/davon 15 min Pausenauffüllung abgezogen/)).toBeTruthy();
     await userEvent.selectOptions(screen.getByLabelText('Projekt für 12:30–17:05'), 'Alpha');
@@ -210,17 +225,16 @@ describe('Tagesprotokoll: Projekte und Arbeitsort', () => {
   it('ohne Projekte (403) bleibt das Protokoll wie bisher', async () => {
     const backend = fakeBackend();
     render(<App locale="de" backend={backend} clock={clock('2026-10-15T09:00:00Z')} />);
-    await userEvent.click(await screen.findByRole('button', { name: 'Tagesprotokoll' }));
+    await openDay('Do., 15.10.2026');
     expect(screen.queryByText('Projekte an diesem Tag')).toBeNull();
     expect(screen.queryByLabelText('Arbeitsort')).toBeNull();
   });
 });
 
-describe('Zu prüfen: Kalender-Vorschläge', () => {
+describe('Heute: Kalender-Vorschläge unter „Zu prüfen“', () => {
   it('„War Arbeit (Termin)“ erzeugt manual_work, Abwesenheit wird erst nach Klick eingetragen', async () => {
     const backend = withExtras();
     render(<App locale="de" backend={backend} clock={clock('2026-10-15T09:00:00Z')} />);
-    await userEvent.click(await screen.findByRole('button', { name: /^Zu prüfen/ }));
     const meeting = await screen.findByRole('button', {
       name: 'War Arbeit (Termin): Mi., 14.10.2026 · Termin während der Pause 12:00–12:30',
     });
@@ -246,7 +260,7 @@ describe('Einstellungen: Projekte, Kalender, Netz-Ort', () => {
   it('legt ein Projekt mit Stichwörtern an und archiviert', async () => {
     const backend = withExtras();
     render(<App locale="de" backend={backend} clock={clock('2026-10-15T09:00:00Z')} />);
-    await userEvent.click(await screen.findByRole('button', { name: 'Einstellungen' }));
+    await openSettings('Zusatzfunktionen');
     await userEvent.type(await screen.findByLabelText('Name'), 'Beta');
     await userEvent.type(
       screen.getByLabelText('Kalender-Stichwörter (durch Komma getrennt)'),
@@ -275,7 +289,7 @@ describe('Einstellungen: Projekte, Kalender, Netz-Ort', () => {
   it('Kalender: abrufen, trennen, Microsoft verbinden (Adresse zum Kopieren)', async () => {
     const backend = withExtras();
     render(<App locale="de" backend={backend} clock={clock('2026-10-15T09:00:00Z')} />);
-    await userEvent.click(await screen.findByRole('button', { name: 'Einstellungen' }));
+    await openSettings('Zusatzfunktionen');
     await userEvent.click(
       await screen.findByRole('button', { name: 'Jetzt abrufen: Google Kalender' }),
     );
@@ -293,7 +307,7 @@ describe('Einstellungen: Projekte, Kalender, Netz-Ort', () => {
   it('Ort und Standardprojekt eines eigenen Netzes', async () => {
     const backend = withExtras();
     render(<App locale="de" backend={backend} clock={clock('2026-10-15T09:00:00Z')} />);
-    await userEvent.click(await screen.findByRole('button', { name: 'Einstellungen' }));
+    await openSettings('Erkennung');
     await userEvent.selectOptions(await screen.findByLabelText('Ort von „Zuhause“'), 'Büro');
     await userEvent.selectOptions(
       await screen.findByLabelText('Standardprojekt in diesem Netz (Zuhause)'),
@@ -312,6 +326,7 @@ describe('Auswertung', () => {
   it('Projektzeiten je Projekt und Kunde, Homeoffice-Jahr mit Tagespauschale', async () => {
     const backend = withExtras();
     render(<App locale="de" backend={backend} clock={clock('2026-10-15T09:00:00Z')} />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Zeiten' }));
     await userEvent.click(await screen.findByRole('button', { name: 'Auswertung' }));
     expect(await screen.findByRole('rowheader', { name: 'Alpha' })).toBeTruthy();
     expect(screen.getByRole('rowheader', { name: 'ohne Projekt' })).toBeTruthy();
@@ -323,31 +338,47 @@ describe('Auswertung', () => {
   });
 });
 
+describe('Zusatzfunktionen', () => {
+  it('sind standardmäßig aus und lassen sich einzeln einschalten', async () => {
+    const backend = fakeBackend();
+    render(<App locale="de" backend={backend} clock={clock('2026-10-15T09:00:00Z')} />);
+    await openSettings('Zusatzfunktionen');
+    const box = await screen.findByRole<HTMLInputElement>('checkbox', {
+      name: 'Arbeitsort und Homeoffice-Nachweis',
+    });
+    expect(box.checked).toBe(false);
+    await userEvent.click(box);
+    await waitFor(() => {
+      expect(sent(backend, 'PUT /api/v1/settings')[0]).toContain('"homeOffice":true');
+    });
+  });
+});
+
 describe('Barrierefreiheit (neue Bereiche)', () => {
-  it('Protokoll, Prüfliste, Auswertung und Einstellungen mit Projekten und Kalender', async () => {
+  it('Tag, Heute mit Kalender, Auswertung und Zusatzfunktionen', async () => {
     const axe = (await import('axe-core')).default;
     const backend = withExtras();
     const { container } = render(
       <App locale="de" backend={backend} clock={clock('2026-10-15T09:00:00Z')} />,
     );
-    await screen.findByRole('button', { name: 'Tagesprotokoll' });
-    const pages: [string, string | RegExp][] = [
-      ['Tagesprotokoll', 'Projekte an diesem Tag'],
-      ['Zu prüfen', 'Vorschläge aus dem Kalender'],
-      ['Auswertung', 'Projektzeiten'],
-      ['Einstellungen', 'Kalender'],
-    ];
-    for (const [page, heading] of pages) {
-      await userEvent.click(screen.getByRole('button', { name: new RegExp(`^${page}`) }));
-      if (page === 'Tagesprotokoll') {
-        await userEvent.click(screen.getByRole('button', { name: 'Vorheriger Tag' }));
-      }
-      await screen.findByRole('heading', { name: heading });
+    const check = async (label: string) => {
       const result = await axe.run(container, { rules: { 'color-contrast': { enabled: false } } });
       const serious = result.violations.filter(
         (v) => v.impact === 'critical' || v.impact === 'serious',
       );
-      expect(serious.map((v) => `${page}: ${v.id}`)).toEqual([]);
-    }
+      expect(serious.map((v) => `${label}: ${v.id}`)).toEqual([]);
+    };
+    await screen.findByRole('heading', { name: 'Vorschläge aus dem Kalender' });
+    await check('Heute');
+    await openDay('Mi., 14.10.2026');
+    await screen.findByRole('heading', { name: 'Projekte an diesem Tag' });
+    await check('Tag');
+    await userEvent.click(screen.getByRole('button', { name: /Zurück zur Übersicht/ }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Auswertung' }));
+    await screen.findByRole('heading', { name: 'Projektzeiten' });
+    await check('Auswertung');
+    await openSettings('Zusatzfunktionen');
+    await screen.findByRole('heading', { name: 'Kalender' });
+    await check('Zusatzfunktionen');
   });
 });

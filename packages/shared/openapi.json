@@ -2874,6 +2874,14 @@
                         "projects": {
                           "default": false,
                           "type": "boolean"
+                        },
+                        "calendar": {
+                          "default": false,
+                          "type": "boolean"
+                        },
+                        "homeOffice": {
+                          "default": false,
+                          "type": "boolean"
                         }
                       },
                       "required": [
@@ -2881,7 +2889,9 @@
                         "notifications",
                         "workdays",
                         "localOnly",
-                        "projects"
+                        "projects",
+                        "calendar",
+                        "homeOffice"
                       ],
                       "additionalProperties": false
                     }
@@ -3043,6 +3053,14 @@
                         "maxLength": 50
                       },
                       "projects": {
+                        "default": false,
+                        "type": "boolean"
+                      },
+                      "calendar": {
+                        "default": false,
+                        "type": "boolean"
+                      },
+                      "homeOffice": {
                         "default": false,
                         "type": "boolean"
                       }
@@ -3221,6 +3239,14 @@
                         "projects": {
                           "default": false,
                           "type": "boolean"
+                        },
+                        "calendar": {
+                          "default": false,
+                          "type": "boolean"
+                        },
+                        "homeOffice": {
+                          "default": false,
+                          "type": "boolean"
                         }
                       },
                       "required": [
@@ -3228,7 +3254,9 @@
                         "notifications",
                         "workdays",
                         "localOnly",
-                        "projects"
+                        "projects",
+                        "calendar",
+                        "homeOffice"
                       ],
                       "additionalProperties": false
                     }

@@ -15,15 +15,35 @@ import { useLoad } from '../useLoad.js';
 const LOCATIONS: readonly WorkLocation[] = ['office', 'home', 'other'];
 const NONE = '';
 
-export function DayExtras({ date, tz }: { date: string; tz: string }) {
+/** Nur mit eingeschalteten Zusatzfunktionen: `projects` (Aufteilung) bzw. `location` (Arbeitsort). */
+export function DayExtras({
+  date,
+  tz,
+  projects: showProjects,
+  location: showLocation,
+}: {
+  date: string;
+  tz: string;
+  projects: boolean;
+  location: boolean;
+}) {
   const backend = useBackend();
   const { t } = useT();
   const id = useId();
   const [message, setMessage] = useState<string>();
-  const list = useLoad(() => backend.api.projects.list(), [backend]);
-  const day = useLoad(() => backend.api.projects.day(date), [backend, date]);
+  const list = useLoad(
+    () => (showProjects ? backend.api.projects.list() : Promise.resolve(undefined)),
+    [backend, showProjects],
+  );
+  const day = useLoad(
+    () => (showProjects ? backend.api.projects.day(date) : Promise.resolve(undefined)),
+    [backend, date, showProjects],
+  );
   const year = Number(date.slice(0, 4));
-  const locations = useLoad(() => backend.api.locations.year(year), [backend, year]);
+  const locations = useLoad(
+    () => (showLocation ? backend.api.locations.year(year) : Promise.resolve(undefined)),
+    [backend, year, showLocation],
+  );
   const projects = list.data?.projects ?? [];
   const loc = locations.data?.days.find((d) => d.date === date);
   const locked = day.data?.locked === true;

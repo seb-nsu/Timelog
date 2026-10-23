@@ -3,6 +3,8 @@ import { HINT_WARNINGS, type Warning, computeBalance, type WorkDay } from '@time
 import { useEffect } from 'react';
 import type { AppState } from '../backend.js';
 import { useBackend, useT } from '../context.js';
+import type { Extras } from '../useExtras.js';
+import { Review } from './Review.js';
 
 export function SyncLine({ state }: { state: AppState }) {
   const { t } = useT();
@@ -12,7 +14,34 @@ export function SyncLine({ state }: { state: AppState }) {
   return <span>{t('sync.ok')}</span>;
 }
 
-export function Status({ state, days, now }: { state: AppState; days: WorkDay[]; now: string }) {
+/** Heute: Status, Start/Stopp, Erkennung und alles, was zu prüfen ist. */
+/** Vertrauensanzeige: Läuft die Automatik, und ist ein Arbeitsnetz da? */
+function DetectionLine({ state }: { state: AppState }) {
+  const { t } = useT();
+  if (!state.tracker.active) return <span>{t('status.idle')}</span>;
+  return (
+    <span>
+      {t('status.detectionOn')} ·{' '}
+      {t(state.tracker.networkId ? 'status.inNetwork' : 'status.notInNetwork')}
+    </span>
+  );
+}
+
+export function Status({
+  state,
+  days,
+  now,
+  extras,
+  onChanged,
+  onOpenDay,
+}: {
+  state: AppState;
+  days: WorkDay[];
+  now: string;
+  extras: Extras;
+  onChanged: () => void;
+  onOpenDay: (date: string) => void;
+}) {
   const backend = useBackend();
   const tr = useT();
   const { t } = tr;
@@ -44,7 +73,7 @@ export function Status({ state, days, now }: { state: AppState; days: WorkDay[];
 
   return (
     <main className="screen">
-      <h1>{t('status.today')}</h1>
+      <h1>{t('nav.today')}</h1>
       <section aria-live="polite" className="card">
         <p className="state">{t(summary.running ? 'status.running' : 'status.stopped')}</p>
         {since && <p>{t('status.since', { time: since })}</p>}
@@ -80,8 +109,16 @@ export function Status({ state, days, now }: { state: AppState; days: WorkDay[];
       >
         {t(summary.running ? 'action.stop' : 'action.start')}
       </button>
+      <Review
+        days={days}
+        today={summary.date}
+        tz={tz}
+        calendar={extras.calendar}
+        onChanged={onChanged}
+        onOpenDay={onOpenDay}
+      />
       <p className="muted">
-        <SyncLine state={state} />{' '}
+        <DetectionLine state={state} /> · <SyncLine state={state} />{' '}
         {state.pending > 0 && (
           <button type="button" className="link" onClick={() => void backend.syncNow()}>
             {t('sync.now')}

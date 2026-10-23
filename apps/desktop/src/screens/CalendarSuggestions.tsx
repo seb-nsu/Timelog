@@ -78,8 +78,8 @@ export function CalendarSuggestions({
     return message ? <p role="status">{message}</p> : null;
 
   return (
-    <section className="card" aria-labelledby="calendar-suggestions">
-      <h2 id="calendar-suggestions">{t('suggest.title')}</h2>
+    <section aria-labelledby="calendar-suggestions">
+      <h3 id="calendar-suggestions">{t('suggest.title')}</h3>
       <ul className="cards">
         {gaps.map((g) => {
           const label = t(g.kind === 'break' ? 'suggest.break' : 'suggest.gap', {

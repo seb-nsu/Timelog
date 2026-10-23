@@ -1,5 +1,5 @@
-// Urlaubs- und Überstundenkonto (nur mit Konto): Stand, Antrag, Stornierung, Saldo-Verlauf.
-// Gerechnet wird im Backend (@timelog/rules); die App zeigt nur an.
+// Urlaubs- und Überstundenkonto der Firmenversion: Stand, Antrag, Stornierung, Saldo-Verlauf.
+// Teil des Bereichs „Abwesenheit“. Gerechnet wird im Backend (@timelog/rules); die App zeigt nur an.
 import { type MessageKey, formatBalance, formatDate, formatMinutes } from '@timelog/app-core';
 import { localDate } from '@timelog/rules';
 import {
@@ -11,37 +11,25 @@ import {
 } from '@timelog/shared';
 import { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
-import {
-  Body,
-  Button,
-  Choice,
-  Field,
-  Notice,
-  Row,
-  Screen,
-  Section,
-  ToggleRow,
-} from '../ui/components';
+import { Body, Button, Choice, Field, Notice, Row, Section, ToggleRow } from '../ui/components';
 import { useMobile } from '../ui/context';
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const ERRORS = ['overlapping_request', 'month_locked', 'no_workdays', 'already_started'] as const;
 
-export function LeaveScreen() {
-  const { core, state, now, t, version } = useMobile();
-  const today = localDate(Date.parse(now), state.timezone);
-  const year = Number(today.slice(0, 4));
+export interface LeaveData {
+  overview: LeaveOverview | undefined;
+  overtime: OvertimeView | undefined;
+  load: () => Promise<void>;
+}
+
+/** Urlaubs- und Überstundenkonto laden; `overview.managed` = Firmenkonto. */
+export function useLeave(): LeaveData {
+  const { core, state, now, version } = useMobile();
+  const year = Number(localDate(Date.parse(now), state.timezone).slice(0, 4));
   const [overview, setOverview] = useState<LeaveOverview>();
   const [overtime, setOvertime] = useState<OvertimeView>();
-  const [kind, setKind] = useState<LeaveKindValue>('vacation');
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
-  const [halfStart, setHalfStart] = useState(false);
-  const [halfEnd, setHalfEnd] = useState(false);
-  const [message, setMessage] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
   const loggedIn = state.account === 'loggedIn';
-  const num = (n: number) => n.toLocaleString(t.tag, { maximumFractionDigits: 1 });
-  const daysText = (n: number) => t.t('leave.days', { days: num(n) });
 
   const load = useCallback(async () => {
     if (!loggedIn) return;
@@ -50,13 +38,31 @@ export function LeaveScreen() {
       setOverview(await api.leave.get(year));
       setOvertime(await api.overtime.get(year));
     } catch {
-      setMessage({ tone: 'error', text: t.m('common.offline') });
+      setOverview(undefined);
+      setOvertime(undefined);
     }
-  }, [core, loggedIn, year, t]);
+  }, [core, loggedIn, year]);
 
   useEffect(() => {
     void load();
   }, [load, version]);
+
+  return { overview, overtime, load };
+}
+
+/** Nur für Firmenkonten: Konto, Antrag (Urlaub, Überstundenabbau), Anträge, Überstunden. */
+export function LeaveSections({ leave }: { leave: LeaveData }) {
+  const { core, state, now, t } = useMobile();
+  const today = localDate(Date.parse(now), state.timezone);
+  const { overview, overtime, load } = leave;
+  const [kind, setKind] = useState<LeaveKindValue>('vacation');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const [halfStart, setHalfStart] = useState(false);
+  const [halfEnd, setHalfEnd] = useState(false);
+  const [message, setMessage] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
+  const num = (n: number) => n.toLocaleString(t.tag, { maximumFractionDigits: 1 });
+  const daysText = (n: number) => t.t('leave.days', { days: num(n) });
 
   const fail = (e: unknown) => {
     const code = e instanceof ApiError ? e.code : '';
@@ -108,17 +114,9 @@ export function LeaveScreen() {
     }
   };
 
-  if (!loggedIn) {
-    return (
-      <Screen title={t.t('leave.title')}>
-        <Notice>{t.m('leave.needsAccount')}</Notice>
-      </Screen>
-    );
-  }
-
   const a = overview?.account;
   return (
-    <Screen title={t.t('leave.title')}>
+    <>
       {a ? (
         <Section title={t.t('leave.account', { year: a.year })}>
           <Row label={t.t('leave.entitlement')} value={daysText(a.entitlement)} />
@@ -234,6 +232,6 @@ export function LeaveScreen() {
           ))}
         </Section>
       ) : null}
-    </Screen>
+    </>
   );
 }

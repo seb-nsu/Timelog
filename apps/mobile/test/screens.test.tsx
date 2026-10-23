@@ -37,6 +37,12 @@ async function ready(h: Harness, opts: { local?: boolean } = {}) {
 
 const button = (name: string | RegExp) => screen.findByRole('button', { name });
 
+/** Tag über „Zeiten“ öffnen (Tagesliste der Woche). */
+async function openDay(user: ReturnType<typeof userEvent.setup>, day: RegExp) {
+  await user.press(await screen.findByRole('tab', { name: /^Zeiten/ }));
+  await user.press(await button(day));
+}
+
 describe('Einrichtungsassistent', () => {
   it('ohne Konto bis zur Heute-Ansicht', async () => {
     const h = await harness();
@@ -161,7 +167,7 @@ describe('Tagesprotokoll', () => {
     await h.core.ingestNative();
     await show(h);
     const user = userEvent.setup();
-    await user.press(await screen.findByRole('tab', { name: 'Protokoll' }));
+    await openDay(user, /^Do\., 15\.10\.2026/);
     await user.press(await button(/^Pause 12:\d\d–12:40 – War Arbeit$/));
     expect(await screen.findByText('Pause als Arbeit eingetragen.')).toBeOnTheScreen();
     const events = await h.core.events('2026-10-15T00:00:00Z', '2026-10-16T00:00:00Z');
@@ -175,7 +181,7 @@ describe('Tagesprotokoll', () => {
     await ready(h);
     await show(h);
     const user = userEvent.setup();
-    await user.press(await screen.findByRole('tab', { name: 'Protokoll' }));
+    await openDay(user, /^Do\., 15\.10\.2026/);
     await user.type(await screen.findByLabelText('Uhrzeit (HH:MM)'), '08:15');
     await user.type(screen.getByLabelText('Begründung'), 'Zug verspätet');
     await user.press(await button('Korrektur speichern'));
@@ -193,7 +199,7 @@ describe('Tagesprotokoll', () => {
     await ready(h, { local: true });
     await show(h);
     const user = userEvent.setup();
-    await user.press(await screen.findByRole('tab', { name: 'Protokoll' }));
+    await openDay(user, /^Do\., 15\.10\.2026/);
     await user.type(await screen.findByLabelText('Uhrzeit (HH:MM)'), '25:00');
     await user.press(await button('Korrektur speichern'));
     expect(await screen.findByRole('alert')).toHaveTextContent('Bitte Uhrzeit als HH:MM eingeben.');
@@ -207,24 +213,27 @@ describe('Zu prüfen', () => {
     await h.core.manualRange('manual_work', '2026-10-18T08:00:00Z', '2026-10-18T10:00:00Z');
     await show(h);
     const user = userEvent.setup();
-    await user.press(await screen.findByRole('tab', { name: /Prüfen, 1 offen/ }));
+    // „Zu prüfen“ steht auf Heute; der Reiter zeigt die Zahl
+    expect(await screen.findByRole('tab', { name: 'Heute, 1 offen' })).toBeOnTheScreen();
     await user.press(await button('Bestätigen'));
-    expect(await screen.findByText('Nichts zu prüfen.')).toBeOnTheScreen();
+    expect(await screen.findByRole('tab', { name: 'Heute' })).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'Bestätigen' })).not.toBeOnTheScreen();
   });
 });
 
-describe('Übersicht und Abwesenheiten', () => {
+describe('Zeiten und Abwesenheit', () => {
   it('Woche mit Saldo, Monat umschaltbar, Urlaub eintragen', async () => {
     const h = await harness({ now: '2026-10-15T15:00:00Z' });
     await ready(h, { local: true });
     await show(h);
     const user = userEvent.setup();
-    await user.press(await screen.findByRole('tab', { name: 'Übersicht' }));
+    await user.press(await screen.findByRole('tab', { name: 'Zeiten' }));
     // Tage ohne Erfassung zählen nicht zum Saldo (wie am Desktop)
     expect(await screen.findByLabelText('Saldo: 0:00')).toBeOnTheScreen();
     await user.press(screen.getByRole('radio', { name: 'Monat' }));
     expect(await screen.findByLabelText(/Soll: 176:00/)).toBeOnTheScreen();
-    await user.press(screen.getByRole('button', { name: 'Abwesenheiten' }));
+    await user.press(screen.getByRole('tab', { name: 'Abwesenheit' }));
+    await user.press(await screen.findByRole('radio', { name: 'Urlaub' }));
     await user.type(await screen.findByLabelText('Von (JJJJ-MM-TT)'), '2026-10-12');
     await user.type(screen.getByLabelText('Bis (JJJJ-MM-TT)'), '2026-10-18');
     await user.press(screen.getByRole('button', { name: 'Speichern' }));
@@ -238,23 +247,24 @@ describe('Übersicht und Abwesenheiten', () => {
     await ready(h);
     const a = await show(h);
     const user = userEvent.setup();
-    await user.press(await screen.findByRole('tab', { name: 'Übersicht' }));
+    await user.press(await screen.findByRole('tab', { name: 'Zeiten' }));
     await user.press(await button('CSV teilen'));
     await screen.findByRole('button', { name: 'CSV teilen' });
     expect(a.shared).toEqual(['timelog-2026-10-12-2026-10-18.csv']);
   });
 });
 
-describe('Urlaub', () => {
+describe('Abwesenheit: Urlaub', () => {
   it('Firmenkonto: Antrag stellen und vor Beginn stornieren; Abwesenheit Urlaub nur per Antrag', async () => {
     const h = await loggedIn({ now: '2026-10-15T15:00:00Z' });
     h.server.orgAccount = true;
     await ready(h);
     await show(h);
     const user = userEvent.setup();
-    await user.press(await screen.findByRole('tab', { name: 'Übersicht' }));
-    await user.press(await button('Urlaub und Überstunden'));
+    await user.press(await screen.findByRole('tab', { name: 'Abwesenheit' }));
     expect(await screen.findByLabelText('Rest: 20 Tage')).toBeOnTheScreen();
+    // Urlaub nur per Antrag: im Eintragen-Formular gibt es ihn nicht
+    expect(screen.getAllByRole('radio', { name: 'Urlaub' })).toHaveLength(1);
     expect(screen.getByText('Anspruch und Buchungen pflegt deine Firma.')).toBeOnTheScreen();
     expect(screen.getByText(/über dem Höchstwert/)).toBeOnTheScreen();
     await user.press(screen.getByRole('radio', { name: 'Überstundenabbau' }));
@@ -276,23 +286,25 @@ describe('Urlaub', () => {
     expect(await screen.findByText('Antrag storniert.')).toBeOnTheScreen();
     expect(h.server.leaveRequests[0]?.status).toBe('cancelled');
 
-    await user.press(screen.getByRole('tab', { name: 'Übersicht' }));
-    await user.press(await button('Abwesenheiten'));
+    // Krankheit trägt auch ein Firmenkonto direkt ein
     await user.type(await screen.findByLabelText('Von (JJJJ-MM-TT)'), '2026-11-09');
     await user.press(screen.getByRole('button', { name: 'Speichern' }));
-    expect(await screen.findByText(/als Antrag stellen/)).toBeOnTheScreen();
+    expect(await screen.findByText('Gespeichert.')).toBeOnTheScreen();
+    expect((await h.core.profile()).absences?.[0]).toMatchObject({
+      date: '2026-11-09',
+      kind: 'sick',
+    });
   });
 
-  it('ohne Konto nur ein Hinweis; englische Texte', async () => {
+  it('Privat- bzw. lokales Konto: kein Urlaubskonto, Urlaub direkt eintragen; englische Texte', async () => {
     const h = await harness({ now: '2026-10-15T15:00:00Z' });
     await ready(h, { local: true });
     await show(h, 'en');
     const user = userEvent.setup();
-    await user.press(await screen.findByRole('tab', { name: 'Overview' }));
-    await user.press(await button('Leave and overtime'));
-    expect(
-      await screen.findByText('Leave and overtime accounts need an account.'),
-    ).toBeOnTheScreen();
+    await user.press(await screen.findByRole('tab', { name: 'Absence' }));
+    expect(await screen.findByRole('radio', { name: 'Vacation' })).toBeOnTheScreen();
+    expect(screen.queryByText(/Leave account/)).not.toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'Request' })).not.toBeOnTheScreen();
   });
 });
 
@@ -307,6 +319,7 @@ describe('Einstellungen', () => {
     await show(h);
     const user = userEvent.setup();
     await user.press(await screen.findByRole('tab', { name: 'Einstellungen' }));
+    await user.press(await screen.findByRole('radio', { name: 'Erkennung' }));
     await user.type(await screen.findByLabelText('Name des Netzes'), 'Büro');
     await user.press(await button('Aktuelles Netz übernehmen'));
     expect(await screen.findByText(/Router-Werkseinstellung/)).toBeOnTheScreen();
@@ -321,6 +334,7 @@ describe('Einstellungen', () => {
     await show(h);
     const user = userEvent.setup();
     await user.press(await screen.findByRole('tab', { name: 'Einstellungen' }));
+    await user.press(await screen.findByRole('radio', { name: 'Erkennung' }));
     expect(await screen.findByText('Kurzbefehl „Arbeitsnetz verbunden“')).toBeOnTheScreen();
     expect(
       screen.queryByRole('button', { name: 'Aktuelles Netz übernehmen' }),
@@ -345,6 +359,7 @@ describe('Einstellungen', () => {
     await show(h);
     const user = userEvent.setup();
     await user.press(await screen.findByRole('tab', { name: 'Einstellungen' }));
+    await user.press(await screen.findByRole('radio', { name: 'Konto' }));
     await user.press(await button('Meine Daten exportieren (JSON)'));
     await user.press(await button('Alle Daten auf diesem Gerät löschen'));
     expect(await screen.findByText('Wirklich alle Daten löschen?')).toBeOnTheScreen();

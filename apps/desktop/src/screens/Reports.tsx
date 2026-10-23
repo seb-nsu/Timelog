@@ -2,11 +2,21 @@
 // PDF gibt es in der Handy-App; der Desktop-Kern überträgt nur Text.
 import { formatEuro, formatMinutes, monthNames } from '@timelog/app-core';
 import { addDays } from '@timelog/rules';
-import { useId, useState } from 'react';
+import { type ReactNode, useId, useState } from 'react';
 import { useBackend, useT } from '../context.js';
+import type { Extras } from '../useExtras.js';
 import { saveFile, useLoad } from '../useLoad.js';
 
-export function Reports({ today }: { today: string }) {
+/** Nur mit Zusatzfunktionen erreichbar (unter Zeiten). */
+export function Reports({
+  today,
+  extras,
+  back,
+}: {
+  today: string;
+  extras: Extras;
+  back?: ReactNode;
+}) {
   const backend = useBackend();
   const tr = useT();
   const { t } = tr;
@@ -25,7 +35,10 @@ export function Reports({ today }: { today: string }) {
         : Promise.resolve(undefined),
     [backend, from, to, valid, list.data?.enabled],
   );
-  const loc = useLoad(() => backend.api.locations.year(year), [backend, year]);
+  const loc = useLoad(
+    () => (extras.homeOffice ? backend.api.locations.year(year) : Promise.resolve(undefined)),
+    [backend, year, extras.homeOffice],
+  );
   const months = monthNames(locale);
 
   const exportCsv = async (load: () => Promise<Blob>, filename: string) => {
@@ -39,6 +52,7 @@ export function Reports({ today }: { today: string }) {
 
   return (
     <main className="screen">
+      {back}
       <h1>{t('nav.reports')}</h1>
       {list.data?.enabled && (
         <section className="card" aria-labelledby={`${id}-projects`}>
@@ -116,81 +130,83 @@ export function Reports({ today }: { today: string }) {
         </section>
       )}
 
-      <section className="card" aria-labelledby={`${id}-ho`}>
-        <div className="row">
-          <button
-            type="button"
-            aria-label={t('homeOffice.prev')}
-            onClick={() => {
-              setYear(year - 1);
-            }}
-          >
-            ‹
-          </button>
-          <h2 id={`${id}-ho`} aria-live="polite">
-            {t('homeOffice.title', { year })}
-          </h2>
-          <button
-            type="button"
-            aria-label={t('homeOffice.next')}
-            disabled={year >= Number(today.slice(0, 4))}
-            onClick={() => {
-              setYear(year + 1);
-            }}
-          >
-            ›
-          </button>
-        </div>
-        {loc.data && (
-          <>
-            <ul className="log">
-              <li>{t('homeOffice.homeDays', { count: loc.data.summary.homeDays })}</li>
-              <li>{t('homeOffice.officeDays', { count: loc.data.summary.officeDays })}</li>
-              <li>{t('homeOffice.otherDays', { count: loc.data.summary.otherDays })}</li>
-              <li>
-                {t('homeOffice.amount', {
-                  amount: formatEuro(loc.data.summary.amountCents, locale),
-                  perDay: formatEuro(loc.data.allowance.perDayCents, locale),
-                  max: formatEuro(loc.data.allowance.maxPerYearCents, locale),
-                })}
-              </li>
-            </ul>
-            <table>
-              <caption>{t('homeOffice.byMonth')}</caption>
-              <thead>
-                <tr>
-                  {months.map((m) => (
-                    <th key={m} scope="col">
-                      {m}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  {loc.data.summary.homeDaysByMonth.map((n, i) => (
-                    <td key={months[i] ?? i}>{n}</td>
-                  ))}
-                </tr>
-              </tbody>
-            </table>
-            <p className="muted">
-              {t('homeOffice.basis', { basis: loc.data.allowance.legalBasis })}
-            </p>
+      {extras.homeOffice && (
+        <section className="card" aria-labelledby={`${id}-ho`}>
+          <div className="row">
             <button
               type="button"
-              onClick={() =>
-                void exportCsv(
-                  () => backend.api.locations.export({ year, format: 'csv' }),
-                  `homeoffice_${String(year)}.csv`,
-                )
-              }
+              aria-label={t('homeOffice.prev')}
+              onClick={() => {
+                setYear(year - 1);
+              }}
             >
-              {t('export.csv')}
+              ‹
             </button>
-          </>
-        )}
-      </section>
+            <h2 id={`${id}-ho`} aria-live="polite">
+              {t('homeOffice.title', { year })}
+            </h2>
+            <button
+              type="button"
+              aria-label={t('homeOffice.next')}
+              disabled={year >= Number(today.slice(0, 4))}
+              onClick={() => {
+                setYear(year + 1);
+              }}
+            >
+              ›
+            </button>
+          </div>
+          {loc.data && (
+            <>
+              <ul className="log">
+                <li>{t('homeOffice.homeDays', { count: loc.data.summary.homeDays })}</li>
+                <li>{t('homeOffice.officeDays', { count: loc.data.summary.officeDays })}</li>
+                <li>{t('homeOffice.otherDays', { count: loc.data.summary.otherDays })}</li>
+                <li>
+                  {t('homeOffice.amount', {
+                    amount: formatEuro(loc.data.summary.amountCents, locale),
+                    perDay: formatEuro(loc.data.allowance.perDayCents, locale),
+                    max: formatEuro(loc.data.allowance.maxPerYearCents, locale),
+                  })}
+                </li>
+              </ul>
+              <table>
+                <caption>{t('homeOffice.byMonth')}</caption>
+                <thead>
+                  <tr>
+                    {months.map((m) => (
+                      <th key={m} scope="col">
+                        {m}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    {loc.data.summary.homeDaysByMonth.map((n, i) => (
+                      <td key={months[i] ?? i}>{n}</td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
+              <p className="muted">
+                {t('homeOffice.basis', { basis: loc.data.allowance.legalBasis })}
+              </p>
+              <button
+                type="button"
+                onClick={() =>
+                  void exportCsv(
+                    () => backend.api.locations.export({ year, format: 'csv' }),
+                    `homeoffice_${String(year)}.csv`,
+                  )
+                }
+              >
+                {t('export.csv')}
+              </button>
+            </>
+          )}
+        </section>
+      )}
       {message && <p role="status">{message}</p>}
     </main>
   );

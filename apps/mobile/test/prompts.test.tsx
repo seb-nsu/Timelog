@@ -163,26 +163,26 @@ describe('Wochenrückblick', () => {
     );
   }
 
-  it('aus der Übersicht: Summen, offene Tage, Woche bestätigen', async () => {
+  it('unter Zeiten: Summen, Tage mit Hinweis, Woche bestätigen', async () => {
     const h = await harness({ now: '2026-10-18T10:00:00Z' });
     await h.core.useLocalOnly();
     await week(h);
     await show(h);
     const user = userEvent.setup();
-    await user.press(await screen.findByRole('tab', { name: /Übersicht/ }));
-    await user.press(await screen.findByRole('button', { name: 'Wochenrückblick' }));
-    expect(await screen.findByRole('header', { name: 'Wochenrückblick' })).toBeOnTheScreen();
-    expect(screen.getByLabelText('Netto: 4:00 h')).toBeOnTheScreen();
-    expect(screen.getByText('Keine Hinweise.')).toBeOnTheScreen();
+    await user.press(await screen.findByRole('tab', { name: /^Zeiten/ }));
+    expect(await screen.findByRole('header', { name: 'Zeiten' })).toBeOnTheScreen();
+    expect(screen.getByLabelText('Netto: 4:00')).toBeOnTheScreen();
+    expect(screen.queryByText('Hinweise zum Arbeitszeitgesetz')).not.toBeOnTheScreen();
     for (const el of screen.getAllByRole('button')) expect(el).toHaveAccessibleName();
-    const open = screen.getByRole('button', { name: /^Sa\., 17\.10\.2026 öffnen/ });
+    const open = screen.getByRole('button', { name: /^Sa\., 17\.10\.2026 ⚠/ });
     await user.press(screen.getByRole('button', { name: 'Woche bestätigen' }));
     expect(await screen.findByText('Bestätigte Tage: 1.')).toBeOnTheScreen();
     expect(
       await screen.findByText('Alle unproblematischen Tage sind bestätigt.'),
     ).toBeOnTheScreen();
     await user.press(open);
-    expect(await screen.findByRole('tab', { name: 'Protokoll' })).toBeSelected();
+    expect(await screen.findByRole('header', { name: 'Tagesprotokoll' })).toBeOnTheScreen();
+    expect(screen.getByRole('tab', { name: /^Zeiten/ })).toBeSelected();
   });
 
   it('Antippen einer Benachrichtigung öffnet die Woche', async () => {
@@ -195,7 +195,8 @@ describe('Wochenrückblick', () => {
     });
     await screen.findByRole('tab', { name: 'Heute' });
     go?.({ name: 'week', date: '2026-10-12' });
-    expect(await screen.findByText('KW 42: Mo., 12.10.2026 – So., 18.10.2026')).toBeOnTheScreen();
+    expect(await screen.findByText('Mo., 12.10.2026 – So., 18.10.2026')).toBeOnTheScreen();
+    expect(screen.getByRole('tab', { name: 'Zeiten' })).toBeSelected();
   });
 
   it('Einstellungen: Rückfrage und Wochenrückblick', async () => {
@@ -204,6 +205,7 @@ describe('Wochenrückblick', () => {
     await show(h);
     const user = userEvent.setup();
     await user.press(await screen.findByRole('tab', { name: 'Einstellungen' }));
+    await user.press(await screen.findByRole('radio', { name: 'Benachrichtigungen' }));
     const ask = { name: 'Nach erkanntem Feierabend fragen („Stimmt das?“)' };
     await fireEvent(await screen.findByRole('switch', ask), 'valueChange', false);
     await waitFor(() => {

@@ -1,5 +1,12 @@
-// Woche/Monat mit Netto, Soll und Saldo; Export und Abwesenheiten.
-import { formatBalance, formatDate, formatMinutes, periodDays } from '@timelog/app-core';
+// Zeiten: Woche/Monat mit Netto, Soll und Saldo, Tagesliste, „Woche bestätigen“ und Export.
+// Ersetzt Übersicht und Wochenrückblick; die Auswertung erscheint nur mit Zusatzfunktionen.
+import {
+  formatBalance,
+  formatDate,
+  formatMinutes,
+  periodDays,
+  weekSummary,
+} from '@timelog/app-core';
 import { addDays, localDate, weekday } from '@timelog/rules';
 import { useState } from 'react';
 import { LOOKBACK_DAYS } from '../core/core';
@@ -23,13 +30,36 @@ export function periodRange(
   return { from: first.toISOString().slice(0, 10), to: last.toISOString().slice(0, 10) };
 }
 
-export function OverviewScreen() {
+/** Wochen zwischen dem Montag von `date` und dem von `today` (0 = diese Woche). */
+function weekOffset(today: string, date: string): number {
+  const monday = (d: string) => addDays(d, -((weekday(d) + 6) % 7));
+  return Math.round((Date.parse(monday(date)) - Date.parse(monday(today))) / (7 * 86_400_000));
+}
+
+export function OverviewScreen({ date }: { date?: string }) {
   const { core, state, days, now, t, go, actions } = useMobile();
-  const [mode, setMode] = useState<Mode>('week');
-  const [offset, setOffset] = useState(0);
-  const [error, setError] = useState<string | null>(null);
   const today = localDate(Date.parse(now), state.timezone);
+  const [mode, setMode] = useState<Mode>('week');
+  const [offset, setOffset] = useState(date ? weekOffset(today, date) : 0);
+  const [error, setError] = useState<string | null>(null);
+  const [msg, setMsg] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
   const { from, to } = periodRange(today, mode, offset);
+  const week = mode === 'week' ? weekSummary(days, state.profile, from, today) : undefined;
+  const extras = state.settings.projects || state.settings.homeOffice;
+
+  const confirm = async (dates: string[]) => {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const count = await core.confirmDays(days, dates);
+      setMsg({ tone: 'success', text: t.t('week.confirmed', { count }) });
+    } catch {
+      setMsg({ tone: 'error', text: t.m('common.error') });
+    } finally {
+      setBusy(false);
+    }
+  };
   const summary = periodDays(days, state.profile, from, to, today);
   const earliest = addDays(today, -LOOKBACK_DAYS);
 
@@ -55,6 +85,7 @@ export function OverviewScreen() {
         onChange={(m) => {
           setMode(m);
           setOffset(0);
+          setMsg(null);
         }}
         options={[
           { value: 'week', label: t.m('overview.week') },
@@ -74,6 +105,7 @@ export function OverviewScreen() {
           disabled={from <= earliest}
           onPress={() => {
             setOffset(offset - 1);
+            setMsg(null);
           }}
         />
         <Button
@@ -82,6 +114,7 @@ export function OverviewScreen() {
           disabled={offset >= 0}
           onPress={() => {
             setOffset(offset + 1);
+            setMsg(null);
           }}
         />
       </Section>
@@ -99,34 +132,39 @@ export function OverviewScreen() {
         ))}
       </Section>
 
-      <Button
-        variant="secondary"
-        label={t.t('nav.week')}
-        onPress={() => {
-          go(mode === 'week' ? { name: 'week', date: from } : { name: 'week' });
-        }}
-      />
-      <Button
-        variant="secondary"
-        label={t.m('overview.absences')}
-        onPress={() => {
-          go({ name: 'absences' });
-        }}
-      />
-      <Button
-        variant="secondary"
-        label={t.m('overview.leave')}
-        onPress={() => {
-          go({ name: 'leave' });
-        }}
-      />
-      <Button
-        variant="secondary"
-        label={t.t('nav.reports')}
-        onPress={() => {
-          go({ name: 'reports' });
-        }}
-      />
+      {week && week.legalHints.length > 0 ? (
+        <Section title={t.t('week.hints')}>
+          {week.legalHints.map((h) => (
+            <Notice key={h.date} tone="warning">
+              {`${formatDate(h.date, t.tag)}: ${h.warnings.map((w) => t.warning(w)).join(', ')}`}
+            </Notice>
+          ))}
+        </Section>
+      ) : null}
+
+      {week ? (
+        week.confirmableDays.length === 0 ? (
+          <Body muted>{t.t('week.nothing')}</Body>
+        ) : (
+          <Button
+            label={t.t('week.confirm')}
+            hint={t.t('week.confirmHint', { count: week.confirmableDays.length })}
+            disabled={busy}
+            onPress={() => confirm(week.confirmableDays)}
+          />
+        )
+      ) : null}
+      {msg ? <Notice tone={msg.tone}>{msg.text}</Notice> : null}
+
+      {extras ? (
+        <Button
+          variant="secondary"
+          label={t.t('nav.reports')}
+          onPress={() => {
+            go({ name: 'reports' });
+          }}
+        />
+      ) : null}
       <Section title={t.m('overview.export')}>
         {state.account === 'loggedIn' ? (
           <>

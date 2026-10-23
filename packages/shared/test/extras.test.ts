@@ -45,6 +45,9 @@ describe('Schemas für Projekte, Kalender und Homeoffice', () => {
 
   it('Einstellungen und Firmen-Schalter haben sichere Standardwerte', () => {
     expect(settingsSchema.parse({}).projects).toBe(false);
+    // Zusatzfunktionen sind ohne Einschalten unsichtbar
+    expect(settingsSchema.parse({}).calendar).toBe(false);
+    expect(settingsSchema.parse({}).homeOffice).toBe(false);
     expect(orgFeatures.parse({})).toEqual({
       projects: false,
       calendar: true,
