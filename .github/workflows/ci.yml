@@ -1,8 +1,14 @@
 name: CI
 
+# Pushes laufen nur auf main; Feature-Branches werden über ihren Pull Request geprüft.
 on:
   push:
+    branches: [main]
   pull_request:
+
+permissions:
+  contents: read
+  pull-requests: read # dorny/paths-filter liest die geänderten Dateien eines PR über die API
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -25,17 +31,32 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
 
-  rust:
-    name: Desktop (Rust, ${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    defaults:
+  # Prüft auf PRs, ob die Desktop-App betroffen ist. Auf main laufen alle Desktop-Jobs immer.
+  changes:
+    name: Änderungen erkennen
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    outputs:
+      desktop: ${{ steps.filter.outputs.desktop }}
+    steps:
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            desktop:
+              - 'apps/desktop/**'
+              - '**/Cargo.*'
+              - 'pnpm-lock.yaml'
+              - '.github/workflows/ci.yml'
+
+  # Linux-Build läuft immer (günstig, deckt Kompilierung, fmt und clippy ab).
+  rust-linux:
+    name: Desktop (Rust, ubuntu-latest)
+    runs-on: ubuntu-latest
+    defaults: &rust-defaults
       run:
         working-directory: apps/desktop/src-tauri
-    steps:
+    steps: &rust-steps
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v5
@@ -62,3 +83,22 @@ jobs:
         if: runner.os == 'Linux'
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo test --workspace --locked
+
+  # Windows und macOS sind teuer (Minuten-Faktor 2 bzw. 10). Auf PRs nur, wenn die Desktop-App
+  # betroffen ist. Eigene Jobs statt Matrix, damit ein übersprungener Job unter seinem echten
+  # Namen als „skipped“ gemeldet wird und Required Checks den Merge nicht blockieren.
+  rust-windows:
+    name: Desktop (Rust, windows-latest)
+    needs: changes
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.changes.outputs.desktop == 'true') }}
+    runs-on: windows-latest
+    defaults: *rust-defaults
+    steps: *rust-steps
+
+  rust-macos:
+    name: Desktop (Rust, macos-latest)
+    needs: changes
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.changes.outputs.desktop == 'true') }}
+    runs-on: macos-latest
+    defaults: *rust-defaults
+    steps: *rust-steps
