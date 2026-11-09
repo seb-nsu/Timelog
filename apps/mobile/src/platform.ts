@@ -3,7 +3,8 @@
 import { uuid } from 'expo';
 import * as Crypto from 'expo-crypto';
 import * as Device from 'expo-device';
-import { getCalendars } from 'expo-localization';
+import { pickLocale } from '@timelog/app-core';
+import { getCalendars, getLocales } from 'expo-localization';
 import * as SecureStore from 'expo-secure-store';
 import * as SQLite from 'expo-sqlite';
 import { Platform } from 'react-native';
@@ -50,6 +51,7 @@ export function getCore(): Promise<MobileCore> {
       native: loadTimelogNative(),
       uuid: () => uuid.v4(),
       timezone: deviceTimezone,
+      locale: pickLocale(getLocales()[0].languageTag),
       crypto: {
         sha256: async (data) =>
           new Uint8Array(await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, data)),

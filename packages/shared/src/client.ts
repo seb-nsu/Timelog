@@ -127,6 +127,8 @@ export interface ApiClientOptions {
   /** Liefert das aktuelle Access-Token; fehlt es, gehen Anfragen ohne Authorization raus. */
   getAccessToken?: () => string | undefined | Promise<string | undefined>;
   fetch?: typeof fetch;
+  /** Sprache für serverseitige Texte (Exporte, E-Mails); wird als Accept-Language gesendet. */
+  locale?: 'de' | 'en';
 }
 
 type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -146,6 +148,7 @@ export function createApiClient(options: ApiClientOptions) {
     const token = await options.getAccessToken?.();
     if (token) headers.authorization = `Bearer ${token}`;
     if (body !== undefined) headers['content-type'] = 'application/json';
+    if (options.locale) headers['accept-language'] = options.locale;
     const init: RequestInit = { method, headers };
     if (body !== undefined) init.body = JSON.stringify(body);
     const res = await doFetch(url, init);

@@ -1,6 +1,6 @@
 import { type Locale, pickLocale, reviewItems, useNow, useTranslator } from '@timelog/app-core';
 import { localDate } from '@timelog/rules';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { DesktopBackend } from './backend.js';
 import { BackendContext, TranslatorContext } from './context.js';
 import { Absence } from './screens/Absence.js';
@@ -39,6 +39,23 @@ export function App({
   const [target, setTarget] = useState<TimesTarget & { n: number }>();
   const [extrasVersion, setExtrasVersion] = useState(0);
   const { t } = translator;
+  // Tray-Menü in derselben Sprache wie die Oberfläche
+  useEffect(() => {
+    void backend
+      .setTrayLabels({
+        open: t('tray.open'),
+        start: t('action.start'),
+        stop: t('action.stop'),
+        quit: t('tray.quit'),
+      })
+      .catch(() => undefined);
+  }, [backend, t]);
+  // Sprache dem Server mitteilen (für Exporte; die Desktop-App sendet kein Accept-Language)
+  const signedIn = state?.loggedIn === true;
+  useEffect(() => {
+    if (!signedIn) return;
+    void backend.api.devices.update({ locale: translator.locale }).catch(() => undefined);
+  }, [backend, signedIn, translator.locale]);
   const active = state?.loggedIn === true && state.setupDone;
   const tz = state?.tracker.timezone;
   useReminders(backend, active ? days : [], profile, now, tz, translator);

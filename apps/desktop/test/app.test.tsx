@@ -41,6 +41,22 @@ describe('Status', () => {
     expect(backend.calls.manual).toEqual(['manual_end']);
   });
 
+  it('beschriftet das Tray-Menü in der Sprache der Oberfläche', async () => {
+    const backend = fakeBackend();
+    render(<App locale="en" backend={backend} clock={clock('2026-10-15T09:00:00Z')} />);
+    await waitFor(() => {
+      expect(backend.setTrayLabels).toHaveBeenCalledWith({
+        open: 'Open TimeLog',
+        start: 'Start work',
+        stop: 'Stop work',
+        quit: 'Quit TimeLog',
+      });
+    });
+    await waitFor(() => {
+      expect(backend.calls.requests).toContain('POST /api/v1/devices {"locale":"en"}');
+    });
+  });
+
   it('ohne Erfassung: Arbeit beginnen', async () => {
     const backend = fakeBackend({ pending: 3 });
     render(<App locale="de" backend={backend} clock={clock('2026-10-15T09:00:00Z')} />);

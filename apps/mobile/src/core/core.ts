@@ -47,6 +47,8 @@ export interface CoreDeps {
   /** IANA-Zeitzone des Geräts (jetzt) */
   timezone: () => string;
   device: { os: string; name: string };
+  /** Sprache der Oberfläche; der Server erzeugt Exporte und E-Mails darin. */
+  locale?: 'de' | 'en';
   /** Für Arbeitsnetze im Modus „Nur lokal“ (HMAC ohne Server). */
   crypto?: { sha256: Sha256; randomBytes: (n: number) => Uint8Array };
 }
@@ -129,6 +131,7 @@ export class MobileCore {
   private readonly tz: () => string;
   private readonly device: { os: string; name: string };
   private readonly crypto: CoreDeps['crypto'];
+  private readonly locale: CoreDeps['locale'];
 
   private access: string | undefined;
   private refreshing: Promise<boolean> | undefined;
@@ -150,6 +153,7 @@ export class MobileCore {
     this.tz = deps.timezone;
     this.device = deps.device;
     this.crypto = deps.crypto;
+    this.locale = deps.locale;
   }
 
   // ── Zustand ─────────────────────────────────────────────────────────────────
@@ -277,6 +281,7 @@ export class MobileCore {
       baseUrl,
       getAccessToken: authed ? () => this.access : undefined,
       fetch: authed ? this.authedFetch(baseUrl) : this.doFetch,
+      ...(this.locale ? { locale: this.locale } : {}),
     });
   }
 

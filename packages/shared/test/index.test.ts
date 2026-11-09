@@ -76,6 +76,22 @@ describe('API-Client', () => {
     expect(new Headers(calls[0]?.init.headers).get('authorization')).toBe('Bearer tok');
   });
 
+  it('sendet die Sprache als Accept-Language, wenn angegeben', async () => {
+    const seen: (string | null)[] = [];
+    const make = (locale?: 'de' | 'en') =>
+      createApiClient({
+        baseUrl: 'https://api.example',
+        ...(locale ? { locale } : {}),
+        fetch: ((_url: URL, init: RequestInit) => {
+          seen.push(new Headers(init.headers).get('accept-language'));
+          return Promise.resolve(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+        }) as typeof fetch,
+      });
+    await make('en').auth.requestPasswordReset('a@example.test');
+    await make().auth.requestPasswordReset('a@example.test');
+    expect(seen).toEqual(['en', null]);
+  });
+
   it('wirft ApiError mit Fehlercode', async () => {
     const client = createApiClient({
       baseUrl: 'https://api.example',

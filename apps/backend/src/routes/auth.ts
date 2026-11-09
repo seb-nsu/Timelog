@@ -21,6 +21,7 @@ import { ACCESS_TOKEN_TTL_S, REFRESH_TOKEN_TTL_MS } from '../security/jwt.js';
 import { burnPasswordCheck, hashPassword, verifyPassword } from '../security/password.js';
 import { generateSecret, otpauthUrl, verifyTotp } from '../security/totp.js';
 import { authOf, requireAuth, scopeOf } from './guard.js';
+import { localeFromHeader, tr } from '../i18n.js';
 
 const VERIFY_TTL_MS = 48 * 3_600_000;
 const RESET_TTL_MS = 3_600_000;
@@ -173,10 +174,19 @@ export function authRoutes(app: App, ctx: AppContext): void {
           : undefined;
       });
       if (token) {
+        const l = localeFromHeader(request.headers['accept-language']) ?? 'de';
         await ctx.mailer.send({
           to: email,
-          subject: 'TimeLog: E-Mail-Adresse bestätigen',
-          text: `Bitte bestätige deine Adresse: ${ctx.appUrl}/verify?token=${token}`,
+          subject: tr(
+            l,
+            'TimeLog: E-Mail-Adresse bestätigen',
+            'TimeLog: Confirm your email address',
+          ),
+          text: tr(
+            l,
+            `Bitte bestätige deine Adresse: ${ctx.appUrl}/verify?token=${token}`,
+            `Please confirm your address: ${ctx.appUrl}/verify?token=${token}`,
+          ),
         });
       }
       return { ok: true as const };
@@ -333,10 +343,15 @@ export function authRoutes(app: App, ctx: AppContext): void {
         return createOneTimeToken(tx, user.id, 'password_reset', RESET_TTL_MS, ctx.now());
       });
       if (token) {
+        const l = localeFromHeader(request.headers['accept-language']) ?? 'de';
         await ctx.mailer.send({
           to: email,
-          subject: 'TimeLog: Passwort zurücksetzen',
-          text: `Neues Passwort setzen (1 Stunde gültig): ${ctx.appUrl}/reset?token=${token}`,
+          subject: tr(l, 'TimeLog: Passwort zurücksetzen', 'TimeLog: Reset your password'),
+          text: tr(
+            l,
+            `Neues Passwort setzen (1 Stunde gültig): ${ctx.appUrl}/reset?token=${token}`,
+            `Set a new password (valid for 1 hour): ${ctx.appUrl}/reset?token=${token}`,
+          ),
         });
       }
       return { ok: true as const };

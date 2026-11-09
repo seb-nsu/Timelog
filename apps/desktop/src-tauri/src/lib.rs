@@ -102,6 +102,7 @@ pub fn run() {
             commands::finish_setup,
             commands::sync_now,
             commands::set_tray_status,
+            commands::set_tray_labels,
         ])
         .run(context)
         .expect("TimeLog konnte nicht gestartet werden");

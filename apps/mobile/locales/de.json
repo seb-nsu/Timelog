@@ -1,0 +1,14 @@
+{
+  "ios": {
+    "NSLocationWhenInUseUsageDescription": "TimeLog bestimmt einmalig deinen Arbeitsort, wenn du den Geofence selbst einrichtest. Der Ort verlässt dein Gerät nicht.",
+    "NSLocationAlwaysAndWhenInUseUsageDescription": "Nur wenn du den Geofence einschaltest: TimeLog erkennt auch bei geschlossener App, wann du den Arbeitsort verlässt, und beendet so die Arbeitszeit. Koordinaten werden weder gespeichert noch gesendet.",
+    "Localizable.strings": {
+      "Arbeitsnetz verbunden": "Arbeitsnetz verbunden",
+      "Meldet TimeLog, dass das Gerät mit dem Arbeitsnetz verbunden ist. Für die Automation „WLAN verbunden“.": "Meldet TimeLog, dass das Gerät mit dem Arbeitsnetz verbunden ist. Für die Automation „WLAN verbunden“.",
+      "Arbeit beginnen": "Arbeit beginnen",
+      "Startet die Zeiterfassung in TimeLog.": "Startet die Zeiterfassung in TimeLog.",
+      "Arbeit beenden": "Arbeit beenden",
+      "Beendet die Zeiterfassung in TimeLog.": "Beendet die Zeiterfassung in TimeLog."
+    }
+  }
+}

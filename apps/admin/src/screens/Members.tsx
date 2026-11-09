@@ -1,9 +1,12 @@
 import { ROLES, type Member, type Role } from '@timelog/shared';
 import { type SyntheticEvent, useState } from 'react';
-import { ROLE_LABELS, dateTime, errorText } from '../texts.js';
+import { L, locale, ROLE_LABELS, dateTime, errorText } from '../texts.js';
 import { ErrorText, Loading, isAdmin, useAdmin, useLoad } from '../ui.js';
 
-const WEEKDAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+const WEEKDAYS =
+  locale === 'en'
+    ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+    : ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
 
 export function Members() {
   const { api, me } = useAdmin();
@@ -11,33 +14,38 @@ export function Members() {
   const members = useLoad(() => api.org.members.list(), [api]);
   const teams = useLoad(() => api.org.teams.list(), [api]);
   const teamName = (id: string | undefined) =>
-    teams.data?.teams.find((t) => t.id === id)?.name ?? 'kein Team';
+    teams.data?.teams.find((t) => t.id === id)?.name ?? L('kein Team', 'no team');
 
   return (
     <section aria-labelledby="page-title" className="stack">
       <h1 id="page-title" tabIndex={-1}>
-        Mitglieder
+        {L('Mitglieder', 'Members')}
       </h1>
       {!admin && (
         <p className="muted">
-          Du siehst die Mitglieder deiner Teams. Rollen und Teams verwaltet ein Admin.
+          {L(
+            'Du siehst die Mitglieder deiner Teams. Rollen und Teams verwaltet ein Admin.',
+            'You see the members of your teams. Roles and teams are managed by an admin.',
+          )}
         </p>
       )}
       <ErrorText text={members.error} />
-      {!members.data && !members.error && <Loading what="Mitglieder" />}
+      {!members.data && !members.error && <Loading what={L('Mitglieder', 'members')} />}
       {members.data && (
         <table>
-          <caption>Mitglieder ({members.data.members.length})</caption>
+          <caption>
+            {L('Mitglieder', 'Members')} ({members.data.members.length})
+          </caption>
           <thead>
             <tr>
               <th scope="col">Name</th>
-              {admin && <th scope="col">E-Mail</th>}
+              {admin && <th scope="col">{L('E-Mail', 'Email')}</th>}
               <th scope="col">Team</th>
-              {admin && <th scope="col">Rolle</th>}
-              {admin && <th scope="col">Zwei-Faktor</th>}
+              {admin && <th scope="col">{L('Rolle', 'Role')}</th>}
+              {admin && <th scope="col">{L('Zwei-Faktor', 'Two-factor')}</th>}
               {admin && (
                 <th scope="col">
-                  <span className="visually-hidden">Aktionen</span>
+                  <span className="visually-hidden">{L('Aktionen', 'Actions')}</span>
                 </th>
               )}
             </tr>
@@ -97,12 +105,14 @@ function AdminRow({
       <tr>
         <th scope="row">
           {member.name}
-          {inactive && <span className="pill">deaktiviert</span>}
+          {inactive && <span className="pill">{L('deaktiviert', 'deactivated')}</span>}
         </th>
         <td>{member.email}</td>
         <td>
           <label>
-            <span className="visually-hidden">Team von {member.name}</span>
+            <span className="visually-hidden">
+              {L(`Team von ${member.name}`, `Team of ${member.name}`)}
+            </span>
             <select
               value={member.teamId ?? ''}
               disabled={inactive}
@@ -110,11 +120,11 @@ function AdminRow({
                 const teamId = e.target.value || null;
                 void run(
                   () => api.org.members.update(member.id, { teamId }),
-                  `Team von ${member.name} geändert.`,
+                  L(`Team von ${member.name} geändert.`, `Team of ${member.name} changed.`),
                 );
               }}
             >
-              <option value="">kein Team</option>
+              <option value="">{L('kein Team', 'no team')}</option>
               {teams.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name}
@@ -125,7 +135,9 @@ function AdminRow({
         </td>
         <td>
           <label>
-            <span className="visually-hidden">Rolle von {member.name}</span>
+            <span className="visually-hidden">
+              {L(`Rolle von ${member.name}`, `Role of ${member.name}`)}
+            </span>
             <select
               value={member.role ?? 'user'}
               disabled={inactive}
@@ -133,7 +145,7 @@ function AdminRow({
                 const role = e.target.value as Role;
                 void run(
                   () => api.org.members.update(member.id, { role }),
-                  `Rolle von ${member.name} geändert.`,
+                  L(`Rolle von ${member.name} geändert.`, `Role of ${member.name} changed.`),
                 );
               }}
             >
@@ -145,7 +157,7 @@ function AdminRow({
             </select>
           </label>
         </td>
-        <td>{member.totpEnabled ? 'eingerichtet' : 'nein'}</td>
+        <td>{member.totpEnabled ? L('eingerichtet', 'set up') : L('nein', 'no')}</td>
         <td>
           <div className="actions">
             <button
@@ -155,7 +167,10 @@ function AdminRow({
                 setHoursOpen((o) => !o);
               }}
             >
-              Sollzeiten<span className="visually-hidden"> von {member.name}</span>
+              {L('Sollzeiten', 'Target hours')}
+              <span className="visually-hidden">
+                {L(` von ${member.name}`, ` of ${member.name}`)}
+              </span>
             </button>
             {!self && !inactive && (
               <button
@@ -164,17 +179,21 @@ function AdminRow({
                 onClick={() => {
                   if (
                     window.confirm(
-                      `${member.name} deaktivieren? Anmeldung und Geräte werden gesperrt.`,
+                      L(
+                        `${member.name} deaktivieren? Anmeldung und Geräte werden gesperrt.`,
+                        `Deactivate ${member.name}? Sign-in and devices will be blocked.`,
+                      ),
                     )
                   ) {
                     void run(
                       () => api.org.members.deactivate(member.id),
-                      `${member.name} deaktiviert.`,
+                      L(`${member.name} deaktiviert.`, `${member.name} deactivated.`),
                     );
                   }
                 }}
               >
-                Deaktivieren<span className="visually-hidden">: {member.name}</span>
+                {L('Deaktivieren', 'Deactivate')}
+                <span className="visually-hidden">: {member.name}</span>
               </button>
             )}
           </div>
@@ -210,7 +229,7 @@ function TargetHours({ memberId, name }: { memberId: string; name: string }) {
         validFrom,
         minutesByWeekday: [so ?? 0, mo ?? 0, di ?? 0, mi ?? 0, don ?? 0, fr ?? 0, sa ?? 0],
       });
-      notify(`Sollzeiten von ${name} gespeichert.`);
+      notify(L(`Sollzeiten von ${name} gespeichert.`, `Target hours of ${name} saved.`));
       current.reload();
     } catch (err) {
       setError(errorText(err));
@@ -220,7 +239,12 @@ function TargetHours({ memberId, name }: { memberId: string; name: string }) {
   return (
     <form onSubmit={(e) => void save(e)}>
       <fieldset>
-        <legend>Sollzeiten von {name} (Minuten je Wochentag)</legend>
+        <legend>
+          {L(
+            `Sollzeiten von ${name} (Minuten je Wochentag)`,
+            `Target hours of ${name} (minutes per weekday)`,
+          )}
+        </legend>
         <div className="grid7">
           {WEEKDAYS.map((day, i) => (
             <label key={day}>
@@ -240,7 +264,7 @@ function TargetHours({ memberId, name }: { memberId: string; name: string }) {
           ))}
         </div>
         <label className="inline">
-          Gültig ab
+          {L('Gültig ab', 'Valid from')}
           <input
             type="date"
             required
@@ -251,7 +275,7 @@ function TargetHours({ memberId, name }: { memberId: string; name: string }) {
           />
         </label>
         <ErrorText text={error ?? current.error} />
-        <button type="submit">Sollzeiten speichern</button>
+        <button type="submit">{L('Sollzeiten speichern', 'Save target hours')}</button>
       </fieldset>
     </form>
   );
@@ -270,7 +294,7 @@ function Invitations({ teams }: { teams: { id: string; name: string }[] }) {
     setError(undefined);
     try {
       await api.org.invite({ email: email.trim(), role, ...(teamId ? { teamId } : {}) });
-      notify(`Einladung an ${email.trim()} verschickt.`);
+      notify(L(`Einladung an ${email.trim()} verschickt.`, `Invitation sent to ${email.trim()}.`));
       setEmail('');
       list.reload();
     } catch (err) {
@@ -280,10 +304,10 @@ function Invitations({ teams }: { teams: { id: string; name: string }[] }) {
 
   return (
     <section aria-labelledby="invite-title" className="card">
-      <h2 id="invite-title">Person einladen</h2>
+      <h2 id="invite-title">{L('Person einladen', 'Invite person')}</h2>
       <form onSubmit={(e) => void invite(e)}>
         <label>
-          E-Mail
+          {L('E-Mail', 'Email')}
           <input
             type="email"
             required
@@ -294,7 +318,7 @@ function Invitations({ teams }: { teams: { id: string; name: string }[] }) {
           />
         </label>
         <label>
-          Rolle
+          {L('Rolle', 'Role')}
           <select
             value={role}
             onChange={(e) => {
@@ -316,7 +340,7 @@ function Invitations({ teams }: { teams: { id: string; name: string }[] }) {
               setTeamId(e.target.value);
             }}
           >
-            <option value="">kein Team</option>
+            <option value="">{L('kein Team', 'no team')}</option>
             {teams.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.name}
@@ -326,24 +350,30 @@ function Invitations({ teams }: { teams: { id: string; name: string }[] }) {
         </label>
         <ErrorText text={error} />
         <button type="submit" className="primary">
-          Einladen
+          {L('Einladen', 'Invite')}
         </button>
       </form>
       {list.data && list.data.invitations.length > 0 && (
         <>
-          <h3>Offene Einladungen</h3>
+          <h3>{L('Offene Einladungen', 'Pending invitations')}</h3>
           <ul className="plain">
             {list.data.invitations.map((i) => (
               <li key={i.id} className="row">
                 <span>
-                  {i.email} · {ROLE_LABELS[i.role]} · gültig bis {dateTime(i.expiresAt)}
+                  {i.email} · {ROLE_LABELS[i.role]} · {L('gültig bis', 'valid until')}{' '}
+                  {dateTime(i.expiresAt)}
                 </span>
                 <button
                   type="button"
                   onClick={() => {
                     void api.org.invitations.revoke(i.id).then(
                       () => {
-                        notify(`Einladung an ${i.email} widerrufen.`);
+                        notify(
+                          L(
+                            `Einladung an ${i.email} widerrufen.`,
+                            `Invitation to ${i.email} revoked.`,
+                          ),
+                        );
                         list.reload();
                       },
                       (err: unknown) => {
@@ -352,7 +382,8 @@ function Invitations({ teams }: { teams: { id: string; name: string }[] }) {
                     );
                   }}
                 >
-                  Widerrufen<span className="visually-hidden">: {i.email}</span>
+                  {L('Widerrufen', 'Revoke')}
+                  <span className="visually-hidden">: {i.email}</span>
                 </button>
               </li>
             ))}

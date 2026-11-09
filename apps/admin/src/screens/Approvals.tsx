@@ -1,7 +1,17 @@
 import { formatDate } from '@timelog/app-core';
 import type { Approval } from '@timelog/shared';
 import { type SyntheticEvent, useState } from 'react';
-import { APPROVAL_LABELS, clock, dateTime, errorText, hours, previousMonth, tr } from '../texts.js';
+import {
+  APPROVAL_LABELS,
+  L,
+  clock,
+  dateTime,
+  errorText,
+  hours,
+  intlLocale,
+  previousMonth,
+  tr,
+} from '../texts.js';
 import { ErrorText, Loading, useAdmin, useLoad } from '../ui.js';
 
 /** Monatsfreigaben: Liste je Monat, Detail mit eingeschränkter Tagesansicht, Freigeben/Zurückweisen. */
@@ -26,10 +36,10 @@ export function Approvals() {
   return (
     <section aria-labelledby="page-title" className="stack">
       <h1 id="page-title" tabIndex={-1}>
-        Freigaben
+        {L('Freigaben', 'Approvals')}
       </h1>
       <label className="inline">
-        Monat
+        {L('Monat', 'Month')}
         <input
           type="month"
           value={month}
@@ -39,19 +49,23 @@ export function Approvals() {
         />
       </label>
       <ErrorText text={list.error} />
-      {!list.data && !list.error && <Loading what="Freigaben" />}
-      {list.data && list.data.approvals.length === 0 && <p>Keine Mitglieder in deinen Teams.</p>}
+      {!list.data && !list.error && <Loading what={L('Freigaben', 'approvals')} />}
+      {list.data && list.data.approvals.length === 0 && (
+        <p>{L('Keine Mitglieder in deinen Teams.', 'No members in your teams.')}</p>
+      )}
       {list.data && list.data.approvals.length > 0 && (
         <table>
-          <caption>Freigabestatus {month}</caption>
+          <caption>
+            {L('Freigabestatus', 'Approval status')} {month}
+          </caption>
           <thead>
             <tr>
               <th scope="col">Person</th>
               <th scope="col">Status</th>
-              <th scope="col">Eingereicht</th>
-              <th scope="col">Kommentar</th>
+              <th scope="col">{L('Eingereicht', 'Submitted')}</th>
+              <th scope="col">{L('Kommentar', 'Comment')}</th>
               <th scope="col">
-                <span className="visually-hidden">Aktion</span>
+                <span className="visually-hidden">{L('Aktion', 'Action')}</span>
               </th>
             </tr>
           </thead>
@@ -71,7 +85,8 @@ export function Approvals() {
                       setSelected(a);
                     }}
                   >
-                    Ansehen<span className="visually-hidden">: {a.name}</span>
+                    {L('Ansehen', 'View')}
+                    <span className="visually-hidden">: {a.name}</span>
                   </button>
                 </td>
               </tr>
@@ -96,7 +111,9 @@ function ApprovalDetail({ approval, onBack }: { approval: Approval; onBack: () =
     e?.preventDefault();
     setError(undefined);
     if (action === 'reject' && !comment.trim()) {
-      setError('Zum Zurückweisen bitte einen Kommentar angeben.');
+      setError(
+        L('Zum Zurückweisen bitte einen Kommentar angeben.', 'Please enter a comment to reject.'),
+      );
       return;
     }
     try {
@@ -106,10 +123,20 @@ function ApprovalDetail({ approval, onBack }: { approval: Approval; onBack: () =
           approval.month,
           comment.trim() || undefined,
         );
-        notify(`Monat ${approval.month} für ${approval.name} freigegeben.`);
+        notify(
+          L(
+            `Monat ${approval.month} für ${approval.name} freigegeben.`,
+            `Month ${approval.month} approved for ${approval.name}.`,
+          ),
+        );
       } else {
         await api.org.approvals.reject(approval.userId, approval.month, comment.trim());
-        notify(`Monat ${approval.month} für ${approval.name} zurückgewiesen.`);
+        notify(
+          L(
+            `Monat ${approval.month} für ${approval.name} zurückgewiesen.`,
+            `Month ${approval.month} rejected for ${approval.name}.`,
+          ),
+        );
       }
       onBack();
     } catch (err) {
@@ -124,56 +151,65 @@ function ApprovalDetail({ approval, onBack }: { approval: Approval; onBack: () =
         {approval.name}: {approval.month}
       </h1>
       <button type="button" className="link" onClick={onBack}>
-        Zurück zur Übersicht
+        {L('Zurück zur Übersicht', 'Back to overview')}
       </button>
       <ErrorText text={detail.error ?? error} />
-      {!d && !detail.error && <Loading what="Arbeitstage" />}
+      {!d && !detail.error && <Loading what={L('Arbeitstage', 'working days')} />}
       {d && (
         <>
           <p>
             Status: <strong>{APPROVAL_LABELS[d.approval.status]}</strong>
-            {d.snapshot && ' · gespeicherter Stand der Freigabe (wird nicht neu berechnet)'}
-            {d.approval.comment && ` · Kommentar: ${d.approval.comment}`}
+            {d.snapshot &&
+              L(
+                ' · gespeicherter Stand der Freigabe (wird nicht neu berechnet)',
+                ' · saved state of the approval (not recalculated)',
+              )}
+            {d.approval.comment && ` · ${L('Kommentar', 'Comment')}: ${d.approval.comment}`}
           </p>
           <dl className="totals">
             <div>
-              <dt>Netto</dt>
+              <dt>{L('Netto', 'Net')}</dt>
               <dd>{hours(d.totals.netMinutes)}</dd>
             </div>
             <div>
-              <dt>Pausen-Auffüllung</dt>
+              <dt>{L('Pausen-Auffüllung', 'Break top-up')}</dt>
               <dd>{hours(d.totals.breakTopUpMin)}</dd>
             </div>
             <div>
-              <dt>Ungeprüfte Tage</dt>
+              <dt>{L('Ungeprüfte Tage', 'Unchecked days')}</dt>
               <dd>{d.totals.uncheckedDays}</dd>
             </div>
             <div>
-              <dt>Offene Tage</dt>
+              <dt>{L('Offene Tage', 'Open days')}</dt>
               <dd>{d.totals.openDays}</dd>
             </div>
           </dl>
           {d.days.length === 0 ? (
-            <p>Keine Arbeitstage in diesem Monat.</p>
+            <p>{L('Keine Arbeitstage in diesem Monat.', 'No working days in this month.')}</p>
           ) : (
             <table>
-              <caption>Arbeitstage (Beginn und Ende in deiner Zeitzone)</caption>
+              <caption>
+                {L(
+                  'Arbeitstage (Beginn und Ende in deiner Zeitzone)',
+                  'Working days (start and end in your time zone)',
+                )}
+              </caption>
               <thead>
                 <tr>
-                  <th scope="col">Datum</th>
-                  <th scope="col">Beginn</th>
-                  <th scope="col">Ende</th>
-                  <th scope="col">Pausen</th>
-                  <th scope="col">Auffüllung</th>
-                  <th scope="col">Netto</th>
+                  <th scope="col">{L('Datum', 'Date')}</th>
+                  <th scope="col">{L('Beginn', 'Start')}</th>
+                  <th scope="col">{L('Ende', 'End')}</th>
+                  <th scope="col">{L('Pausen', 'Breaks')}</th>
+                  <th scope="col">{L('Auffüllung', 'Top-up')}</th>
+                  <th scope="col">{L('Netto', 'Net')}</th>
                   <th scope="col">Status</th>
-                  <th scope="col">Hinweise</th>
+                  <th scope="col">{L('Hinweise', 'Notes')}</th>
                 </tr>
               </thead>
               <tbody>
                 {d.days.map((day) => (
                   <tr key={day.date}>
-                    <th scope="row">{formatDate(day.date)}</th>
+                    <th scope="row">{formatDate(day.date, intlLocale)}</th>
                     <td>{clock(day.start)}</td>
                     <td>{clock(day.end)}</td>
                     <td>{hours(day.breakMinutes)}</td>
@@ -197,7 +233,7 @@ function ApprovalDetail({ approval, onBack }: { approval: Approval; onBack: () =
           {d.approval.status === 'submitted' && (
             <form className="card" onSubmit={(e) => void decide('approve', e)}>
               <label>
-                Kommentar (zum Zurückweisen Pflicht)
+                {L('Kommentar (zum Zurückweisen Pflicht)', 'Comment (required to reject)')}
                 <textarea
                   rows={3}
                   value={comment}
@@ -208,10 +244,10 @@ function ApprovalDetail({ approval, onBack }: { approval: Approval; onBack: () =
               </label>
               <div className="actions">
                 <button type="submit" className="primary">
-                  Freigeben
+                  {L('Freigeben', 'Approve')}
                 </button>
                 <button type="button" onClick={() => void decide('reject')}>
-                  Zurückweisen
+                  {L('Zurückweisen', 'Reject')}
                 </button>
               </div>
             </form>

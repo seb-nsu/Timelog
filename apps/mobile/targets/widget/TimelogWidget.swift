@@ -6,6 +6,13 @@ import AppIntents
 import SwiftUI
 import WidgetKit
 
+/// Deutsch oder Englisch nach der bevorzugten Sprache des Geräts (wie die App: en* = Englisch).
+/// Die Texte im Widget selbst liefert die App bereits übersetzt; das hier gilt nur für
+/// Platzhalter und die Beschreibung in der Widget-Galerie.
+private func tr(_ de: String, _ en: String) -> String {
+  (Locale.preferredLanguages.first ?? "de").lowercased().hasPrefix("en") ? en : de
+}
+
 struct ToggleWorkIntent: AppIntent {
   static var title: LocalizedStringResource = "Arbeit beginnen oder beenden"
   static var isDiscoverable: Bool = false
@@ -34,7 +41,7 @@ struct WorkEntry: TimelineEntry {
       title: (w["title"] as? String) ?? "TimeLog",
       subtitle: (w["subtitle"] as? String) ?? "",
       startLabel: (w["startLabel"] as? String) ?? "Start",
-      stopLabel: (w["stopLabel"] as? String) ?? "Stopp"
+      stopLabel: (w["stopLabel"] as? String) ?? tr("Stopp", "Stop")
     )
   }
 }
@@ -42,7 +49,7 @@ struct WorkEntry: TimelineEntry {
 struct WorkProvider: TimelineProvider {
   func placeholder(in context: Context) -> WorkEntry {
     WorkEntry(date: Date(), running: false, since: nil, title: "TimeLog", subtitle: "0:00",
-              startLabel: "Start", stopLabel: "Stopp")
+              startLabel: "Start", stopLabel: tr("Stopp", "Stop"))
   }
 
   func getSnapshot(in context: Context, completion: @escaping (WorkEntry) -> Void) {
@@ -94,7 +101,7 @@ struct TimelogWidget: Widget {
       TimelogWidgetView(entry: entry)
     }
     .configurationDisplayName("TimeLog")
-    .description("Arbeitszeit heute mit Start und Stopp.")
+    .description(Text(tr("Arbeitszeit heute mit Start und Stopp.", "Today’s working time with start and stop.")))
     .supportedFamilies([.systemSmall, .systemMedium])
   }
 }

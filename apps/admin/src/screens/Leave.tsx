@@ -5,17 +5,19 @@ import type { OrgLeaveRequest } from '@timelog/shared';
 import { type SyntheticEvent, useState } from 'react';
 import {
   CALENDAR_KIND_LABELS,
+  L,
   LEAVE_KIND_LABELS,
   LEAVE_STATUS_LABELS,
   errorText,
+  intlLocale,
 } from '../texts.js';
 import { ErrorText, Loading, isAdmin, useAdmin, useLoad } from '../ui.js';
 import { LeaveMember } from './LeaveMember.js';
 
-const day = (d: string) => formatDate(d, 'de-DE');
+const day = (d: string) => formatDate(d, intlLocale);
 const range = (r: { from: string; to: string }) =>
   r.from === r.to ? day(r.from) : `${day(r.from)} – ${day(r.to)}`;
-const num = (n: number) => n.toLocaleString('de-DE', { maximumFractionDigits: 1 });
+const num = (n: number) => n.toLocaleString(intlLocale, { maximumFractionDigits: 1 });
 
 function monthBounds(month: string): { from: string; to: string } {
   const [y, m] = month.split('-').map(Number);
@@ -42,7 +44,7 @@ export function Leave() {
   return (
     <section aria-labelledby="page-title" className="stack">
       <h1 id="page-title" tabIndex={-1}>
-        Urlaub
+        {L('Urlaub', 'Leave')}
       </h1>
       <PendingRequests />
       <TeamCalendar initialMonth={thisMonth} />
@@ -68,7 +70,15 @@ function PendingRequests() {
         await api.org.leave.approve(deciding.id, comment.trim() || undefined);
       else await api.org.leave.reject(deciding.id, comment.trim());
       notify(
-        `Antrag von ${deciding.name ?? ''} ${action === 'approve' ? 'genehmigt' : 'abgelehnt'}.`,
+        action === 'approve'
+          ? L(
+              `Antrag von ${deciding.name ?? ''} genehmigt.`,
+              `Request from ${deciding.name ?? ''} approved.`,
+            )
+          : L(
+              `Antrag von ${deciding.name ?? ''} abgelehnt.`,
+              `Request from ${deciding.name ?? ''} rejected.`,
+            ),
       );
       setDeciding(undefined);
       setComment('');
@@ -80,22 +90,24 @@ function PendingRequests() {
 
   return (
     <section className="card" aria-labelledby="leave-pending">
-      <h2 id="leave-pending">Offene Anträge</h2>
+      <h2 id="leave-pending">{L('Offene Anträge', 'Pending requests')}</h2>
       <ErrorText text={list.error} />
-      {!list.data && !list.error && <Loading what="Anträge" />}
-      {list.data && list.data.requests.length === 0 && <p>Keine offenen Anträge.</p>}
+      {!list.data && !list.error && <Loading what={L('Anträge', 'requests')} />}
+      {list.data && list.data.requests.length === 0 && (
+        <p>{L('Keine offenen Anträge.', 'No pending requests.')}</p>
+      )}
       {list.data && list.data.requests.length > 0 && (
         <table>
-          <caption className="visually-hidden">Offene Anträge</caption>
+          <caption className="visually-hidden">{L('Offene Anträge', 'Pending requests')}</caption>
           <thead>
             <tr>
               <th scope="col">Person</th>
-              <th scope="col">Art</th>
-              <th scope="col">Zeitraum</th>
-              <th scope="col">Arbeitstage</th>
-              <th scope="col">Gleichzeitig abwesend</th>
+              <th scope="col">{L('Art', 'Type')}</th>
+              <th scope="col">{L('Zeitraum', 'Period')}</th>
+              <th scope="col">{L('Arbeitstage', 'Working days')}</th>
+              <th scope="col">{L('Gleichzeitig abwesend', 'Absent at the same time')}</th>
               <th scope="col">
-                <span className="visually-hidden">Aktion</span>
+                <span className="visually-hidden">{L('Aktion', 'Action')}</span>
               </th>
             </tr>
           </thead>
@@ -123,7 +135,8 @@ function PendingRequests() {
                       setError(undefined);
                     }}
                   >
-                    Entscheiden<span className="visually-hidden">: {r.name}</span>
+                    {L('Entscheiden', 'Decide')}
+                    <span className="visually-hidden">: {r.name}</span>
                   </button>
                 </td>
               </tr>
@@ -134,10 +147,10 @@ function PendingRequests() {
       {deciding && (
         <div className="stack" role="group" aria-labelledby="leave-decide">
           <h3 id="leave-decide">
-            {LEAVE_KIND_LABELS[deciding.kind]} von {deciding.name}: {range(deciding)}
+            {LEAVE_KIND_LABELS[deciding.kind]} {L('von', 'for')} {deciding.name}: {range(deciding)}
           </h3>
           <label>
-            Kommentar (beim Ablehnen Pflicht)
+            {L('Kommentar (beim Ablehnen Pflicht)', 'Comment (required to reject)')}
             <textarea
               value={comment}
               maxLength={1000}
@@ -149,14 +162,14 @@ function PendingRequests() {
           <ErrorText text={error} />
           <div className="actions">
             <button type="button" className="primary" onClick={() => void decide('approve')}>
-              Genehmigen
+              {L('Genehmigen', 'Approve')}
             </button>
             <button
               type="button"
               disabled={comment.trim() === ''}
               onClick={() => void decide('reject')}
             >
-              Ablehnen
+              {L('Ablehnen', 'Reject')}
             </button>
             <button
               type="button"
@@ -164,7 +177,7 @@ function PendingRequests() {
                 setDeciding(undefined);
               }}
             >
-              Abbrechen
+              {L('Abbrechen', 'Cancel')}
             </button>
           </div>
         </div>
@@ -184,14 +197,16 @@ function TeamCalendar({ initialMonth }: { initialMonth: string }) {
   );
   return (
     <section className="card" aria-labelledby="leave-cal">
-      <h2 id="leave-cal">Teamkalender</h2>
+      <h2 id="leave-cal">{L('Teamkalender', 'Team calendar')}</h2>
       <p className="muted">
-        Nur Name und Zeitraum. Krankheit und sonstige Abwesenheiten erscheinen ohne Grund als
-        „abwesend“.
+        {L(
+          'Nur Name und Zeitraum. Krankheit und sonstige Abwesenheiten erscheinen ohne Grund als „abwesend“.',
+          'Name and period only. Sickness and other absences appear as “absent” without a reason.',
+        )}
       </p>
       <div className="row">
         <label className="inline">
-          Monat
+          {L('Monat', 'Month')}
           <input
             type="month"
             value={month}
@@ -208,7 +223,7 @@ function TeamCalendar({ initialMonth }: { initialMonth: string }) {
               setTeamId(e.target.value);
             }}
           >
-            <option value="">alle sichtbaren</option>
+            <option value="">{L('alle sichtbaren', 'all visible')}</option>
             {(teams.data?.teams ?? []).map((t) => (
               <option key={t.id} value={t.id}>
                 {t.name}
@@ -218,15 +233,19 @@ function TeamCalendar({ initialMonth }: { initialMonth: string }) {
         </label>
       </div>
       <ErrorText text={cal.error} />
-      {cal.data && cal.data.entries.length === 0 && <p>Niemand abwesend.</p>}
+      {cal.data && cal.data.entries.length === 0 && (
+        <p>{L('Niemand abwesend.', 'Nobody absent.')}</p>
+      )}
       {cal.data && cal.data.entries.length > 0 && (
         <table>
-          <caption className="visually-hidden">Abwesenheiten {month}</caption>
+          <caption className="visually-hidden">
+            {L('Abwesenheiten', 'Absences')} {month}
+          </caption>
           <thead>
             <tr>
               <th scope="col">Person</th>
-              <th scope="col">Zeitraum</th>
-              <th scope="col">Art</th>
+              <th scope="col">{L('Zeitraum', 'Period')}</th>
+              <th scope="col">{L('Art', 'Type')}</th>
             </tr>
           </thead>
           <tbody>
@@ -236,7 +255,7 @@ function TeamCalendar({ initialMonth }: { initialMonth: string }) {
                 <td>{range(e)}</td>
                 <td>
                   {CALENDAR_KIND_LABELS[e.kind]}
-                  {e.pending && ' (beantragt)'}
+                  {e.pending && L(' (beantragt)', ' (requested)')}
                 </td>
               </tr>
             ))}
@@ -264,7 +283,12 @@ function OwnRequest() {
     setError(undefined);
     try {
       await api.leave.request({ kind, from, to, halfDayStart: halfStart, halfDayEnd: halfEnd });
-      notify('Antrag gestellt. Entscheiden darf nur eine andere Person.');
+      notify(
+        L(
+          'Antrag gestellt. Entscheiden darf nur eine andere Person.',
+          'Request submitted. Only another person may decide on it.',
+        ),
+      );
       own.reload();
     } catch (err) {
       setError(errorText(err));
@@ -274,17 +298,22 @@ function OwnRequest() {
   const a = own.data?.account;
   return (
     <section className="card" aria-labelledby="leave-own">
-      <h2 id="leave-own">Eigener Antrag</h2>
+      <h2 id="leave-own">{L('Eigener Antrag', 'My request')}</h2>
       {a && (
         <p>
-          Resturlaub {a.year}: <strong>{num(a.remaining)} Tage</strong> (Anspruch{' '}
-          {num(a.entitlement)}, genommen {num(a.taken)}, geplant {num(a.planned)}, beantragt{' '}
-          {num(a.pending)})
+          {L('Resturlaub', 'Remaining leave')} {a.year}:{' '}
+          <strong>
+            {num(a.remaining)} {L('Tage', 'days')}
+          </strong>{' '}
+          {L(
+            `(Anspruch ${num(a.entitlement)}, genommen ${num(a.taken)}, geplant ${num(a.planned)}, beantragt ${num(a.pending)})`,
+            `(entitlement ${num(a.entitlement)}, taken ${num(a.taken)}, planned ${num(a.planned)}, requested ${num(a.pending)})`,
+          )}
         </p>
       )}
       <form className="stack" onSubmit={(e) => void submit(e)}>
         <label>
-          Art
+          {L('Art', 'Type')}
           <select
             value={kind}
             onChange={(e) => {
@@ -297,7 +326,7 @@ function OwnRequest() {
         </label>
         <div className="row">
           <label>
-            Von
+            {L('Von', 'From')}
             <input
               type="date"
               required
@@ -309,7 +338,7 @@ function OwnRequest() {
             />
           </label>
           <label>
-            Bis
+            {L('Bis', 'To')}
             <input
               type="date"
               required
@@ -329,7 +358,7 @@ function OwnRequest() {
               setHalfStart(e.target.checked);
             }}
           />
-          Erster Tag nur halb
+          {L('Erster Tag nur halb', 'First day half only')}
         </label>
         <label className="inline">
           <input
@@ -339,11 +368,11 @@ function OwnRequest() {
               setHalfEnd(e.target.checked);
             }}
           />
-          Letzter Tag nur halb
+          {L('Letzter Tag nur halb', 'Last day half only')}
         </label>
         <ErrorText text={error} />
         <button type="submit" className="primary">
-          Beantragen
+          {L('Beantragen', 'Request')}
         </button>
       </form>
       {own.data && own.data.requests.length > 0 && (
@@ -367,10 +396,14 @@ function MemberPicker({ onPick }: { onPick: (id: string) => void }) {
   const list = (members.data?.members ?? []).filter((m) => m.id !== me.user.id);
   return (
     <section className="card" aria-labelledby="leave-members">
-      <h2 id="leave-members">Konten der Mitglieder</h2>
+      <h2 id="leave-members">{L('Konten der Mitglieder', 'Member accounts')}</h2>
       <p className="muted">
-        Urlaubs- und Überstundenkonto ansehen.
-        {isAdmin(me) && ' Admins pflegen hier Anspruch, Übertrag, Korrekturen und Buchungen.'}
+        {L('Urlaubs- und Überstundenkonto ansehen.', 'View leave and overtime accounts.')}
+        {isAdmin(me) &&
+          L(
+            ' Admins pflegen hier Anspruch, Übertrag, Korrekturen und Buchungen.',
+            ' Admins manage entitlement, carry-over, corrections and bookings here.',
+          )}
       </p>
       <ErrorText text={members.error} />
       <div className="row">
@@ -382,7 +415,7 @@ function MemberPicker({ onPick }: { onPick: (id: string) => void }) {
               setId(e.target.value);
             }}
           >
-            <option value="">bitte wählen</option>
+            <option value="">{L('bitte wählen', 'please choose')}</option>
             {list.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.name}
@@ -397,7 +430,7 @@ function MemberPicker({ onPick }: { onPick: (id: string) => void }) {
             onPick(id);
           }}
         >
-          Konto öffnen
+          {L('Konto öffnen', 'Open account')}
         </button>
       </div>
     </section>
@@ -414,7 +447,7 @@ function LeaveSettingsForm() {
       initial={current.data}
       save={async (body) => {
         await api.org.leave.setSettings(body);
-        notify('Urlaubseinstellungen gespeichert.');
+        notify(L('Urlaubseinstellungen gespeichert.', 'Leave settings saved.'));
         current.reload();
       }}
     />
@@ -467,10 +500,15 @@ function LeaveSettingsFields({
 
   return (
     <section className="card" aria-labelledby="leave-settings">
-      <h2 id="leave-settings">Urlaubseinstellungen der Organisation</h2>
+      <h2 id="leave-settings">
+        {L('Urlaubseinstellungen der Organisation', 'Organisation leave settings')}
+      </h2>
       <form className="stack" onSubmit={(e) => void submit(e)}>
         <label>
-          Standard-Jahresanspruch (Tage, bei voller Woche)
+          {L(
+            'Standard-Jahresanspruch (Tage, bei voller Woche)',
+            'Default annual entitlement (days, full week)',
+          )}
           <input
             type="number"
             min={0}
@@ -483,7 +521,7 @@ function LeaveSettingsFields({
           />
         </label>
         <label>
-          Arbeitstage je Woche bei Vollzeit
+          {L('Arbeitstage je Woche bei Vollzeit', 'Working days per week at full time')}
           <input
             type="number"
             min={1}
@@ -503,10 +541,10 @@ function LeaveSettingsFields({
               setExpires(e.target.checked);
             }}
           />
-          Übertrag aus dem Vorjahr verfällt
+          {L('Übertrag aus dem Vorjahr verfällt', 'Carry-over from the previous year expires')}
         </label>
         <label>
-          Verfall zum (MM-TT)
+          {L('Verfall zum (MM-TT)', 'Expires on (MM-DD)')}
           <input
             type="text"
             pattern="(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])"
@@ -517,12 +555,16 @@ function LeaveSettingsFields({
           />
         </label>
         <p className="muted">
-          Hinweis (keine Rechtsberatung): Nach der Rechtsprechung des Bundesarbeitsgerichts verfällt
-          Resturlaub nur, wenn der Arbeitgeber rechtzeitig auf den Resturlaub und den drohenden
-          Verfall hingewiesen hat. Ohne diesen Hinweis „Verfall“ besser ausschalten.
+          {L(
+            'Hinweis (keine Rechtsberatung): Nach der Rechtsprechung des Bundesarbeitsgerichts verfällt Resturlaub nur, wenn der Arbeitgeber rechtzeitig auf den Resturlaub und den drohenden Verfall hingewiesen hat. Ohne diesen Hinweis „Verfall“ besser ausschalten.',
+            'Note (not legal advice): under German Federal Labour Court case law, remaining leave only expires if the employer pointed out the remaining leave and the impending expiry in good time. Without such a notice, better turn “expires” off.',
+          )}
         </p>
         <label>
-          Höchstsaldo Überstunden (Stunden, leer = keiner)
+          {L(
+            'Höchstsaldo Überstunden (Stunden, leer = keiner)',
+            'Maximum overtime balance (hours, empty = none)',
+          )}
           <input
             type="number"
             min={0}
@@ -535,7 +577,7 @@ function LeaveSettingsFields({
         </label>
         <ErrorText text={error} />
         <button type="submit" className="primary">
-          Speichern
+          {L('Speichern', 'Save')}
         </button>
       </form>
     </section>

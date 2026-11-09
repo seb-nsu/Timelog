@@ -1,7 +1,7 @@
 // Kleine Bausteine: Daten laden, Meldungen, Kontext.
 import type { ApiClient, OrgMeResponse } from '@timelog/shared';
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { errorText } from './texts.js';
+import { L, errorText } from './texts.js';
 
 export interface AdminContextValue {
   api: ApiClient;
@@ -70,5 +70,5 @@ export function ErrorText({ text }: { text: string | undefined }) {
 }
 
 export function Loading({ what }: { what: string }) {
-  return <p className="muted">{what} werden geladen …</p>;
+  return <p className="muted">{L(`${what} werden geladen …`, `Loading ${what} …`)}</p>;
 }

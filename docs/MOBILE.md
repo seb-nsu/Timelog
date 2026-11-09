@@ -19,6 +19,7 @@ Die Arbeitszeit berechnet weiterhin nur `packages/rules`, über `computeDeviceDa
 | iOS App Intents | `modules/timelog-native/ios-app` | Kurzbefehle „Arbeitsnetz verbunden“, „Arbeit beginnen“ und „Arbeit beenden“. `plugins/withTimelog.js` kopiert sie beim Prebuild ins App-Target |
 | iOS-Widget | `targets/widget` | WidgetKit-Erweiterung, erzeugt mit `@bacons/apple-targets`, mit interaktivem Start/Stopp-Knopf (ab iOS 17) |
 | Konfiguration | `app.config.ts`, `plugins/withTimelog.js` | Bundle-ID, App Group, Berechtigungen, Push und Build-Optionen |
+| Sprachen | `src/i18n.ts`, `locales/de.json`, `locales/en.json` | Oberfläche folgt der Gerätesprache (en* = Englisch, sonst Deutsch). iOS-Zwecktexte und Titel der Kurzbefehle kommen über Expo `locales` (InfoPlist.strings, Localizable.strings); Antworten der Kurzbefehle und die Widget-Beschreibung wählen die Sprache zur Laufzeit. Exporte und E-Mails erzeugt der Server in der Sprache, die die App per Accept-Language sendet |
 
 Datenfluss: Das native Modul schreibt auch bei beendeter App in den eigenen Speicher.
 - Android: SharedPreferences.

@@ -29,7 +29,8 @@ import { renderPdf } from '../../export/pdf.js';
 import { applyCorrection } from '../corrections.js';
 import { loadDayExtras, snapshotOf } from '../../extras.js';
 import { loadDays } from '../days.js';
-import { CSV_HEADER, csvCell, exportRows } from '../privacy.js';
+import { csvCell, csvHeader, exportRows } from '../privacy.js';
+import { requestLocale, tr } from '../../i18n.js';
 import { ADMINS, type Actor, actorOf, actorScope, audit, loadMember } from './access.js';
 import { visibleMembers } from './manage.js';
 
@@ -60,11 +61,14 @@ export function toManagerDay(d: WorkDay): ManagerDay {
   };
 }
 
-const APPROVAL_DE = {
-  none: 'nicht eingereicht',
-  submitted: 'eingereicht',
-  approved: 'freigegeben',
-  rejected: 'zurückgewiesen',
+const APPROVAL_TEXT = {
+  de: {
+    none: 'nicht eingereicht',
+    submitted: 'eingereicht',
+    approved: 'freigegeben',
+    rejected: 'zurückgewiesen',
+  },
+  en: { none: 'not submitted', submitted: 'submitted', approved: 'approved', rejected: 'rejected' },
 } as const;
 
 type ApprovalRow = typeof approvals.$inferSelect;
@@ -402,6 +406,7 @@ export function orgApprovalRoutes(app: App, ctx: AppContext): void {
     async (request, reply) => {
       const actor = actorOf(request);
       const { month, format, teamId } = request.query;
+      const locale = await requestLocale(ctx.db, request.headers, actor.deviceId);
       const { from, to } = monthRange(month);
       const members = await withUser(ctx.db, actorScope(actor), (tx) =>
         visibleMembers(tx, actor, teamId),
@@ -415,12 +420,12 @@ export function orgApprovalRoutes(app: App, ctx: AppContext): void {
         });
         const settings = z.object({ personnelNumber: z.string().optional() }).safeParse(m.settings);
         const pn = (settings.success ? settings.data.personnelNumber : undefined) ?? '';
-        for (const r of exportRows(result.days, result.timezone, pn)) {
+        for (const r of exportRows(result.days, result.timezone, pn, locale)) {
           rows.push([
             r[0] ?? '',
             m.name,
             ...r.slice(1),
-            APPROVAL_DE[result.approval?.status ?? 'none'],
+            APPROVAL_TEXT[locale][result.approval?.status ?? 'none'],
           ]);
         }
       }
@@ -431,13 +436,19 @@ export function orgApprovalRoutes(app: App, ctx: AppContext): void {
           members: members.length,
         }),
       );
-      const header = [CSV_HEADER[0] ?? '', 'Name', ...CSV_HEADER.slice(1), 'Freigabe'];
+      const base = csvHeader(locale);
+      const header = [base[0] ?? '', 'Name', ...base.slice(1), tr(locale, 'Freigabe', 'Approval')];
       const filename = `arbeitszeit_${month}${teamId ? '_team' : ''}`;
       if (format === 'pdf') {
         const widths = [55, 90, 60, 38, 38, 45, 60, 45, 60, 60, 45, 100, 50];
         const pdf = renderPdf({
-          title: `Arbeitszeit ${month}`,
-          subtitle: `${String(members.length)} Mitglieder`,
+          title: tr(locale, `Arbeitszeit ${month}`, `Working time ${month}`),
+          subtitle: tr(
+            locale,
+            `${String(members.length)} Mitglieder`,
+            `${String(members.length)} members`,
+          ),
+          locale,
           columns: widths.map((width, i) => ({ label: header[i] ?? '', width })),
           rows,
         });

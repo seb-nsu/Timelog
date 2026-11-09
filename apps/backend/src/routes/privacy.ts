@@ -39,31 +39,54 @@ import { verifyPassword } from '../security/password.js';
 import { projectCell } from './projects.js';
 import { toStoredEvent } from './events.js';
 import { authOf, scopeOf } from './guard.js';
+import { type Locale, requestLocale, tr } from '../i18n.js';
 
 const security = [{ bearer: [] }];
 
-const STATUS_DE: Record<WorkDay['status'], string> = {
-  open: 'offen',
-  unchecked: 'ungeprüft',
-  auto: 'automatisch',
-  confirmed: 'bestätigt',
+const STATUS: Record<Locale, Record<WorkDay['status'], string>> = {
+  de: { open: 'offen', unchecked: 'ungeprüft', auto: 'automatisch', confirmed: 'bestätigt' },
+  en: { open: 'open', unchecked: 'unchecked', auto: 'automatic', confirmed: 'confirmed' },
 };
 
-export const CSV_HEADER = [
-  'Personalnummer',
-  'Datum',
-  'Beginn',
-  'Ende',
-  'Pause (min)',
-  'davon aufgefüllt (min)',
-  'Netto (min)',
-  'Abwesenheit (min)',
-  'Status',
-  'korrigiert',
-  'Warnungen',
-];
+const CSV_HEADERS: Record<Locale, string[]> = {
+  de: [
+    'Personalnummer',
+    'Datum',
+    'Beginn',
+    'Ende',
+    'Pause (min)',
+    'davon aufgefüllt (min)',
+    'Netto (min)',
+    'Abwesenheit (min)',
+    'Status',
+    'korrigiert',
+    'Warnungen',
+  ],
+  en: [
+    'Personnel number',
+    'Date',
+    'Start',
+    'End',
+    'Break (min)',
+    'of which topped up (min)',
+    'Net (min)',
+    'Absence (min)',
+    'Status',
+    'corrected',
+    'Warnings',
+  ],
+};
 
-export function exportRows(days: WorkDay[], tz: string, personnelNumber: string): string[][] {
+/** Spaltenköpfe des Exports in der gewünschten Sprache. */
+export const csvHeader = (locale: Locale = 'de'): string[] => CSV_HEADERS[locale];
+export const CSV_HEADER = CSV_HEADERS.de;
+
+export function exportRows(
+  days: WorkDay[],
+  tz: string,
+  personnelNumber: string,
+  locale: Locale = 'de',
+): string[][] {
   const time = (iso: string | undefined, date: string) => {
     if (!iso) return '';
     const ms = Date.parse(iso);
@@ -78,8 +101,8 @@ export function exportRows(days: WorkDay[], tz: string, personnelNumber: string)
     String(d.breakTopUpMin),
     String(d.netMinutes),
     String(d.absenceMinutes),
-    STATUS_DE[d.status],
-    d.corrected ? 'ja' : 'nein',
+    STATUS[locale][d.status],
+    d.corrected ? tr(locale, 'ja', 'yes') : tr(locale, 'nein', 'no'),
     d.warnings.join(' '),
   ]);
 }
@@ -138,6 +161,7 @@ export function privacyRoutes(app: App, ctx: AppContext): void {
     async (request, reply) => {
       const claims = authOf(request);
       const { from, to, format } = request.query;
+      const locale = await requestLocale(ctx.db, request.headers, claims.did);
       const { extras, user, names } = await withUser(ctx.db, scopeOf(claims), async (tx) => {
         const [u] = await tx.select().from(users).where(eq(users.id, claims.sub));
         if (!u) throw new HttpError(401, 'unauthorized');
@@ -153,9 +177,11 @@ export function privacyRoutes(app: App, ctx: AppContext): void {
       // Mit eingeschalteten Projekten: zusätzliche Spalte „Projekte“ (Netto je Projekt).
       const withProjects = extras.features.projects;
       const byDate = new Map(extras.projects.map((p) => [p.date, p]));
-      const header = withProjects ? [...CSV_HEADER, 'Projekte'] : CSV_HEADER;
-      const rows = exportRows(days, timezone, personnelNumber).map((r, i) =>
-        withProjects ? [...r, projectCell(byDate.get(days[i]?.date ?? ''), names)] : r,
+      const header = withProjects
+        ? [...csvHeader(locale), tr(locale, 'Projekte', 'Projects')]
+        : csvHeader(locale);
+      const rows = exportRows(days, timezone, personnelNumber, locale).map((r, i) =>
+        withProjects ? [...r, projectCell(byDate.get(days[i]?.date ?? ''), names, locale)] : r,
       );
       const filename = `arbeitszeit_${from}_${to}`;
       if (format === 'pdf') {
@@ -163,8 +189,9 @@ export function privacyRoutes(app: App, ctx: AppContext): void {
           ? [62, 48, 38, 38, 45, 60, 45, 55, 55, 45, 120, 159]
           : [70, 65, 45, 45, 55, 75, 55, 70, 70, 55, 165];
         const pdf = renderPdf({
-          title: `Arbeitszeit ${from} bis ${to}`,
-          subtitle: `${user.name}${personnelNumber ? ` · ${personnelNumber}` : ''} · Zeitzone ${timezone}`,
+          title: tr(locale, `Arbeitszeit ${from} bis ${to}`, `Working time ${from} to ${to}`),
+          subtitle: `${user.name}${personnelNumber ? ` · ${personnelNumber}` : ''} · ${tr(locale, 'Zeitzone', 'Time zone')} ${timezone}`,
+          locale,
           columns: widths.map((width, i) => ({ label: header[i] ?? '', width })),
           rows,
         });

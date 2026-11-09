@@ -1,6 +1,6 @@
 import { parseKeywords } from '@timelog/app-core';
 import { type SyntheticEvent, useState } from 'react';
-import { errorText, hours } from '../texts.js';
+import { L, errorText, hours } from '../texts.js';
 import { ErrorText, Loading, useAdmin, useLoad } from '../ui.js';
 
 const firstOfMonth = (nowMs: number) => {
@@ -51,7 +51,7 @@ export function Projects() {
         keywords: parseKeywords(keywords),
         ...(teamId ? { teamId } : {}),
       });
-      notify(`Projekt ${name.trim()} angelegt.`);
+      notify(L(`Projekt ${name.trim()} angelegt.`, `Project ${name.trim()} created.`));
       setName('');
       setCustomer('');
       setKeywords('');
@@ -64,7 +64,11 @@ export function Projects() {
   const archive = (id: string, label: string, archived: boolean) => {
     api.org.projects.update(id, { archived }).then(
       () => {
-        notify(`Projekt ${label} ${archived ? 'archiviert' : 'wiederhergestellt'}.`);
+        notify(
+          archived
+            ? L(`Projekt ${label} archiviert.`, `Project ${label} archived.`)
+            : L(`Projekt ${label} wiederhergestellt.`, `Project ${label} restored.`),
+        );
         list.reload();
       },
       (err: unknown) => {
@@ -76,21 +80,27 @@ export function Projects() {
   return (
     <section aria-labelledby="page-title" className="stack">
       <h1 id="page-title" tabIndex={-1}>
-        Projekte
+        {L('Projekte', 'Projects')}
       </h1>
       {list.data && !list.data.enabled && (
         <p className="notice">
-          Projekte sind für die Mitglieder noch ausgeschaltet. Einschalten unter Einstellungen →
-          Funktionen.
+          {L(
+            'Projekte sind für die Mitglieder noch ausgeschaltet. Einschalten unter Einstellungen → Funktionen.',
+            'Projects are still turned off for members. Turn them on under Settings → Features.',
+          )}
         </p>
       )}
       <p className="muted">
-        Mitglieder ordnen Arbeitszeit im Tagesprotokoll Projekten zu. Automatisch: Standardprojekt
-        je Firmen-Netz und Stichwörter im Kalendertermin. Von Hand gewinnt immer.
+        {L(
+          'Mitglieder ordnen Arbeitszeit im Tagesprotokoll Projekten zu. Automatisch: Standardprojekt je Firmen-Netz und Stichwörter im Kalendertermin. Von Hand gewinnt immer.',
+          'Members assign working time to projects in the day log. Automatically: default project per company network and keywords in calendar appointments. Manual entries always win.',
+        )}
       </p>
       <ErrorText text={list.error} />
-      {!list.data && !list.error && <Loading what="Projekte" />}
-      {list.data && list.data.projects.length === 0 && <p>Noch keine Projekte angelegt.</p>}
+      {!list.data && !list.error && <Loading what={L('Projekte', 'projects')} />}
+      {list.data && list.data.projects.length === 0 && (
+        <p>{L('Noch keine Projekte angelegt.', 'No projects yet.')}</p>
+      )}
       {list.data && list.data.projects.length > 0 && (
         <ul className="plain">
           {list.data.projects.map((p) => (
@@ -101,9 +111,11 @@ export function Projects() {
                 </span>{' '}
                 <strong>{p.name}</strong>
                 {p.customer ? ` · ${p.customer}` : ''}
-                {p.teamId ? ` · nur Team ${teamName(p.teamId)}` : ''}
-                {p.keywords.length > 0 ? ` · Stichwörter: ${p.keywords.join(', ')}` : ''}
-                {p.archived ? ' · archiviert' : ''}
+                {p.teamId ? ` · ${L('nur Team', 'team only:')} ${teamName(p.teamId)}` : ''}
+                {p.keywords.length > 0
+                  ? ` · ${L('Stichwörter', 'Keywords')}: ${p.keywords.join(', ')}`
+                  : ''}
+                {p.archived ? ` · ${L('archiviert', 'archived')}` : ''}
               </span>
               <button
                 type="button"
@@ -111,7 +123,7 @@ export function Projects() {
                   archive(p.id, p.name, !p.archived);
                 }}
               >
-                {p.archived ? 'Wiederherstellen' : 'Archivieren'}
+                {p.archived ? L('Wiederherstellen', 'Restore') : L('Archivieren', 'Archive')}
                 <span className="visually-hidden">: {p.name}</span>
               </button>
             </li>
@@ -119,7 +131,7 @@ export function Projects() {
         </ul>
       )}
       <form className="card" onSubmit={(e) => void add(e)}>
-        <h2>Projekt anlegen</h2>
+        <h2>{L('Projekt anlegen', 'Create project')}</h2>
         <label>
           Name
           <input
@@ -132,7 +144,7 @@ export function Projects() {
           />
         </label>
         <label>
-          Kunde (optional)
+          {L('Kunde (optional)', 'Customer (optional)')}
           <input
             maxLength={100}
             value={customer}
@@ -142,7 +154,7 @@ export function Projects() {
           />
         </label>
         <label>
-          Farbe
+          {L('Farbe', 'Colour')}
           <input
             type="color"
             value={color}
@@ -152,7 +164,7 @@ export function Projects() {
           />
         </label>
         <label>
-          Kalender-Stichwörter (durch Komma getrennt)
+          {L('Kalender-Stichwörter (durch Komma getrennt)', 'Calendar keywords (comma-separated)')}
           <input
             value={keywords}
             onChange={(e) => {
@@ -161,33 +173,38 @@ export function Projects() {
           />
         </label>
         <label>
-          Sichtbar für
+          {L('Sichtbar für', 'Visible to')}
           <select
             value={teamId}
             onChange={(e) => {
               setTeamId(e.target.value);
             }}
           >
-            <option value="">alle Mitglieder</option>
+            <option value="">{L('alle Mitglieder', 'all members')}</option>
             {(teams.data?.teams ?? []).map((t) => (
               <option key={t.id} value={t.id}>
-                nur Team {t.name}
+                {L('nur Team', 'team only:')} {t.name}
               </option>
             ))}
           </select>
         </label>
         <ErrorText text={error} />
         <button type="submit" className="primary">
-          Anlegen
+          {L('Anlegen', 'Create')}
         </button>
       </form>
 
       <section aria-labelledby="report-title" className="card stack">
-        <h2 id="report-title">Auswertung</h2>
-        <p className="muted">Netto-Arbeitszeit als Summe – keine Angaben je Person.</p>
+        <h2 id="report-title">{L('Auswertung', 'Report')}</h2>
+        <p className="muted">
+          {L(
+            'Netto-Arbeitszeit als Summe – keine Angaben je Person.',
+            'Net working time as a total, nothing per person.',
+          )}
+        </p>
         <div className="row">
           <label>
-            Von
+            {L('Von', 'From')}
             <input
               type="date"
               value={from}
@@ -197,7 +214,7 @@ export function Projects() {
             />
           </label>
           <label>
-            Bis
+            {L('Bis', 'To')}
             <input
               type="date"
               value={to}
@@ -214,7 +231,7 @@ export function Projects() {
                 setReportTeam(e.target.value);
               }}
             >
-              <option value="">alle Mitglieder</option>
+              <option value="">{L('alle Mitglieder', 'all members')}</option>
               {(teams.data?.teams ?? []).map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name}
@@ -224,23 +241,27 @@ export function Projects() {
           </label>
         </div>
         <ErrorText text={report.error} />
-        {report.data && report.data.totals.length === 0 && <p>Keine Projektzeiten im Zeitraum.</p>}
+        {report.data && report.data.totals.length === 0 && (
+          <p>{L('Keine Projektzeiten im Zeitraum.', 'No project time in this period.')}</p>
+        )}
         {report.data && report.data.totals.length > 0 && (
           <>
             <table>
-              <caption>Je Projekt</caption>
+              <caption>{L('Je Projekt', 'Per project')}</caption>
               <thead>
                 <tr>
-                  <th scope="col">Projekt</th>
-                  <th scope="col">Kunde</th>
-                  <th scope="col">Netto</th>
-                  <th scope="col">davon Pausenauffüllung abgezogen</th>
+                  <th scope="col">{L('Projekt', 'Project')}</th>
+                  <th scope="col">{L('Kunde', 'Customer')}</th>
+                  <th scope="col">{L('Netto', 'Net')}</th>
+                  <th scope="col">
+                    {L('davon Pausenauffüllung abgezogen', 'of which break top-up deducted')}
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {report.data.totals.map((x) => (
                   <tr key={x.projectId ?? 'none'}>
-                    <th scope="row">{x.name ?? 'ohne Projekt'}</th>
+                    <th scope="row">{x.name ?? L('ohne Projekt', 'no project')}</th>
                     <td>{x.customer ?? '–'}</td>
                     <td>{hours(x.netMinutes)}</td>
                     <td>{hours(x.topUpMinutes)}</td>
@@ -249,17 +270,17 @@ export function Projects() {
               </tbody>
             </table>
             <table>
-              <caption>Je Kunde</caption>
+              <caption>{L('Je Kunde', 'Per customer')}</caption>
               <thead>
                 <tr>
-                  <th scope="col">Kunde</th>
-                  <th scope="col">Netto</th>
+                  <th scope="col">{L('Kunde', 'Customer')}</th>
+                  <th scope="col">{L('Netto', 'Net')}</th>
                 </tr>
               </thead>
               <tbody>
                 {report.data.customers.map((c) => (
                   <tr key={c.customer ?? 'none'}>
-                    <th scope="row">{c.customer ?? 'ohne Kunde'}</th>
+                    <th scope="row">{c.customer ?? L('ohne Kunde', 'no customer')}</th>
                     <td>{hours(c.netMinutes)}</td>
                   </tr>
                 ))}

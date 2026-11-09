@@ -21,6 +21,8 @@ export interface PdfTable {
   subtitle?: string;
   columns: { label: string; width: number }[];
   rows: string[][];
+  /** Sprache der Seitenzahl („Seite“/„Page“), Standard Deutsch. */
+  locale?: 'de' | 'en';
 }
 
 export function renderPdf(table: PdfTable): Buffer {
@@ -45,7 +47,7 @@ export function renderPdf(table: PdfTable): Buffer {
       y,
       9,
       false,
-      `Seite ${String(pageIndex + 1)}/${String(chunks.length)}`,
+      `${table.locale === 'en' ? 'Page' : 'Seite'} ${String(pageIndex + 1)}/${String(chunks.length)}`,
     );
     y -= 2 * LINE_H;
     let x = MARGIN;

@@ -2,7 +2,10 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App.js';
 import { Session } from './session.js';
+import { locale } from './texts.js';
 import './styles.css';
+
+document.documentElement.lang = locale;
 
 const baseUrl = (import.meta.env.VITE_API_URL as string | undefined) ?? window.location.origin;
 const session = new Session(baseUrl, window.sessionStorage);

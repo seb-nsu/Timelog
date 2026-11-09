@@ -1,6 +1,6 @@
 import type { Team } from '@timelog/shared';
 import { type SyntheticEvent, useState } from 'react';
-import { errorText } from '../texts.js';
+import { L, errorText } from '../texts.js';
 import { ErrorText, Loading, isAdmin, useAdmin, useLoad } from '../ui.js';
 
 export function Teams() {
@@ -21,7 +21,7 @@ export function Teams() {
     setError(undefined);
     try {
       await api.org.teams.create({ name: name.trim() });
-      notify(`Team ${name.trim()} angelegt.`);
+      notify(L(`Team ${name.trim()} angelegt.`, `Team ${name.trim()} created.`));
       setName('');
       teams.reload();
     } catch (err) {
@@ -42,11 +42,11 @@ export function Teams() {
           <thead>
             <tr>
               <th scope="col">Name</th>
-              <th scope="col">Leitung</th>
-              <th scope="col">Mitglieder</th>
+              <th scope="col">{L('Leitung', 'Lead')}</th>
+              <th scope="col">{L('Mitglieder', 'Members')}</th>
               {admin && (
                 <th scope="col">
-                  <span className="visually-hidden">Aktionen</span>
+                  <span className="visually-hidden">{L('Aktionen', 'Actions')}</span>
                 </th>
               )}
             </tr>
@@ -68,7 +68,7 @@ export function Teams() {
       )}
       {admin && (
         <form className="card" onSubmit={(e) => void create(e)}>
-          <h2>Neues Team</h2>
+          <h2>{L('Neues Team', 'New team')}</h2>
           <label>
             Name
             <input
@@ -80,7 +80,7 @@ export function Teams() {
             />
           </label>
           <button type="submit" className="primary">
-            Team anlegen
+            {L('Team anlegen', 'Create team')}
           </button>
         </form>
       )}
@@ -114,18 +114,20 @@ function TeamRow({
       <th scope="row">{team.name}</th>
       <td>
         <label>
-          <span className="visually-hidden">Leitung von {team.name}</span>
+          <span className="visually-hidden">
+            {L(`Leitung von ${team.name}`, `Lead of ${team.name}`)}
+          </span>
           <select
             value={team.managerId ?? ''}
             onChange={(e) => {
               const managerId = e.target.value || null;
               void run(
                 () => api.org.teams.update(team.id, { managerId }),
-                `Leitung von ${team.name} geändert.`,
+                L(`Leitung von ${team.name} geändert.`, `Lead of ${team.name} changed.`),
               );
             }}
           >
-            <option value="">keine</option>
+            <option value="">{L('keine', 'none')}</option>
             {leaders.map((l) => (
               <option key={l.id} value={l.id}>
                 {l.name}
@@ -142,14 +144,21 @@ function TeamRow({
           onClick={() => {
             if (
               window.confirm(
-                `Team ${team.name} löschen? Die Mitglieder bleiben, sind dann aber keinem Team zugeordnet.`,
+                L(
+                  `Team ${team.name} löschen? Die Mitglieder bleiben, sind dann aber keinem Team zugeordnet.`,
+                  `Delete team ${team.name}? Its members stay but will no longer belong to a team.`,
+                ),
               )
             ) {
-              void run(() => api.org.teams.remove(team.id), `Team ${team.name} gelöscht.`);
+              void run(
+                () => api.org.teams.remove(team.id),
+                L(`Team ${team.name} gelöscht.`, `Team ${team.name} deleted.`),
+              );
             }
           }}
         >
-          Löschen<span className="visually-hidden">: {team.name}</span>
+          {L('Löschen', 'Delete')}
+          <span className="visually-hidden">: {team.name}</span>
         </button>
         <ErrorText text={error} />
       </td>

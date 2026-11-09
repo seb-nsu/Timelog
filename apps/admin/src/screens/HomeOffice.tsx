@@ -1,6 +1,7 @@
 import { monthNames } from '@timelog/app-core';
 import { ApiError } from '@timelog/shared';
 import { useState } from 'react';
+import { L, intlLocale } from '../texts.js';
 import { ErrorText, Loading, useAdmin, useLoad } from '../ui.js';
 
 /**
@@ -18,16 +19,18 @@ export function HomeOffice() {
       }),
     [api, year],
   );
-  const months = monthNames('de-DE');
+  const months = monthNames(intlLocale);
 
   return (
     <section aria-labelledby="page-title" className="stack">
       <h1 id="page-title" tabIndex={-1}>
-        Homeoffice-Tage {year}
+        {L('Homeoffice-Tage', 'Home office days')} {year}
       </h1>
       <p className="muted">
-        Anzahl der Tage, an denen überwiegend im Homeoffice gearbeitet wurde (z. B. für eine
-        Bescheinigung). Keine Tagesangaben, keine Orte. Jeder Abruf steht im Audit-Log.
+        {L(
+          'Anzahl der Tage, an denen überwiegend im Homeoffice gearbeitet wurde (z. B. für eine Bescheinigung). Keine Tagesangaben, keine Orte. Jeder Abruf steht im Audit-Log.',
+          'Number of days worked mainly from home (e.g. for a certificate). No individual days, no locations. Every view is recorded in the audit log.',
+        )}
       </p>
       <div className="row">
         <button
@@ -36,7 +39,7 @@ export function HomeOffice() {
             setYear(year - 1);
           }}
         >
-          Vorjahr
+          {L('Vorjahr', 'Previous year')}
         </button>
         <button
           type="button"
@@ -45,30 +48,32 @@ export function HomeOffice() {
             setYear(year + 1);
           }}
         >
-          Folgejahr
+          {L('Folgejahr', 'Next year')}
         </button>
       </div>
       <ErrorText text={data.error} />
-      {data.data === undefined && !data.error && <Loading what="Zahlen" />}
+      {data.data === undefined && !data.error && <Loading what={L('Zahlen', 'figures')} />}
       {data.data === null && (
         <p className="notice">
-          Ausgeschaltet. Einschalten unter Einstellungen → Funktionen („Homeoffice-Tage je Monat für
-          Admins“). Vorher die Mitglieder informieren.
+          {L(
+            'Ausgeschaltet. Einschalten unter Einstellungen → Funktionen („Homeoffice-Tage je Monat für Admins“). Vorher die Mitglieder informieren.',
+            'Turned off. Turn it on under Settings → Features (“Home office days per month for admins”). Inform members beforehand.',
+          )}
         </p>
       )}
       {data.data && (
         <div className="scroll">
           <table>
-            <caption>Homeoffice-Tage je Monat</caption>
+            <caption>{L('Homeoffice-Tage je Monat', 'Home office days per month')}</caption>
             <thead>
               <tr>
-                <th scope="col">Mitglied</th>
+                <th scope="col">{L('Mitglied', 'Member')}</th>
                 {months.map((m) => (
                   <th key={m} scope="col">
                     {m}
                   </th>
                 ))}
-                <th scope="col">Summe</th>
+                <th scope="col">{L('Summe', 'Total')}</th>
               </tr>
             </thead>
             <tbody>

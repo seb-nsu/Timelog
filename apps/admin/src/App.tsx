@@ -16,7 +16,7 @@ import { Projects } from './screens/Projects.js';
 import { Settings } from './screens/Settings.js';
 import { Teams } from './screens/Teams.js';
 import type { Session } from './session.js';
-import { ROLE_LABELS, errorText } from './texts.js';
+import { L, ROLE_LABELS, errorText } from './texts.js';
 import { AdminContext, type AdminContextValue, isAdmin } from './ui.js';
 
 type Page =
@@ -34,22 +34,33 @@ type Page =
   | 'calendar';
 
 // Navigation in Gruppen: Tagesgeschäft im Team zuerst, Firmen-Einrichtung, dann Auswertung und Lohn.
-const GROUPS = ['Team', 'Firma', 'Auswertung & Lohn', 'Mein Konto'] as const;
+const GROUPS = ['team', 'company', 'reports', 'account'] as const;
 type Group = (typeof GROUPS)[number];
+const GROUP_LABELS: Record<Group, string> = {
+  team: 'Team',
+  company: L('Firma', 'Company'),
+  reports: L('Auswertung & Lohn', 'Reports & payroll'),
+  account: L('Mein Konto', 'My account'),
+};
 
 const PAGES: { id: Page; label: string; adminOnly: boolean; group: Group }[] = [
-  { id: 'approvals', label: 'Freigaben', adminOnly: false, group: 'Team' },
-  { id: 'leave', label: 'Urlaub', adminOnly: false, group: 'Team' },
-  { id: 'members', label: 'Mitglieder', adminOnly: false, group: 'Team' },
-  { id: 'teams', label: 'Teams', adminOnly: false, group: 'Team' },
-  { id: 'settings', label: 'Einstellungen', adminOnly: true, group: 'Firma' },
-  { id: 'projects', label: 'Projekte', adminOnly: true, group: 'Firma' },
-  { id: 'networks', label: 'Firmen-Netze', adminOnly: true, group: 'Firma' },
-  { id: 'export', label: 'Export', adminOnly: true, group: 'Auswertung & Lohn' },
-  { id: 'payroll', label: 'Lohn', adminOnly: true, group: 'Auswertung & Lohn' },
-  { id: 'homeOffice', label: 'Homeoffice', adminOnly: true, group: 'Auswertung & Lohn' },
-  { id: 'audit', label: 'Audit-Log', adminOnly: true, group: 'Auswertung & Lohn' },
-  { id: 'calendar', label: 'Mein Kalender', adminOnly: false, group: 'Mein Konto' },
+  { id: 'approvals', label: L('Freigaben', 'Approvals'), adminOnly: false, group: 'team' },
+  { id: 'leave', label: L('Urlaub', 'Leave'), adminOnly: false, group: 'team' },
+  { id: 'members', label: L('Mitglieder', 'Members'), adminOnly: false, group: 'team' },
+  { id: 'teams', label: 'Teams', adminOnly: false, group: 'team' },
+  { id: 'settings', label: L('Einstellungen', 'Settings'), adminOnly: true, group: 'company' },
+  { id: 'projects', label: L('Projekte', 'Projects'), adminOnly: true, group: 'company' },
+  {
+    id: 'networks',
+    label: L('Firmen-Netze', 'Company networks'),
+    adminOnly: true,
+    group: 'company',
+  },
+  { id: 'export', label: 'Export', adminOnly: true, group: 'reports' },
+  { id: 'payroll', label: L('Lohn', 'Payroll'), adminOnly: true, group: 'reports' },
+  { id: 'homeOffice', label: L('Homeoffice', 'Home office'), adminOnly: true, group: 'reports' },
+  { id: 'audit', label: L('Audit-Log', 'Audit log'), adminOnly: true, group: 'reports' },
+  { id: 'calendar', label: L('Mein Kalender', 'My calendar'), adminOnly: false, group: 'account' },
 ];
 
 type State =
@@ -146,7 +157,7 @@ export function App({
       return (
         <main id="main" className="narrow">
           <h1>TimeLog Admin</h1>
-          <p role="status">Wird geladen …</p>
+          <p role="status">{L('Wird geladen …', 'Loading …')}</p>
         </main>
       );
     case 'login':
@@ -166,13 +177,17 @@ export function App({
     case 'noAccess':
       return (
         <main id="main" className="narrow">
-          <h1>Kein Zugriff auf den Web-Admin</h1>
+          <h1>{L('Kein Zugriff auf den Web-Admin', 'No access to the web admin')}</h1>
           <p>
-            Du bist Mitglied von <strong>{state.me.org.name}</strong>. Der Web-Admin ist für Manager
-            und Admins. Deine Arbeitszeiten siehst und reichst du in der TimeLog-App ein.
+            {L('Du bist Mitglied von ', 'You are a member of ')}
+            <strong>{state.me.org.name}</strong>
+            {L(
+              '. Der Web-Admin ist für Manager und Admins. Deine Arbeitszeiten siehst und reichst du in der TimeLog-App ein.',
+              '. The web admin is for managers and admins. You can view and submit your working hours in the TimeLog app.',
+            )}
           </p>
           <button type="button" onClick={logout}>
-            Abmelden
+            {L('Abmelden', 'Sign out')}
           </button>
         </main>
       );
@@ -240,7 +255,7 @@ function Shell({
   return (
     <AdminContext.Provider value={ctx}>
       <a href="#main" className="skip">
-        Zum Inhalt springen
+        {L('Zum Inhalt springen', 'Skip to content')}
       </a>
       <header className="top">
         <p className="brand">
@@ -249,18 +264,18 @@ function Shell({
         <p className="who">
           {me.user.name} ({ROLE_LABELS[me.user.role]})
           <button type="button" onClick={onLogout}>
-            Abmelden
+            {L('Abmelden', 'Sign out')}
           </button>
         </p>
       </header>
-      <nav aria-label="Bereiche">
+      <nav aria-label={L('Bereiche', 'Sections')}>
         {GROUPS.map((g, i) => {
           const items = pages.filter((p) => p.group === g);
           if (items.length === 0) return null;
           const id = `nav-${String(i)}`;
           return (
             <div key={g} className="nav-group">
-              <h2 id={id}>{g}</h2>
+              <h2 id={id}>{GROUP_LABELS[g]}</h2>
               <ul aria-labelledby={id}>
                 {items.map((p) => (
                   <li key={p.id}>

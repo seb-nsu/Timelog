@@ -1,6 +1,6 @@
 import type { AuditEntry } from '@timelog/shared';
 import { useEffect, useState } from 'react';
-import { AUDIT_LABELS, dateTime, errorText } from '../texts.js';
+import { L, AUDIT_LABELS, dateTime, errorText } from '../texts.js';
 import { ErrorText, Loading, useAdmin } from '../ui.js';
 
 const PAGE = 50;
@@ -29,20 +29,30 @@ export function Audit() {
   return (
     <section aria-labelledby="page-title" className="stack">
       <h1 id="page-title" tabIndex={-1}>
-        Audit-Log
+        {L('Audit-Log', 'Audit log')}
       </h1>
-      <p className="muted">Alle Admin- und Freigabe-Aktionen der Organisation, neueste zuerst.</p>
+      <p className="muted">
+        {L(
+          'Alle Admin- und Freigabe-Aktionen der Organisation, neueste zuerst.',
+          'All admin and approval actions of the organisation, newest first.',
+        )}
+      </p>
       <ErrorText text={error} />
-      {!entries && !error && <Loading what="Einträge" />}
+      {!entries && !error && <Loading what={L('Einträge', 'entries')} />}
       {entries && (
         <table>
-          <caption>Audit-Log ({entries.length} Einträge geladen)</caption>
+          <caption>
+            {L(
+              `Audit-Log (${String(entries.length)} Einträge geladen)`,
+              `Audit log (${String(entries.length)} entries loaded)`,
+            )}
+          </caption>
           <thead>
             <tr>
-              <th scope="col">Zeitpunkt</th>
+              <th scope="col">{L('Zeitpunkt', 'Time')}</th>
               <th scope="col">Person</th>
-              <th scope="col">Aktion</th>
-              <th scope="col">Ziel</th>
+              <th scope="col">{L('Aktion', 'Action')}</th>
+              <th scope="col">{L('Ziel', 'Target')}</th>
             </tr>
           </thead>
           <tbody>
@@ -61,7 +71,7 @@ export function Audit() {
       )}
       {next && (
         <button type="button" onClick={() => void load(next)}>
-          Ältere Einträge laden
+          {L('Ältere Einträge laden', 'Load older entries')}
         </button>
       )}
     </section>
