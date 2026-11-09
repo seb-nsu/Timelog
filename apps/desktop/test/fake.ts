@@ -235,6 +235,7 @@ export function fakeBackend(
     }),
     syncNow: () => Promise.resolve(),
     setTrayStatus: vi.fn(() => Promise.resolve()),
+    setTrayLabels: vi.fn(() => Promise.resolve()),
     autostart: { isEnabled: () => Promise.resolve(true), set: vi.fn(() => Promise.resolve()) },
     onChange: (l) => {
       listeners.add(l);

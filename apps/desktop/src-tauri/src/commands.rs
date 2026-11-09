@@ -305,6 +305,19 @@ pub fn set_tray_status(app: AppHandle, text: String) -> CmdResult<()> {
     crate::tray::set_tooltip(&app, &text).map_err(|e| e.to_string())
 }
 
+/// Beschriftungen des Tray-Menüs in der Sprache der Oberfläche.
+#[tauri::command]
+pub fn set_tray_labels(app: AppHandle, labels: crate::tray::TrayLabels) -> CmdResult<()> {
+    let clip = |s: String| -> String { s.chars().take(60).collect() };
+    let labels = crate::tray::TrayLabels {
+        open: clip(labels.open),
+        start: clip(labels.start),
+        stop: clip(labels.stop),
+        quit: clip(labels.quit),
+    };
+    crate::tray::set_labels(&app, &labels).map_err(|e| e.to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::valid_base_url;

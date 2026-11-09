@@ -41,6 +41,14 @@ export interface CurrentNetwork {
   wired: boolean;
 }
 
+/** Beschriftungen des Tray-Menüs. */
+export interface TrayLabels {
+  open: string;
+  start: string;
+  stop: string;
+  quit: string;
+}
+
 export interface DesktopBackend {
   api: ApiClient;
   getState: () => Promise<AppState>;
@@ -56,6 +64,8 @@ export interface DesktopBackend {
   finishSetup: () => Promise<void>;
   syncNow: () => Promise<void>;
   setTrayStatus: (text: string) => Promise<void>;
+  /** Beschriftet das Tray-Menü in der Sprache der Oberfläche. */
+  setTrayLabels: (labels: TrayLabels) => Promise<void>;
   autostart: { isEnabled: () => Promise<boolean>; set: (enabled: boolean) => Promise<void> };
   /** Systembenachrichtigung; fragt beim ersten Mal nach der Erlaubnis. */
   notify: (title: string, body: string) => Promise<void>;
@@ -174,6 +184,7 @@ export async function createTauriBackend(): Promise<DesktopBackend> {
     finishSetup: () => call('finish_setup'),
     syncNow: () => done(call('sync_now')),
     setTrayStatus: (text) => call('set_tray_status', { text }),
+    setTrayLabels: (labels) => call('set_tray_labels', { labels }),
     autostart: {
       isEnabled: () => autostart.isEnabled(),
       set: (enabled) => (enabled ? autostart.enable() : autostart.disable()),

@@ -5,7 +5,7 @@ use std::sync::Arc;
 use chrono::Utc;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Manager, Wry};
 use timelog_core::EventType;
 
 use crate::runtime::Runtime;
@@ -27,6 +27,34 @@ pub fn set_tooltip(app: &AppHandle, text: &str) -> tauri::Result<()> {
     Ok(())
 }
 
+/// Einträge des Tray-Menüs, damit die Oberfläche sie in ihrer Sprache beschriften kann.
+pub struct TrayItems {
+    open: MenuItem<Wry>,
+    start: MenuItem<Wry>,
+    stop: MenuItem<Wry>,
+    quit: MenuItem<Wry>,
+}
+
+/// Beschriftungen aus der Oberfläche (Deutsch oder Englisch, je nach Systemsprache).
+#[derive(Debug, serde::Deserialize)]
+pub struct TrayLabels {
+    pub open: String,
+    pub start: String,
+    pub stop: String,
+    pub quit: String,
+}
+
+/// Setzt die Beschriftungen des Tray-Menüs. Bis dahin gilt Deutsch.
+pub fn set_labels(app: &AppHandle, labels: &TrayLabels) -> tauri::Result<()> {
+    if let Some(items) = app.try_state::<TrayItems>() {
+        items.open.set_text(&labels.open)?;
+        items.start.set_text(&labels.start)?;
+        items.stop.set_text(&labels.stop)?;
+        items.quit.set_text(&labels.quit)?;
+    }
+    Ok(())
+}
+
 pub fn create(app: &AppHandle) -> tauri::Result<()> {
     let open = MenuItem::with_id(app, "open", "TimeLog öffnen", true, None::<&str>)?;
     let start = MenuItem::with_id(app, "start", "Arbeit beginnen", true, None::<&str>)?;
@@ -43,6 +71,12 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
             &quit,
         ],
     )?;
+    app.manage(TrayItems {
+        open,
+        start,
+        stop,
+        quit,
+    });
 
     let mut builder = TrayIconBuilder::with_id(TRAY_ID)
         .tooltip("TimeLog")
