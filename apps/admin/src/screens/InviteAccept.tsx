@@ -2,7 +2,7 @@ import { STATE_NAMES } from '@timelog/app-core';
 import { GERMAN_STATES, type GermanState } from '@timelog/rules';
 import type { ApiClient } from '@timelog/shared';
 import { type SyntheticEvent, useState } from 'react';
-import { ROLE_LABELS, errorText } from '../texts.js';
+import { L, ROLE_LABELS, errorText } from '../texts.js';
 import { ErrorText, Loading, useLoad } from '../ui.js';
 
 /** Öffentliche Seite hinter dem Einladungslink: Konto für die Firma anlegen. */
@@ -33,18 +33,23 @@ export function InviteAccept({ api, token }: { api: ApiClient; token: string }) 
 
   return (
     <main id="main" className="narrow">
-      <h1>Einladung annehmen</h1>
+      <h1>{L('Einladung annehmen', 'Accept invitation')}</h1>
       <ErrorText text={info.error ?? error} />
-      {!info.data && !info.error && <Loading what="Einladung" />}
+      {!info.data && !info.error && <Loading what={L('Einladung', 'invitation')} />}
       {info.data && !done && (
         <>
           <p>
-            <strong>{info.data.orgName}</strong> lädt <strong>{info.data.email}</strong> als{' '}
-            {ROLE_LABELS[info.data.role]} ein.
+            {L('', 'Invitation from ')}
+            <strong>{info.data.orgName}</strong>
+            {L(' lädt ', ' for ')}
+            <strong>{info.data.email}</strong>
+            {L(' als ', ' as ')}
+            {ROLE_LABELS[info.data.role]}
+            {L(' ein.', '.')}
           </p>
           <form onSubmit={(e) => void submit(e)}>
             <label>
-              Dein Name
+              {L('Dein Name', 'Your name')}
               <input
                 required
                 autoComplete="name"
@@ -55,7 +60,7 @@ export function InviteAccept({ api, token }: { api: ApiClient; token: string }) 
               />
             </label>
             <label>
-              Passwort (mindestens 10 Zeichen)
+              {L('Passwort (mindestens 10 Zeichen)', 'Password (at least 10 characters)')}
               <input
                 type="password"
                 required
@@ -68,7 +73,7 @@ export function InviteAccept({ api, token }: { api: ApiClient; token: string }) 
               />
             </label>
             <label>
-              Bundesland (für Feiertage)
+              {L('Bundesland (für Feiertage)', 'German state (for public holidays)')}
               <select
                 value={state}
                 onChange={(e) => {
@@ -83,15 +88,17 @@ export function InviteAccept({ api, token }: { api: ApiClient; token: string }) 
               </select>
             </label>
             <button type="submit" className="primary">
-              Konto anlegen
+              {L('Konto anlegen', 'Create account')}
             </button>
           </form>
         </>
       )}
       {done && (
         <p role="status">
-          Konto angelegt. Melde dich jetzt in der TimeLog-App auf Laptop oder Handy mit deiner
-          E-Mail-Adresse an.
+          {L(
+            'Konto angelegt. Melde dich jetzt in der TimeLog-App auf Laptop oder Handy mit deiner E-Mail-Adresse an.',
+            'Account created. Now sign in to the TimeLog app on your laptop or phone with your email address.',
+          )}
         </p>
       )}
     </main>

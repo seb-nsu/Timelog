@@ -1,18 +1,18 @@
 import { type SyntheticEvent, useState } from 'react';
-import { errorText } from '../texts.js';
+import { L, errorText } from '../texts.js';
 import { ErrorText, Loading, useAdmin, useLoad } from '../ui.js';
 
 const KIND_LABELS = {
-  fingerprint: 'Netzwerk-Kennung',
-  ssid: 'WLAN-Name',
+  fingerprint: L('Netzwerk-Kennung', 'Network ID'),
+  ssid: L('WLAN-Name', 'Wi-Fi name'),
   geofence: 'Geofence',
 } as const;
 
 /** Firmen-Arbeitsnetze: gelten automatisch für alle Mitglieder. */
 const LOCATION_LABELS = {
-  office: 'Büro',
-  home: 'Homeoffice',
-  other: 'unterwegs/sonstiges',
+  office: L('Büro', 'Office'),
+  home: L('Homeoffice', 'Home office'),
+  other: L('unterwegs/sonstiges', 'on the road/other'),
 } as const;
 
 export function Networks() {
@@ -27,7 +27,7 @@ export function Networks() {
   ) => {
     api.org.updateNetwork(id, body).then(
       () => {
-        notify(`Netz ${label} geändert.`);
+        notify(L(`Netz ${label} geändert.`, `Network ${label} changed.`));
         list.reload();
       },
       (err: unknown) => {
@@ -49,7 +49,7 @@ export function Networks() {
           ? { kind, label: label.trim(), fingerprint: value.trim() }
           : { kind, label: label.trim(), ssid: value.trim() },
       );
-      notify(`Netz ${label.trim()} hinzugefügt.`);
+      notify(L(`Netz ${label.trim()} hinzugefügt.`, `Network ${label.trim()} added.`));
       setLabel('');
       setValue('');
       list.reload();
@@ -61,17 +61,19 @@ export function Networks() {
   return (
     <section aria-labelledby="page-title" className="stack">
       <h1 id="page-title" tabIndex={-1}>
-        Firmen-Arbeitsnetze
+        {L('Firmen-Arbeitsnetze', 'Company work networks')}
       </h1>
       <p className="muted">
-        Firmen-Netze gelten automatisch für alle Mitglieder. Standard ist die Netzwerk-Kennung
-        (funktioniert auch per LAN und an der Dockingstation, ohne Standortfreigabe). Gespeichert
-        wird nur ein HMAC mit dem Schlüssel der Organisation. Hinweis: Eine Netzwerk-Kennung lässt
-        sich mit eigenem Router nachbauen.
+        {L(
+          'Firmen-Netze gelten automatisch für alle Mitglieder. Standard ist die Netzwerk-Kennung (funktioniert auch per LAN und an der Dockingstation, ohne Standortfreigabe). Gespeichert wird nur ein HMAC mit dem Schlüssel der Organisation. Hinweis: Eine Netzwerk-Kennung lässt sich mit eigenem Router nachbauen.',
+          'Company networks apply automatically to all members. The default is the network ID (also works via LAN and on a docking station, without location permission). Only an HMAC with the organisation key is stored. Note: a network ID can be imitated with your own router.',
+        )}
       </p>
       <ErrorText text={list.error} />
-      {!list.data && !list.error && <Loading what="Netze" />}
-      {list.data && list.data.networks.length === 0 && <p>Noch keine Firmen-Netze hinterlegt.</p>}
+      {!list.data && !list.error && <Loading what={L('Netze', 'networks')} />}
+      {list.data && list.data.networks.length === 0 && (
+        <p>{L('Noch keine Firmen-Netze hinterlegt.', 'No company networks yet.')}</p>
+      )}
       {list.data && list.data.networks.length > 0 && (
         <ul className="plain">
           {list.data.networks.map((n) => (
@@ -81,7 +83,8 @@ export function Networks() {
                 {n.ssid ? ` „${n.ssid}“` : ''}
               </span>
               <label>
-                Ort<span className="visually-hidden"> von {n.label}</span>
+                {L('Ort', 'Location')}
+                <span className="visually-hidden">{L(` von ${n.label}`, ` of ${n.label}`)}</span>
                 <select
                   value={n.location}
                   onChange={(e) => {
@@ -99,14 +102,15 @@ export function Networks() {
               </label>
               {projects.data?.enabled && (
                 <label>
-                  Standardprojekt<span className="visually-hidden"> von {n.label}</span>
+                  {L('Standardprojekt', 'Default project')}
+                  <span className="visually-hidden">{L(` von ${n.label}`, ` of ${n.label}`)}</span>
                   <select
                     value={n.defaultProjectId ?? ''}
                     onChange={(e) => {
                       update(n.id, n.label, { defaultProjectId: e.target.value || null });
                     }}
                   >
-                    <option value="">keins</option>
+                    <option value="">{L('keins', 'none')}</option>
                     {projects.data.projects
                       .filter((p) => !p.archived || p.id === n.defaultProjectId)
                       .map((p) => (
@@ -123,7 +127,7 @@ export function Networks() {
                 onClick={() => {
                   void api.org.networks.remove(n.id).then(
                     () => {
-                      notify(`Netz ${n.label} entfernt.`);
+                      notify(L(`Netz ${n.label} entfernt.`, `Network ${n.label} removed.`));
                       list.reload();
                     },
                     (err: unknown) => {
@@ -132,16 +136,17 @@ export function Networks() {
                   );
                 }}
               >
-                Entfernen<span className="visually-hidden">: {n.label}</span>
+                {L('Entfernen', 'Remove')}
+                <span className="visually-hidden">: {n.label}</span>
               </button>
             </li>
           ))}
         </ul>
       )}
       <form className="card" onSubmit={(e) => void add(e)}>
-        <h2>Netz hinzufügen</h2>
+        <h2>{L('Netz hinzufügen', 'Add network')}</h2>
         <label>
-          Bezeichnung
+          {L('Bezeichnung', 'Label')}
           <input
             required
             value={label}
@@ -151,7 +156,7 @@ export function Networks() {
           />
         </label>
         <fieldset>
-          <legend>Art</legend>
+          <legend>{L('Art', 'Type')}</legend>
           <label className="inline">
             <input
               type="radio"
@@ -161,7 +166,7 @@ export function Networks() {
                 setKind('fingerprint');
               }}
             />
-            Netzwerk-Kennung (Standard)
+            {L('Netzwerk-Kennung (Standard)', 'Network ID (default)')}
           </label>
           <label className="inline">
             <input
@@ -172,13 +177,16 @@ export function Networks() {
                 setKind('ssid');
               }}
             />
-            WLAN-Name
+            {L('WLAN-Name', 'Wi-Fi name')}
           </label>
         </fieldset>
         <label>
           {kind === 'fingerprint'
-            ? 'Netzwerk-Kennung (aus der Desktop-App: „Aktuelles Netz übernehmen“)'
-            : 'WLAN-Name (SSID)'}
+            ? L(
+                'Netzwerk-Kennung (aus der Desktop-App: „Aktuelles Netz übernehmen“)',
+                'Network ID (from the desktop app: “Use current network”)',
+              )
+            : L('WLAN-Name (SSID)', 'Wi-Fi name (SSID)')}
           <input
             required
             minLength={kind === 'fingerprint' ? 8 : 1}
@@ -190,7 +198,7 @@ export function Networks() {
         </label>
         <ErrorText text={error} />
         <button type="submit" className="primary">
-          Hinzufügen
+          {L('Hinzufügen', 'Add')}
         </button>
       </form>
     </section>

@@ -1,5 +1,5 @@
 import { type SyntheticEvent, useState } from 'react';
-import { errorText, previousMonth } from '../texts.js';
+import { L, errorText, previousMonth } from '../texts.js';
 import { ErrorText, useAdmin, useLoad } from '../ui.js';
 
 /** Monatsexport (CSV DATEV-tauglich vorbereitet, PDF); freigegebene Monate aus dem Snapshot. */
@@ -19,7 +19,7 @@ export function Export({ download }: { download: (blob: Blob, filename: string) 
     try {
       const blob = await api.org.export({ month, format, ...(teamId ? { teamId } : {}) });
       download(blob, `arbeitszeit_${month}.${format}`);
-      notify(`Export ${month} erstellt.`);
+      notify(L(`Export ${month} erstellt.`, `Export ${month} created.`));
     } catch (err) {
       setError(errorText(err));
     } finally {
@@ -33,12 +33,14 @@ export function Export({ download }: { download: (blob: Blob, filename: string) 
         Export
       </h1>
       <p className="muted">
-        Je Person und Tag: Beginn, Ende, Pause, davon aufgefüllt, Netto, Abwesenheit, Status,
-        korrigiert, Hinweise und Freigabestatus. Jeder Export wird im Audit-Log vermerkt.
+        {L(
+          'Je Person und Tag: Beginn, Ende, Pause, davon aufgefüllt, Netto, Abwesenheit, Status, korrigiert, Hinweise und Freigabestatus. Jeder Export wird im Audit-Log vermerkt.',
+          'Per person and day: start, end, break, of which topped up, net, absence, status, corrected, notes and approval status. Every export is recorded in the audit log.',
+        )}
       </p>
       <form onSubmit={(e) => void run(e)} className="card">
         <label>
-          Monat
+          {L('Monat', 'Month')}
           <input
             type="month"
             required
@@ -56,7 +58,7 @@ export function Export({ download }: { download: (blob: Blob, filename: string) 
               setTeamId(e.target.value);
             }}
           >
-            <option value="">alle Mitglieder</option>
+            <option value="">{L('alle Mitglieder', 'all members')}</option>
             {(teams.data?.teams ?? []).map((t) => (
               <option key={t.id} value={t.id}>
                 {t.name}
@@ -75,7 +77,7 @@ export function Export({ download }: { download: (blob: Blob, filename: string) 
                 setFormat('csv');
               }}
             />
-            CSV (Semikolon, UTF-8)
+            {L('CSV (Semikolon, UTF-8)', 'CSV (semicolon, UTF-8)')}
           </label>
           <label className="inline">
             <input
@@ -91,7 +93,7 @@ export function Export({ download }: { download: (blob: Blob, filename: string) 
         </fieldset>
         <ErrorText text={error} />
         <button type="submit" className="primary" disabled={busy}>
-          Herunterladen
+          {L('Herunterladen', 'Download')}
         </button>
       </form>
     </section>

@@ -2,7 +2,7 @@ import type { ApiClient, SsoInfoResponse } from '@timelog/shared';
 import { ApiError } from '@timelog/shared';
 import { type SyntheticEvent, useState } from 'react';
 import type { Session } from '../session.js';
-import { errorText } from '../texts.js';
+import { L, errorText } from '../texts.js';
 import { ErrorText } from '../ui.js';
 
 const METHOD_LABELS = { oidc: 'OpenID Connect', saml: 'SAML' } as const;
@@ -56,7 +56,7 @@ export function Login({
     } catch (err) {
       setError(
         err instanceof ApiError && err.status === 404
-          ? 'Organisation nicht gefunden.'
+          ? L('Organisation nicht gefunden.', 'Organisation not found.')
           : errorText(err),
       );
     }
@@ -65,13 +65,18 @@ export function Login({
   return (
     <main id="main" className="narrow">
       <h1>TimeLog Admin</h1>
-      <p className="muted">Firmenversion: Freigaben, Mitglieder, Teams und Einstellungen.</p>
+      <p className="muted">
+        {L(
+          'Firmenversion: Freigaben, Mitglieder, Teams und Einstellungen.',
+          'Business edition: approvals, members, teams and settings.',
+        )}
+      </p>
       <ErrorText text={error} />
       <section aria-labelledby="pw-login" className="card">
-        <h2 id="pw-login">Mit E-Mail anmelden</h2>
+        <h2 id="pw-login">{L('Mit E-Mail anmelden', 'Sign in with email')}</h2>
         <form onSubmit={(e) => void submit(e)}>
           <label>
-            E-Mail
+            {L('E-Mail', 'Email')}
             <input
               type="email"
               autoComplete="username"
@@ -83,7 +88,7 @@ export function Login({
             />
           </label>
           <label>
-            Passwort
+            {L('Passwort', 'Password')}
             <input
               type="password"
               autoComplete="current-password"
@@ -96,7 +101,7 @@ export function Login({
           </label>
           {needTotp && (
             <label>
-              Code aus der Authenticator-App
+              {L('Code aus der Authenticator-App', 'Code from your authenticator app')}
               <input
                 inputMode="numeric"
                 autoComplete="one-time-code"
@@ -110,15 +115,15 @@ export function Login({
             </label>
           )}
           <button type="submit" className="primary" disabled={busy}>
-            Anmelden
+            {L('Anmelden', 'Sign in')}
           </button>
         </form>
       </section>
       <section aria-labelledby="sso-login" className="card">
-        <h2 id="sso-login">Mit SSO anmelden</h2>
+        <h2 id="sso-login">{L('Mit SSO anmelden', 'Sign in with SSO')}</h2>
         <form onSubmit={(e) => void findSso(e)}>
           <label>
-            Kurzname der Organisation
+            {L('Kurzname der Organisation', 'Organisation short name')}
             <input
               required
               autoComplete="organization"
@@ -128,7 +133,7 @@ export function Login({
               }}
             />
           </label>
-          <button type="submit">Weiter</button>
+          <button type="submit">{L('Weiter', 'Continue')}</button>
         </form>
         {sso && (
           <div className="actions">
@@ -187,27 +192,33 @@ export function TotpSetup({
 
   return (
     <main id="main" className="narrow">
-      <h1>Zwei-Faktor-Anmeldung einrichten</h1>
+      <h1>{L('Zwei-Faktor-Anmeldung einrichten', 'Set up two-factor sign-in')}</h1>
       <p>
-        Für Manager und Admins ist ein zweiter Faktor Pflicht. Richte in einer Authenticator-App (z.
-        B. Microsoft Authenticator, Google Authenticator, 1Password) ein neues Konto ein.
+        {L(
+          'Für Manager und Admins ist ein zweiter Faktor Pflicht. Richte in einer Authenticator-App (z. B. Microsoft Authenticator, Google Authenticator, 1Password) ein neues Konto ein.',
+          'A second factor is required for managers and admins. Add a new account in an authenticator app (e.g. Microsoft Authenticator, Google Authenticator, 1Password).',
+        )}
       </p>
       <ErrorText text={error} />
       {!secret ? (
         <button type="button" className="primary" onClick={() => void start()}>
-          Schlüssel erzeugen
+          {L('Schlüssel erzeugen', 'Generate key')}
         </button>
       ) : (
         <form onSubmit={(e) => void verify(e)}>
           <p>
-            Schlüssel zum Eintippen: <code className="secret">{secret.secret}</code>
+            {L('Schlüssel zum Eintippen:', 'Key to type in:')}{' '}
+            <code className="secret">{secret.secret}</code>
           </p>
           <p className="muted">
-            Oder diese Adresse in der App öffnen bzw. einfügen:{' '}
+            {L(
+              'Oder diese Adresse in der App öffnen bzw. einfügen:',
+              'Or open or paste this address in the app:',
+            )}{' '}
             <code className="wrap">{secret.otpauthUrl}</code>
           </p>
           <label>
-            Sechsstelliger Code aus der App
+            {L('Sechsstelliger Code aus der App', 'Six-digit code from the app')}
             <input
               inputMode="numeric"
               autoComplete="one-time-code"
@@ -220,12 +231,12 @@ export function TotpSetup({
             />
           </label>
           <button type="submit" className="primary">
-            Bestätigen
+            {L('Bestätigen', 'Confirm')}
           </button>
         </form>
       )}
       <button type="button" className="link" onClick={onLogout}>
-        Abmelden
+        {L('Abmelden', 'Sign out')}
       </button>
     </main>
   );
@@ -256,15 +267,17 @@ export function CreateOrg({
   };
   return (
     <main id="main" className="narrow">
-      <h1>Organisation anlegen</h1>
+      <h1>{L('Organisation anlegen', 'Create organisation')}</h1>
       <p>
-        Dein Konto gehört noch zu keiner Firma. Lege eine Organisation an – du wirst ihr Admin. Ab
-        dann gelten für deine Daten die Aufbewahrungsfristen der Firmenversion.
+        {L(
+          'Dein Konto gehört noch zu keiner Firma. Lege eine Organisation an – du wirst ihr Admin. Ab dann gelten für deine Daten die Aufbewahrungsfristen der Firmenversion.',
+          'Your account does not belong to a company yet. Create an organisation and you become its admin. From then on, the retention periods of the business edition apply to your data.',
+        )}
       </p>
       <ErrorText text={error} />
       <form onSubmit={(e) => void submit(e)}>
         <label>
-          Name der Firma
+          {L('Name der Firma', 'Company name')}
           <input
             required
             autoComplete="organization"
@@ -275,7 +288,10 @@ export function CreateOrg({
           />
         </label>
         <label>
-          Kurzname für die SSO-Anmeldung (Kleinbuchstaben, Ziffern, Bindestrich)
+          {L(
+            'Kurzname für die SSO-Anmeldung (Kleinbuchstaben, Ziffern, Bindestrich)',
+            'Short name for SSO sign-in (lowercase letters, digits, hyphen)',
+          )}
           <input
             required
             pattern="[a-z0-9][a-z0-9\-]{1,38}[a-z0-9]"
@@ -286,11 +302,11 @@ export function CreateOrg({
           />
         </label>
         <button type="submit" className="primary">
-          Anlegen
+          {L('Anlegen', 'Create')}
         </button>
       </form>
       <button type="button" className="link" onClick={onLogout}>
-        Abmelden
+        {L('Abmelden', 'Sign out')}
       </button>
     </main>
   );

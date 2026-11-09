@@ -6,7 +6,7 @@ import {
   type OrgRulesConfig,
 } from '@timelog/shared';
 import { type SyntheticEvent, useState } from 'react';
-import { RULE_LABELS, errorText } from '../texts.js';
+import { L, RULE_LABELS, errorText } from '../texts.js';
 import { ErrorText, Loading, useAdmin, useLoad } from '../ui.js';
 import { Features } from './Features.js';
 
@@ -17,11 +17,11 @@ export function Settings() {
   return (
     <section aria-labelledby="page-title" className="stack">
       <h1 id="page-title" tabIndex={-1}>
-        Einstellungen
+        {L('Einstellungen', 'Settings')}
       </h1>
       <Features />
       <ErrorText text={config.error} />
-      {!config.data && !config.error && <Loading what="Einstellungen" />}
+      {!config.data && !config.error && <Loading what={L('Einstellungen', 'settings')} />}
       {config.data && <SettingsForm config={config.data} onSaved={config.reload} />}
     </section>
   );
@@ -53,7 +53,7 @@ function SettingsForm({ config, onSaved }: { config: OrgConfigResponse; onSaved:
   const [domains, setDomains] = useState(sso.allowedDomains.join(', '));
   const [error, setError] = useState<string>();
 
-  const ssoBase = `${new URL(API_PREFIX, baseUrl).toString()}/auth/sso/${slug || '<kurzname>'}`;
+  const ssoBase = `${new URL(API_PREFIX, baseUrl).toString()}/auth/sso/${slug || L('<kurzname>', '<short-name>')}`;
 
   const save = async (e: SyntheticEvent) => {
     e.preventDefault();
@@ -100,7 +100,7 @@ function SettingsForm({ config, onSaved }: { config: OrgConfigResponse; onSaved:
     };
     try {
       await api.org.config.put(body);
-      notify('Einstellungen gespeichert.');
+      notify(L('Einstellungen gespeichert.', 'Settings saved.'));
       onSaved();
     } catch (err) {
       setError(errorText(err));
@@ -122,7 +122,7 @@ function SettingsForm({ config, onSaved }: { config: OrgConfigResponse; onSaved:
           />
         </label>
         <label>
-          Kurzname (für die SSO-Anmeldung)
+          {L('Kurzname (für die SSO-Anmeldung)', 'Short name (for SSO sign-in)')}
           <input
             value={slug}
             pattern="[a-z0-9][a-z0-9\-]{1,38}[a-z0-9]"
@@ -132,8 +132,10 @@ function SettingsForm({ config, onSaved }: { config: OrgConfigResponse; onSaved:
           />
         </label>
         <label>
-          Aufbewahrungsfrist in Jahren (mindestens 2 nach § 16 Abs. 2 ArbZG, bis 6 für
-          Lohnunterlagen)
+          {L(
+            'Aufbewahrungsfrist in Jahren (mindestens 2 nach § 16 Abs. 2 ArbZG, bis 6 für Lohnunterlagen)',
+            'Retention period in years (at least 2 under § 16(2) ArbZG, up to 6 for payroll records)',
+          )}
           <input
             type="number"
             min={2}
@@ -148,15 +150,19 @@ function SettingsForm({ config, onSaved }: { config: OrgConfigResponse; onSaved:
       </fieldset>
 
       <fieldset>
-        <legend>Regelwerk-Parameter (leer = Standardwert)</legend>
+        <legend>
+          {L('Regelwerk-Parameter (leer = Standardwert)', 'Rule parameters (empty = default)')}
+        </legend>
         <p className="muted">
-          Änderungen wirken auf alle noch nicht freigegebenen Monate; freigegebene Monate bleiben
-          unverändert. Gesetzliche Schwellen (Pausen, 10 Stunden, Ruhezeit) sind nicht einstellbar.
+          {L(
+            'Änderungen wirken auf alle noch nicht freigegebenen Monate; freigegebene Monate bleiben unverändert. Gesetzliche Schwellen (Pausen, 10 Stunden, Ruhezeit) sind nicht einstellbar.',
+            'Changes apply to all months not yet approved; approved months stay unchanged. Statutory thresholds (breaks, 10 hours, rest period) cannot be changed.',
+          )}{' '}
           Version {config.rulesConfigVersion}.
         </p>
         {ORG_RULES_KEYS.map((k) => (
           <label key={k}>
-            {RULE_LABELS[k] ?? k} – Standard {config.ruleDefaults[k] ?? '–'}
+            {RULE_LABELS[k] ?? k} – {L('Standard', 'default')} {config.ruleDefaults[k] ?? '–'}
             <input
               type="number"
               min={0}
@@ -174,8 +180,10 @@ function SettingsForm({ config, onSaved }: { config: OrgConfigResponse; onSaved:
       <fieldset>
         <legend>Single Sign-on</legend>
         <p className="muted">
-          Secrets werden hier nie eingetragen: Der Client-Secret steht als Umgebungsvariable auf dem
-          Server (Präfix SSO_), hier nur ihr Name.
+          {L(
+            'Secrets werden hier nie eingetragen: Der Client-Secret steht als Umgebungsvariable auf dem Server (Präfix SSO_), hier nur ihr Name.',
+            'Secrets are never entered here: the client secret is an environment variable on the server (prefix SSO_); only its name goes here.',
+          )}
         </p>
         <label className="inline">
           <input
@@ -190,7 +198,7 @@ function SettingsForm({ config, onSaved }: { config: OrgConfigResponse; onSaved:
         {oidcOn && (
           <div className="stack indent">
             <label>
-              Anbieter
+              {L('Anbieter', 'Provider')}
               <select
                 value={provider}
                 onChange={(e) => {
@@ -199,7 +207,7 @@ function SettingsForm({ config, onSaved }: { config: OrgConfigResponse; onSaved:
               >
                 <option value="entra">Microsoft Entra ID</option>
                 <option value="google">Google</option>
-                <option value="oidc">Anderer OIDC-Anbieter</option>
+                <option value="oidc">{L('Anderer OIDC-Anbieter', 'Other OIDC provider')}</option>
               </select>
             </label>
             <label>
@@ -208,7 +216,10 @@ function SettingsForm({ config, onSaved }: { config: OrgConfigResponse; onSaved:
                 type="url"
                 placeholder={
                   provider === 'entra'
-                    ? 'https://login.microsoftonline.com/<Mandanten-ID>/v2.0'
+                    ? L(
+                        'https://login.microsoftonline.com/<Mandanten-ID>/v2.0',
+                        'https://login.microsoftonline.com/<tenant-ID>/v2.0',
+                      )
                     : 'https://accounts.google.com'
                 }
                 value={issuer}
@@ -218,7 +229,7 @@ function SettingsForm({ config, onSaved }: { config: OrgConfigResponse; onSaved:
               />
             </label>
             <label>
-              Client-ID (Anwendungs-ID)
+              {L('Client-ID (Anwendungs-ID)', 'Client ID (application ID)')}
               <input
                 required
                 value={clientId}
@@ -228,7 +239,10 @@ function SettingsForm({ config, onSaved }: { config: OrgConfigResponse; onSaved:
               />
             </label>
             <label>
-              Name der Umgebungsvariable mit dem Client-Secret
+              {L(
+                'Name der Umgebungsvariable mit dem Client-Secret',
+                'Name of the environment variable holding the client secret',
+              )}
               <input
                 required
                 pattern="SSO_[A-Z0-9_]{1,64}"
@@ -240,7 +254,7 @@ function SettingsForm({ config, onSaved }: { config: OrgConfigResponse; onSaved:
               />
             </label>
             <p className="muted">
-              Umleitungs-URI beim IdP eintragen:{' '}
+              {L('Umleitungs-URI beim IdP eintragen:', 'Redirect URI to enter at the IdP:')}{' '}
               <code className="wrap">{ssoBase}/oidc/callback</code>
             </p>
           </div>
@@ -258,7 +272,7 @@ function SettingsForm({ config, onSaved }: { config: OrgConfigResponse; onSaved:
         {samlOn && (
           <div className="stack indent">
             <label>
-              Anmelde-URL des IdP (SSO-URL)
+              {L('Anmelde-URL des IdP (SSO-URL)', 'IdP sign-in URL (SSO URL)')}
               <input
                 type="url"
                 required
@@ -269,7 +283,10 @@ function SettingsForm({ config, onSaved }: { config: OrgConfigResponse; onSaved:
               />
             </label>
             <label>
-              Signaturzertifikat des IdP (PEM oder Base64)
+              {L(
+                'Signaturzertifikat des IdP (PEM oder Base64)',
+                'IdP signing certificate (PEM or Base64)',
+              )}
               <textarea
                 rows={5}
                 required
@@ -280,7 +297,7 @@ function SettingsForm({ config, onSaved }: { config: OrgConfigResponse; onSaved:
               />
             </label>
             <label>
-              Entity-ID des IdP (optional)
+              {L('Entity-ID des IdP (optional)', 'IdP entity ID (optional)')}
               <input
                 value={idpIssuer}
                 onChange={(e) => {
@@ -289,7 +306,10 @@ function SettingsForm({ config, onSaved }: { config: OrgConfigResponse; onSaved:
               />
             </label>
             <label>
-              Attribut mit der E-Mail-Adresse (optional)
+              {L(
+                'Attribut mit der E-Mail-Adresse (optional)',
+                'Attribute containing the email address (optional)',
+              )}
               <input
                 value={emailAttribute}
                 onChange={(e) => {
@@ -298,8 +318,10 @@ function SettingsForm({ config, onSaved }: { config: OrgConfigResponse; onSaved:
               />
             </label>
             <p className="muted">
-              Entity-ID und Metadaten: <code className="wrap">{ssoBase}/saml/metadata</code>,
-              Antwort-URL (ACS): <code className="wrap">{ssoBase}/saml/acs</code>
+              {L('Entity-ID und Metadaten:', 'Entity ID and metadata:')}{' '}
+              <code className="wrap">{ssoBase}/saml/metadata</code>,
+              {L('Antwort-URL (ACS):', 'Reply URL (ACS):')}{' '}
+              <code className="wrap">{ssoBase}/saml/acs</code>
             </p>
           </div>
         )}
@@ -311,7 +333,10 @@ function SettingsForm({ config, onSaved }: { config: OrgConfigResponse; onSaved:
               setEnforced(e.target.checked);
             }}
           />
-          Anmeldung nur über SSO (Admins behalten Passwort und Zwei-Faktor als Notzugang)
+          {L(
+            'Anmeldung nur über SSO (Admins behalten Passwort und Zwei-Faktor als Notzugang)',
+            'Sign-in via SSO only (admins keep password and two-factor as emergency access)',
+          )}
         </label>
         <label className="inline">
           <input
@@ -321,10 +346,16 @@ function SettingsForm({ config, onSaved }: { config: OrgConfigResponse; onSaved:
               setAutoProvision(e.target.checked);
             }}
           />
-          Unbekannte Personen aus erlaubten Domains bei der ersten Anmeldung als Mitglied anlegen
+          {L(
+            'Unbekannte Personen aus erlaubten Domains bei der ersten Anmeldung als Mitglied anlegen',
+            'Create unknown people from allowed domains as members on first sign-in',
+          )}
         </label>
         <label>
-          Erlaubte E-Mail-Domains (kommagetrennt, leer = alle)
+          {L(
+            'Erlaubte E-Mail-Domains (kommagetrennt, leer = alle)',
+            'Allowed email domains (comma-separated, empty = all)',
+          )}
           <input
             value={domains}
             onChange={(e) => {
@@ -335,7 +366,7 @@ function SettingsForm({ config, onSaved }: { config: OrgConfigResponse; onSaved:
       </fieldset>
       <ErrorText text={error} />
       <button type="submit" className="primary">
-        Speichern
+        {L('Speichern', 'Save')}
       </button>
     </form>
   );

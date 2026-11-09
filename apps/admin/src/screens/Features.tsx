@@ -1,20 +1,29 @@
 import type { OrgFeatures } from '@timelog/shared';
 import { useState } from 'react';
-import { errorText } from '../texts.js';
+import { L, errorText } from '../texts.js';
 import { ErrorText, useAdmin, useLoad } from '../ui.js';
 
 const LABELS: Record<keyof OrgFeatures, { label: string; hint: string }> = {
   projects: {
-    label: 'Projekte und Tätigkeiten',
-    hint: 'Mitglieder ordnen Arbeitszeit Firmenprojekten zu. Auswertung nur als Summe.',
+    label: L('Projekte und Tätigkeiten', 'Projects and activities'),
+    hint: L(
+      'Mitglieder ordnen Arbeitszeit Firmenprojekten zu. Auswertung nur als Summe.',
+      'Members assign working time to company projects. Reports show totals only.',
+    ),
   },
   calendar: {
-    label: 'Kalender-Anbindung erlauben',
-    hint: 'Mitglieder dürfen ihren eigenen Kalender (nur lesend) verbinden. Admins sehen keine Termine.',
+    label: L('Kalender-Anbindung erlauben', 'Allow calendar connection'),
+    hint: L(
+      'Mitglieder dürfen ihren eigenen Kalender (nur lesend) verbinden. Admins sehen keine Termine.',
+      'Members may connect their own calendar (read-only). Admins cannot see any appointments.',
+    ),
   },
   homeOfficeReport: {
-    label: 'Homeoffice-Tage je Monat für Admins',
-    hint: 'Zeigt Admins nur die Anzahl der Homeoffice-Tage je Monat und Person. Vorher die Mitglieder informieren; jeder Abruf steht im Audit-Log.',
+    label: L('Homeoffice-Tage je Monat für Admins', 'Home office days per month for admins'),
+    hint: L(
+      'Zeigt Admins nur die Anzahl der Homeoffice-Tage je Monat und Person. Vorher die Mitglieder informieren; jeder Abruf steht im Audit-Log.',
+      'Shows admins only the number of home office days per month and person. Inform members beforehand; every view is recorded in the audit log.',
+    ),
   },
 };
 
@@ -29,7 +38,9 @@ export function Features() {
     setError(undefined);
     api.org.features.put({ [key]: value }).then(
       () => {
-        notify(`${LABELS[key].label}: ${value ? 'eingeschaltet' : 'ausgeschaltet'}.`);
+        notify(
+          `${LABELS[key].label}: ${value ? L('eingeschaltet', 'turned on') : L('ausgeschaltet', 'turned off')}.`,
+        );
         features.reload();
       },
       (err: unknown) => {
@@ -40,7 +51,7 @@ export function Features() {
 
   return (
     <fieldset className="card">
-      <legend>Funktionen</legend>
+      <legend>{L('Funktionen', 'Features')}</legend>
       <ErrorText text={features.error ?? error} />
       {data &&
         (Object.keys(LABELS) as (keyof OrgFeatures)[]).map((key) => (

@@ -4,15 +4,17 @@ import { formatDate } from '@timelog/app-core';
 import { type SyntheticEvent, useState } from 'react';
 import {
   BOOKING_KIND_LABELS,
+  L,
   LEAVE_KIND_LABELS,
   LEAVE_STATUS_LABELS,
   errorText,
   hours,
+  intlLocale,
 } from '../texts.js';
 import { ErrorText, Loading, isAdmin, useAdmin, useLoad } from '../ui.js';
 
-const day = (d: string) => formatDate(d, 'de-DE');
-const num = (n: number) => n.toLocaleString('de-DE', { maximumFractionDigits: 1 });
+const day = (d: string) => formatDate(d, intlLocale);
+const num = (n: number) => n.toLocaleString(intlLocale, { maximumFractionDigits: 1 });
 const signed = (m: number) => (m > 0 ? `+${hours(m)}` : hours(m));
 
 export function LeaveMember({ memberId, onBack }: { memberId: string; onBack: () => void }) {
@@ -33,7 +35,7 @@ export function LeaveMember({ memberId, onBack }: { memberId: string; onBack: ()
     if (!cancelling) return;
     try {
       await api.org.leave.cancel(cancelling, cancelComment.trim());
-      notify('Antrag storniert.');
+      notify(L('Antrag storniert.', 'Request cancelled.'));
       setCancelling(undefined);
       setCancelComment('');
       reload();
@@ -46,14 +48,14 @@ export function LeaveMember({ memberId, onBack }: { memberId: string; onBack: ()
   return (
     <section aria-labelledby="page-title" className="stack">
       <h1 id="page-title" tabIndex={-1}>
-        Urlaub: {leave.data?.name ?? '…'}
+        {L('Urlaub', 'Leave')}: {leave.data?.name ?? '…'}
       </h1>
       <div className="row">
         <button type="button" onClick={onBack}>
-          Zurück
+          {L('Zurück', 'Back')}
         </button>
         <label className="inline">
-          Jahr
+          {L('Jahr', 'Year')}
           <input
             type="number"
             min={2000}
@@ -67,38 +69,56 @@ export function LeaveMember({ memberId, onBack }: { memberId: string; onBack: ()
         </label>
       </div>
       <ErrorText text={leave.error} />
-      {!leave.data && !leave.error && <Loading what="Konten" />}
+      {!leave.data && !leave.error && <Loading what={L('Konten', 'accounts')} />}
       {a && leave.data && (
         <section className="card" aria-labelledby="acc-title">
-          <h2 id="acc-title">Urlaubskonto {a.year}</h2>
+          <h2 id="acc-title">
+            {L('Urlaubskonto', 'Leave account')} {a.year}
+          </h2>
           <dl className="facts">
-            <dt>Anspruch</dt>
-            <dd>{num(a.entitlement)} Tage</dd>
-            <dt>Übertrag{a.carryOverManual ? ' (manuell)' : ''}</dt>
+            <dt>{L('Anspruch', 'Entitlement')}</dt>
             <dd>
-              {num(a.carryOver)} Tage, Verfall {day(a.carryOverExpiry)}
-              {a.carryOverForfeited > 0 && `, verfallen ${num(a.carryOverForfeited)}`}
+              {num(a.entitlement)} {L('Tage', 'days')}
             </dd>
-            <dt>Korrektur</dt>
-            <dd>{num(a.correction)} Tage</dd>
-            <dt>Genommen / geplant / beantragt</dt>
+            <dt>
+              {L('Übertrag', 'Carry-over')}
+              {a.carryOverManual ? L(' (manuell)', ' (manual)') : ''}
+            </dt>
+            <dd>
+              {L(
+                `${num(a.carryOver)} Tage, Verfall ${day(a.carryOverExpiry)}`,
+                `${num(a.carryOver)} days, expires ${day(a.carryOverExpiry)}`,
+              )}
+              {a.carryOverForfeited > 0 &&
+                L(
+                  `, verfallen ${num(a.carryOverForfeited)}`,
+                  `, expired ${num(a.carryOverForfeited)}`,
+                )}
+            </dd>
+            <dt>{L('Korrektur', 'Correction')}</dt>
+            <dd>
+              {num(a.correction)} {L('Tage', 'days')}
+            </dd>
+            <dt>{L('Genommen / geplant / beantragt', 'Taken / planned / requested')}</dt>
             <dd>
               {num(a.taken)} / {num(a.planned)} / {num(a.pending)}
             </dd>
-            <dt>Rest</dt>
+            <dt>{L('Rest', 'Remaining')}</dt>
             <dd>
-              <strong>{num(a.remaining)} Tage</strong>
+              <strong>
+                {num(a.remaining)} {L('Tage', 'days')}
+              </strong>
             </dd>
           </dl>
-          <h3>Anträge</h3>
+          <h3>{L('Anträge', 'Requests')}</h3>
           {leave.data.requests.length === 0 ? (
-            <p>Keine Anträge.</p>
+            <p>{L('Keine Anträge.', 'No requests.')}</p>
           ) : (
             <ul>
               {leave.data.requests.map((r) => (
                 <li key={r.id}>
-                  {LEAVE_KIND_LABELS[r.kind]} {day(r.from)} – {day(r.to)} ({num(r.days)} Tage):{' '}
-                  {LEAVE_STATUS_LABELS[r.status]}
+                  {LEAVE_KIND_LABELS[r.kind]} {day(r.from)} – {day(r.to)} ({num(r.days)}{' '}
+                  {L('Tage', 'days')}): {LEAVE_STATUS_LABELS[r.status]}
                   {admin && (r.status === 'approved' || r.status === 'pending') && (
                     <>
                       {' '}
@@ -108,7 +128,7 @@ export function LeaveMember({ memberId, onBack }: { memberId: string; onBack: ()
                           setCancelling(r.id);
                         }}
                       >
-                        Stornieren
+                        {L('Stornieren', 'Cancel')}
                         <span className="visually-hidden">
                           : {day(r.from)} – {day(r.to)}
                         </span>
@@ -116,7 +136,9 @@ export function LeaveMember({ memberId, onBack }: { memberId: string; onBack: ()
                     </>
                   )}
                   {r.from <= today && r.status === 'approved' && admin && (
-                    <span className="muted"> (bereits begonnen – nur Admin)</span>
+                    <span className="muted">
+                      {L(' (bereits begonnen – nur Admin)', ' (already started – admin only)')}
+                    </span>
                   )}
                 </li>
               ))}
@@ -124,9 +146,9 @@ export function LeaveMember({ memberId, onBack }: { memberId: string; onBack: ()
           )}
           {cancelling && (
             <div className="stack" role="group" aria-labelledby="cancel-title">
-              <h3 id="cancel-title">Antrag stornieren</h3>
+              <h3 id="cancel-title">{L('Antrag stornieren', 'Cancel request')}</h3>
               <label>
-                Begründung
+                {L('Begründung', 'Reason')}
                 <input
                   type="text"
                   maxLength={1000}
@@ -143,7 +165,7 @@ export function LeaveMember({ memberId, onBack }: { memberId: string; onBack: ()
                   disabled={cancelComment.trim() === ''}
                   onClick={() => void cancel()}
                 >
-                  Stornierung bestätigen
+                  {L('Stornierung bestätigen', 'Confirm cancellation')}
                 </button>
                 <button
                   type="button"
@@ -151,19 +173,22 @@ export function LeaveMember({ memberId, onBack }: { memberId: string; onBack: ()
                     setCancelling(undefined);
                   }}
                 >
-                  Abbrechen
+                  {L('Abbrechen', 'Cancel')}
                 </button>
               </div>
             </div>
           )}
           {leave.data.adjustments.length > 0 && (
             <>
-              <h3>Buchungen am Urlaubskonto</h3>
+              <h3>{L('Buchungen am Urlaubskonto', 'Leave account bookings')}</h3>
               <ul>
                 {leave.data.adjustments.map((b) => (
                   <li key={b.id}>
-                    {b.year}: {b.kind === 'carry_over' ? 'Übertrag gesetzt' : 'Korrektur'}{' '}
-                    {num(b.days)} Tage – {b.comment}
+                    {b.year}:{' '}
+                    {b.kind === 'carry_over'
+                      ? L('Übertrag gesetzt', 'Carry-over set')
+                      : L('Korrektur', 'Correction')}{' '}
+                    {num(b.days)} {L('Tage', 'days')} – {b.comment}
                   </li>
                 ))}
               </ul>
@@ -182,31 +207,42 @@ export function LeaveMember({ memberId, onBack }: { memberId: string; onBack: ()
       {admin && <AdjustmentForm memberId={memberId} year={year} onSaved={reload} />}
 
       <section className="card" aria-labelledby="ot-title">
-        <h2 id="ot-title">Überstundenkonto {year}</h2>
+        <h2 id="ot-title">
+          {L('Überstundenkonto', 'Overtime account')} {year}
+        </h2>
         <ErrorText text={overtime.error} />
         {overtime.data && (
           <>
             <p>
-              Saldo: <strong>{signed(overtime.data.balanceMinutes)}</strong>
+              {L('Saldo', 'Balance')}: <strong>{signed(overtime.data.balanceMinutes)}</strong>
               {overtime.data.maxBalanceMinutes !== undefined &&
-                ` (Höchstsaldo ${hours(overtime.data.maxBalanceMinutes)})`}
+                L(
+                  ` (Höchstsaldo ${hours(overtime.data.maxBalanceMinutes)})`,
+                  ` (maximum balance ${hours(overtime.data.maxBalanceMinutes)})`,
+                )}
             </p>
             {overtime.data.overMax && (
               <p role="alert" className="error">
-                Der Saldo liegt über dem Höchstsaldo.
+                {L(
+                  'Der Saldo liegt über dem Höchstsaldo.',
+                  'The balance is above the maximum balance.',
+                )}
               </p>
             )}
             <table>
               <caption>
-                Saldo-Verlauf je Monat (Vortrag {signed(overtime.data.startBalanceMinutes)})
+                {L(
+                  `Saldo-Verlauf je Monat (Vortrag ${signed(overtime.data.startBalanceMinutes)})`,
+                  `Balance by month (brought forward ${signed(overtime.data.startBalanceMinutes)})`,
+                )}
               </caption>
               <thead>
                 <tr>
-                  <th scope="col">Monat</th>
-                  <th scope="col">Arbeit</th>
-                  <th scope="col">davon Abbau</th>
-                  <th scope="col">Buchungen</th>
-                  <th scope="col">Stand</th>
+                  <th scope="col">{L('Monat', 'Month')}</th>
+                  <th scope="col">{L('Arbeit', 'Work')}</th>
+                  <th scope="col">{L('davon Abbau', 'of which reduced')}</th>
+                  <th scope="col">{L('Buchungen', 'Bookings')}</th>
+                  <th scope="col">{L('Stand', 'Balance')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -214,14 +250,14 @@ export function LeaveMember({ memberId, onBack }: { memberId: string; onBack: ()
                   <tr key={m.month}>
                     <th scope="row">
                       {m.month}
-                      {m.approved && ' (freigegeben)'}
+                      {m.approved && L(' (freigegeben)', ' (approved)')}
                     </th>
                     <td>{signed(m.workMinutes)}</td>
                     <td>{hours(m.reducedMinutes)}</td>
                     <td>{signed(m.bookedMinutes)}</td>
                     <td>
                       {signed(m.balanceMinutes)}
-                      {m.overMax && ' ⚠ über Höchstsaldo'}
+                      {m.overMax && L(' ⚠ über Höchstsaldo', ' ⚠ above maximum balance')}
                     </td>
                   </tr>
                 ))}
@@ -272,7 +308,7 @@ function ProfileForm({
         entryDate: entry || null,
         exitDate: exit || null,
       });
-      notify('Urlaubsanspruch gespeichert.');
+      notify(L('Urlaubsanspruch gespeichert.', 'Leave entitlement saved.'));
       onSaved();
     } catch (err) {
       setError(errorText(err));
@@ -281,14 +317,16 @@ function ProfileForm({
 
   return (
     <section className="card" aria-labelledby="profile-title">
-      <h2 id="profile-title">Anspruch</h2>
+      <h2 id="profile-title">{L('Anspruch', 'Entitlement')}</h2>
       <p className="muted">
-        Leer = Standard der Organisation. Teilzeit und Ein-/Austritt im Jahr werden anteilig
-        berechnet (1/12 je vollem Monat).
+        {L(
+          'Leer = Standard der Organisation. Teilzeit und Ein-/Austritt im Jahr werden anteilig berechnet (1/12 je vollem Monat).',
+          'Empty = organisation default. Part-time and joining/leaving during the year are prorated (1/12 per full month).',
+        )}
       </p>
       <form className="stack" onSubmit={(e) => void submit(e)}>
         <label>
-          Jahresanspruch (Tage)
+          {L('Jahresanspruch (Tage)', 'Annual entitlement (days)')}
           <input
             type="number"
             min={0}
@@ -301,7 +339,7 @@ function ProfileForm({
           />
         </label>
         <label>
-          Arbeitstage je Woche
+          {L('Arbeitstage je Woche', 'Working days per week')}
           <input
             type="number"
             min={0}
@@ -315,7 +353,7 @@ function ProfileForm({
         </label>
         <div className="row">
           <label>
-            Eintritt
+            {L('Eintritt', 'Joining date')}
             <input
               type="date"
               value={entry}
@@ -325,7 +363,7 @@ function ProfileForm({
             />
           </label>
           <label>
-            Austritt
+            {L('Austritt', 'Leaving date')}
             <input
               type="date"
               value={exit}
@@ -337,7 +375,7 @@ function ProfileForm({
         </div>
         <ErrorText text={error} />
         <button type="submit" className="primary">
-          Anspruch speichern
+          {L('Anspruch speichern', 'Save entitlement')}
         </button>
       </form>
     </section>
@@ -364,7 +402,7 @@ function AdjustmentForm({
     setError(undefined);
     try {
       await api.org.leave.adjust(memberId, { year, kind, days: Number(days), comment });
-      notify('Buchung am Urlaubskonto gespeichert.');
+      notify(L('Buchung am Urlaubskonto gespeichert.', 'Leave account booking saved.'));
       setDays('');
       setComment('');
       onSaved();
@@ -375,10 +413,12 @@ function AdjustmentForm({
 
   return (
     <section className="card" aria-labelledby="adj-title">
-      <h2 id="adj-title">Übertrag oder Korrektur {year}</h2>
+      <h2 id="adj-title">
+        {L('Übertrag oder Korrektur', 'Carry-over or correction')} {year}
+      </h2>
       <form className="stack" onSubmit={(e) => void submit(e)}>
         <label>
-          Art
+          {L('Art', 'Type')}
           <select
             value={kind}
             onChange={(e) => {
@@ -386,13 +426,16 @@ function AdjustmentForm({
             }}
           >
             <option value="carry_over">
-              Übertrag aus dem Vorjahr setzen (ersetzt die Automatik)
+              {L(
+                'Übertrag aus dem Vorjahr setzen (ersetzt die Automatik)',
+                'Set carry-over from previous year (replaces automatic value)',
+              )}
             </option>
-            <option value="correction">Korrektur (+/− Tage)</option>
+            <option value="correction">{L('Korrektur (+/− Tage)', 'Correction (+/− days)')}</option>
           </select>
         </label>
         <label>
-          Tage
+          {L('Tage', 'Days')}
           <input
             type="number"
             required
@@ -406,7 +449,7 @@ function AdjustmentForm({
           />
         </label>
         <label>
-          Kommentar
+          {L('Kommentar', 'Comment')}
           <input
             type="text"
             required
@@ -419,7 +462,7 @@ function AdjustmentForm({
         </label>
         <ErrorText text={error} />
         <button type="submit" className="primary">
-          Buchen
+          {L('Buchen', 'Book')}
         </button>
       </form>
     </section>
@@ -446,7 +489,7 @@ function BookingForm({ memberId, onSaved }: { memberId: string; onSaved: () => v
         minutes: kind === 'correction' ? minutes : -Math.abs(minutes),
         comment,
       });
-      notify('Überstunden gebucht.');
+      notify(L('Überstunden gebucht.', 'Overtime booked.'));
       setAmount('');
       setComment('');
       onSaved();
@@ -457,10 +500,10 @@ function BookingForm({ memberId, onSaved }: { memberId: string; onSaved: () => v
 
   return (
     <form className="stack" onSubmit={(e) => void submit(e)} aria-labelledby="book-title">
-      <h3 id="book-title">Manuelle Buchung</h3>
+      <h3 id="book-title">{L('Manuelle Buchung', 'Manual booking')}</h3>
       <div className="row">
         <label>
-          Monat
+          {L('Monat', 'Month')}
           <input
             type="month"
             required
@@ -471,7 +514,7 @@ function BookingForm({ memberId, onSaved }: { memberId: string; onSaved: () => v
           />
         </label>
         <label>
-          Art
+          {L('Art', 'Type')}
           <select
             value={kind}
             onChange={(e) => {
@@ -485,7 +528,7 @@ function BookingForm({ memberId, onSaved }: { memberId: string; onSaved: () => v
           </select>
         </label>
         <label>
-          Stunden
+          {L('Stunden', 'Hours')}
           <input
             type="number"
             required
@@ -498,7 +541,7 @@ function BookingForm({ memberId, onSaved }: { memberId: string; onSaved: () => v
         </label>
       </div>
       <label>
-        Kommentar
+        {L('Kommentar', 'Comment')}
         <input
           type="text"
           required
@@ -511,7 +554,7 @@ function BookingForm({ memberId, onSaved }: { memberId: string; onSaved: () => v
       </label>
       <ErrorText text={error} />
       <button type="submit" className="primary">
-        Buchen
+        {L('Buchen', 'Book')}
       </button>
     </form>
   );
