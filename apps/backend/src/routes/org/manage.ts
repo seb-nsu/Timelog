@@ -553,8 +553,13 @@ export function orgManageRoutes(app: App, ctx: AppContext): void {
       });
       await ctx.mailer.send({
         to: email,
-        subject: `TimeLog: Einladung von ${orgName}`,
-        text: `Du wurdest zu ${orgName} eingeladen. Konto anlegen (7 Tage gültig): ${ctx.adminUrl}/invite?token=${token}`,
+        // Sprache der eingeladenen Person ist unbekannt: Deutsch und Englisch in einer Mail.
+        subject: `TimeLog: Einladung von ${orgName} / Invitation from ${orgName}`,
+        text: [
+          `Du wurdest zu ${orgName} eingeladen. Konto anlegen (7 Tage gültig): ${ctx.adminUrl}/invite?token=${token}`,
+          '',
+          `You have been invited to ${orgName}. Create your account (valid for 7 days): ${ctx.adminUrl}/invite?token=${token}`,
+        ].join('\n'),
       });
       return toInvitation(row);
     },

@@ -94,6 +94,37 @@ describe('Export', () => {
     );
   });
 
+  it('CSV auf Englisch per Accept-Language oder hinterlegter Gerätesprache', async () => {
+    const t = await registerAndLogin(env);
+    await workday(t);
+    const url = '/api/v1/export?from=2026-10-01&to=2026-10-31&format=csv';
+    const viaHeader = await env.app.inject({
+      method: 'GET',
+      url,
+      headers: { ...t.auth, 'accept-language': 'en-GB,en;q=0.9,de;q=0.8' },
+    });
+    const header = viaHeader.body.slice(1).split('\r\n')[0]?.split(';');
+    expect(header?.slice(0, 4)).toEqual(['Personnel number', 'Date', 'Start', 'End']);
+    expect(viaHeader.body).toContain(';unchecked;no;');
+
+    // Ohne Header (z. B. Desktop-App): Sprache des Geräts aus dem Token
+    await env.app.inject({
+      method: 'POST',
+      url: '/api/v1/devices',
+      headers: t.auth,
+      payload: { locale: 'en' },
+    });
+    const viaDevice = await env.app.inject({ method: 'GET', url, headers: t.auth });
+    expect(viaDevice.body.slice(1).startsWith('Personnel number;')).toBe(true);
+
+    const german = await env.app.inject({
+      method: 'GET',
+      url,
+      headers: { ...t.auth, 'accept-language': 'de-DE' },
+    });
+    expect(german.body.slice(1).startsWith('Personalnummer;')).toBe(true);
+  });
+
   it('PDF ist ein gültiges Dokument', async () => {
     const t = await registerAndLogin(env);
     await workday(t);

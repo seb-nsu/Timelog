@@ -26,6 +26,7 @@ import { featuresOf } from '../features.js';
 import { assertMonthOpen } from './corrections.js';
 import { authOf, scopeOf } from './guard.js';
 import { csvCell } from './privacy.js';
+import { type Locale, requestLocale, tr } from '../i18n.js';
 
 const tags = ['projects'];
 const security = [{ bearer: [] }];
@@ -56,13 +57,15 @@ const minutes = (m: number): string =>
   `${String(Math.floor(m / 60))}:${String(m % 60).padStart(2, '0')}`;
 
 /** Kurztext der Projektaufteilung eines Tages für den Arbeitszeit-Export. */
-export function projectCell(p: DayProjects | undefined, names: Map<string, string>): string {
+export function projectCell(
+  p: DayProjects | undefined,
+  names: Map<string, string>,
+  locale: Locale = 'de',
+): string {
   if (!p) return '';
+  const none = tr(locale, 'ohne Projekt', 'no project');
   return p.items
-    .map(
-      (i) =>
-        `${i.projectId ? (names.get(i.projectId) ?? '?') : 'ohne Projekt'} ${minutes(i.netMinutes)}`,
-    )
+    .map((i) => `${i.projectId ? (names.get(i.projectId) ?? '?') : none} ${minutes(i.netMinutes)}`)
     .join(', ');
 }
 
@@ -96,19 +99,18 @@ export function buildReport(
   };
 }
 
-export const PROJECT_CSV_HEADER = [
-  'Datum',
-  'Projekt',
-  'Kunde',
-  'Arbeit (min)',
-  'davon Auffüllung (min)',
-  'Netto (min)',
-];
+const PROJECT_CSV_HEADERS: Record<Locale, string[]> = {
+  de: ['Datum', 'Projekt', 'Kunde', 'Arbeit (min)', 'davon Auffüllung (min)', 'Netto (min)'],
+  en: ['Date', 'Project', 'Customer', 'Work (min)', 'of which top-up (min)', 'Net (min)'],
+};
+export const PROJECT_CSV_HEADER = PROJECT_CSV_HEADERS.de;
 
 export function projectExportRows(
   report: z.infer<typeof projectReportResponse>,
   list: readonly ProjectRow[],
+  locale: Locale = 'de',
 ): string[][] {
+  const none = tr(locale, 'ohne Projekt', 'no project');
   const byId = new Map(list.map((p) => [p.id, p]));
   const rows: string[][] = [];
   for (const d of report.days) {
@@ -116,7 +118,7 @@ export function projectExportRows(
       const p = i.projectId ? byId.get(i.projectId) : undefined;
       rows.push([
         d.date,
-        p?.name ?? (i.projectId ? '?' : 'ohne Projekt'),
+        p?.name ?? (i.projectId ? '?' : none),
         p?.customer ?? '',
         String(i.workMinutes),
         String(i.topUpMinutes),
@@ -126,8 +128,8 @@ export function projectExportRows(
   }
   for (const t of report.totals) {
     rows.push([
-      'Summe',
-      t.name ?? (t.projectId ? '?' : 'ohne Projekt'),
+      tr(locale, 'Summe', 'Total'),
+      t.name ?? (t.projectId ? '?' : none),
       t.customer ?? '',
       String(t.workMinutes),
       String(t.topUpMinutes),
@@ -396,19 +398,22 @@ export function projectRoutes(app: App, ctx: AppContext): void {
     async (request, reply) => {
       const claims = authOf(request);
       const { from, to, format } = request.query;
+      const locale = await requestLocale(ctx.db, request.headers, claims.did);
+      const header = PROJECT_CSV_HEADERS[locale];
       const {
         report: r,
         list,
         user,
       } = await withUser(ctx.db, scopeOf(claims), (tx) => report(tx, claims.sub, from, to));
-      const rows = projectExportRows(r, list);
+      const rows = projectExportRows(r, list, locale);
       const filename = `projekte_${from}_${to}`;
       if (format === 'pdf') {
         const pdf = renderPdf({
-          title: `Projektzeiten ${from} bis ${to}`,
+          title: tr(locale, `Projektzeiten ${from} bis ${to}`, `Project time ${from} to ${to}`),
           subtitle: user.name,
+          locale,
           columns: [80, 220, 160, 90, 110, 90].map((width, i) => ({
-            label: PROJECT_CSV_HEADER[i] ?? '',
+            label: header[i] ?? '',
             width,
           })),
           rows,
@@ -419,9 +424,7 @@ export function projectRoutes(app: App, ctx: AppContext): void {
           .send(pdf);
       }
       const csv =
-        '﻿' +
-        [PROJECT_CSV_HEADER, ...rows].map((row) => row.map(csvCell).join(';')).join('\r\n') +
-        '\r\n';
+        '﻿' + [header, ...rows].map((row) => row.map(csvCell).join(';')).join('\r\n') + '\r\n';
       return reply
         .header('content-type', 'text/csv; charset=utf-8')
         .header('content-disposition', `attachment; filename="${filename}.csv"`)

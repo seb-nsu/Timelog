@@ -18,6 +18,7 @@ import { loadDayExtras } from '../extras.js';
 import { assertMonthOpen } from './corrections.js';
 import { authOf, scopeOf } from './guard.js';
 import { csvCell } from './privacy.js';
+import { type Locale, intlLocale, requestLocale, tr } from '../i18n.js';
 
 const tags = ['locations'];
 const security = [{ bearer: [] }];
@@ -25,7 +26,11 @@ const security = [{ bearer: [] }];
 /** Rechtsgrundlage der Tagespauschale (Stand der Prüfung: docs/PROJEKTE_KALENDER.md). */
 export const LEGAL_BASIS = '§ 4 Abs. 5 Satz 1 Nr. 6c EStG (Tagespauschale)';
 
-export const LOCATION_DE = { office: 'Büro', home: 'Homeoffice', other: 'unterwegs/unbekannt' };
+const LOCATION_NAMES = {
+  de: { office: 'Büro', home: 'Homeoffice', other: 'unterwegs/unbekannt' },
+  en: { office: 'Office', home: 'Home office', other: 'on the road/unknown' },
+} as const;
+export const LOCATION_DE = LOCATION_NAMES.de;
 
 /** Tagesorte eines Kalenderjahres samt Übersicht. */
 export async function yearLocations(
@@ -51,35 +56,51 @@ export async function yearLocations(
 }
 
 /** Betrag als „1.260,00 EUR“ (ohne €-Zeichen, das die PDF-Schrift WinAnsi hier nicht abbildet). */
-export const euro = (cents: number): string =>
-  `${new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(cents / 100)} EUR`;
+export const euro = (cents: number, locale: Locale = 'de'): string =>
+  `${new Intl.NumberFormat(intlLocale(locale), { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(cents / 100)} EUR`;
 
-export const LOCATION_CSV_HEADER = ['Datum', 'Ort', 'Quelle', 'Büro (min)', 'Homeoffice (min)'];
+const LOCATION_CSV_HEADERS: Record<Locale, string[]> = {
+  de: ['Datum', 'Ort', 'Quelle', 'Büro (min)', 'Homeoffice (min)'],
+  en: ['Date', 'Location', 'Source', 'Office (min)', 'Home office (min)'],
+};
+export const LOCATION_CSV_HEADER = LOCATION_CSV_HEADERS.de;
+export const locationCsvHeader = (locale: Locale = 'de'): string[] => LOCATION_CSV_HEADERS[locale];
 
-export function locationRows(data: z.infer<typeof locationsResponse>): string[][] {
+export function locationRows(
+  data: z.infer<typeof locationsResponse>,
+  locale: Locale = 'de',
+): string[][] {
+  const t = (de: string, en: string) => tr(locale, de, en);
+  const eur = (cents: number) => euro(cents, locale);
   const rows = data.days
     .filter((d) => d.location !== undefined)
     .map((d) => [
       d.date,
-      d.location ? LOCATION_DE[d.location] : '',
-      d.source === 'manual' ? 'manuell' : 'automatisch',
+      d.location ? LOCATION_NAMES[locale][d.location] : '',
+      d.source === 'manual' ? t('manuell', 'manual') : t('automatisch', 'automatic'),
       String(d.officeMinutes),
       String(d.homeMinutes),
     ]);
   const s = data.summary;
   rows.push(
     [],
-    ['Homeoffice-Tage', String(s.homeDays)],
-    ['Bürotage', String(s.officeDays)],
-    ['unterwegs/unbekannt', String(s.otherDays)],
+    [t('Homeoffice-Tage', 'Home office days'), String(s.homeDays)],
+    [t('Bürotage', 'Office days'), String(s.officeDays)],
+    [LOCATION_NAMES[locale].other, String(s.otherDays)],
     [
-      'Tagespauschale',
-      `${euro(data.allowance.perDayCents)} je Tag, höchstens ${euro(data.allowance.maxPerYearCents)} (${data.allowance.legalBasis})`,
+      t('Tagespauschale', 'Daily allowance'),
+      t(
+        `${eur(data.allowance.perDayCents)} je Tag, höchstens ${eur(data.allowance.maxPerYearCents)} (${data.allowance.legalBasis})`,
+        `${eur(data.allowance.perDayCents)} per day, at most ${eur(data.allowance.maxPerYearCents)} (${data.allowance.legalBasis})`,
+      ),
     ],
-    ['rechnerisch', euro(s.amountCents)],
+    [t('rechnerisch', 'calculated'), eur(s.amountCents)],
     [
-      'Hinweis',
-      'Nachweis aus der Zeiterfassung, keine Steuerberatung. Werte vor der Abgabe prüfen.',
+      t('Hinweis', 'Note'),
+      t(
+        'Nachweis aus der Zeiterfassung, keine Steuerberatung. Werte vor der Abgabe prüfen.',
+        'Record from time tracking, not tax advice. Check the values before filing.',
+      ),
     ],
   );
   return rows;
@@ -162,6 +183,8 @@ export function locationRoutes(app: App, ctx: AppContext): void {
     async (request, reply) => {
       const claims = authOf(request);
       const { year, format } = request.query;
+      const locale = await requestLocale(ctx.db, request.headers, claims.did);
+      const header = locationCsvHeader(locale);
       const { data, name } = await withUser(ctx.db, scopeOf(claims), async (tx) => {
         const [u] = await tx
           .select({ name: users.name })
@@ -172,14 +195,19 @@ export function locationRoutes(app: App, ctx: AppContext): void {
           name: u?.name ?? '',
         };
       });
-      const rows = locationRows(data);
+      const rows = locationRows(data, locale);
       const filename = `homeoffice_${String(year)}`;
       if (format === 'pdf') {
         const pdf = renderPdf({
-          title: `Nachweis Arbeitsort ${String(year)}`,
+          title: tr(
+            locale,
+            `Nachweis Arbeitsort ${String(year)}`,
+            `Work location record ${String(year)}`,
+          ),
           subtitle: name,
+          locale,
           columns: [110, 330, 110, 100, 120].map((width, i) => ({
-            label: LOCATION_CSV_HEADER[i] ?? '',
+            label: header[i] ?? '',
             width,
           })),
           rows,
@@ -190,9 +218,7 @@ export function locationRoutes(app: App, ctx: AppContext): void {
           .send(pdf);
       }
       const csv =
-        '﻿' +
-        [LOCATION_CSV_HEADER, ...rows].map((r) => r.map(csvCell).join(';')).join('\r\n') +
-        '\r\n';
+        '﻿' + [header, ...rows].map((r) => r.map(csvCell).join(';')).join('\r\n') + '\r\n';
       return reply
         .header('content-type', 'text/csv; charset=utf-8')
         .header('content-disposition', `attachment; filename="${filename}.csv"`)

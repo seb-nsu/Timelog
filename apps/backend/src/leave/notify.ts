@@ -4,6 +4,7 @@ import { and, eq, inArray, isNull, ne } from 'drizzle-orm';
 import type { AppContext } from '../app.js';
 import { asSystem } from '../db/index.js';
 import { teams, users } from '../db/schema.js';
+import { type Locale, tr, userLocale } from '../i18n.js';
 
 export interface LeaveNotice {
   kind: 'leave.requested' | 'leave.decided' | 'leave.cancelled';
@@ -62,7 +63,10 @@ async function emailOf(ctx: AppContext, userId: string): Promise<Recipient | und
   return u;
 }
 
-const KIND_DE = { vacation: 'Urlaub', overtime: 'Überstundenabbau' } as const;
+const KIND = {
+  de: { vacation: 'Urlaub', overtime: 'Überstundenabbau' },
+  en: { vacation: 'vacation', overtime: 'overtime reduction' },
+} as const;
 
 export interface NoticeRequest {
   id: string;
@@ -73,8 +77,32 @@ export interface NoticeRequest {
   days: number;
 }
 
-const period = (r: NoticeRequest) =>
-  `${r.from === r.to ? r.from : `${r.from} bis ${r.to}`} (${String(r.days).replace('.', ',')} Tage)`;
+const period = (r: NoticeRequest, l: Locale) =>
+  l === 'en'
+    ? `${r.from === r.to ? r.from : `${r.from} to ${r.to}`} (${String(r.days)} days)`
+    : `${r.from === r.to ? r.from : `${r.from} bis ${r.to}`} (${String(r.days).replace('.', ',')} Tage)`;
+
+/** Text zum neuen Antrag in der Sprache des Empfängers. */
+function requestedText(ctx: AppContext, r: NoticeRequest, memberName: string, l: Locale) {
+  const kind = KIND[l][r.kind];
+  return {
+    title: tr(
+      l,
+      `TimeLog: Antrag auf ${kind} von ${memberName}`,
+      `TimeLog: ${memberName} requests ${kind}`,
+    ),
+    body: tr(
+      l,
+      `${memberName} beantragt ${kind}: ${period(r, l)}. Bitte im Web-Admin unter „Urlaub“ genehmigen oder ablehnen: ${ctx.adminUrl}`,
+      `${memberName} requests ${kind}: ${period(r, l)}. Please approve or reject it in the web admin under “Leave”: ${ctx.adminUrl}`,
+    ),
+  };
+}
+
+const OUTCOME = {
+  de: { approved: 'genehmigt', rejected: 'abgelehnt', cancelled: 'storniert' },
+  en: { approved: 'approved', rejected: 'rejected', cancelled: 'cancelled' },
+} as const;
 
 /** Neuer Antrag: E-Mail an die Genehmiger, Push-Hook. */
 export async function notifyRequested(
@@ -83,9 +111,12 @@ export async function notifyRequested(
   memberName: string,
 ): Promise<void> {
   const to = await approversOf(ctx, r.userId);
-  const title = `TimeLog: Antrag auf ${KIND_DE[r.kind]} von ${memberName}`;
-  const body = `${memberName} beantragt ${KIND_DE[r.kind]}: ${period(r)}. Bitte im Web-Admin unter „Urlaub“ genehmigen oder ablehnen: ${ctx.adminUrl}`;
-  for (const rcpt of to) await ctx.mailer.send({ to: rcpt.email, subject: title, text: body });
+  for (const rcpt of to) {
+    const mail = requestedText(ctx, r, memberName, await userLocale(ctx.db, rcpt.id));
+    await ctx.mailer.send({ to: rcpt.email, subject: mail.title, text: mail.body });
+  }
+  // Push-Hook: Deutsch als Vorgabe (Geräte-Sprache wählt der Push-Versand selbst).
+  const { title, body } = requestedText(ctx, r, memberName, 'de');
   await ctx.push({
     kind: 'leave.requested',
     requestId: r.id,
@@ -104,9 +135,15 @@ export async function notifyDecided(
 ): Promise<void> {
   const rcpt = await emailOf(ctx, r.userId);
   if (!rcpt) return;
-  const word = { approved: 'genehmigt', rejected: 'abgelehnt', cancelled: 'storniert' }[outcome];
-  const title = `TimeLog: ${KIND_DE[r.kind]} ${word}`;
-  const body = `Dein Antrag auf ${KIND_DE[r.kind]} ${period(r)} wurde ${word}.${comment ? ` Kommentar: ${comment}` : ''}`;
+  const l = await userLocale(ctx.db, r.userId);
+  const kind = KIND[l][r.kind];
+  const word = OUTCOME[l][outcome];
+  const title = tr(l, `TimeLog: ${kind} ${word}`, `TimeLog: ${kind} ${word}`);
+  const body = tr(
+    l,
+    `Dein Antrag auf ${kind} ${period(r, l)} wurde ${word}.${comment ? ` Kommentar: ${comment}` : ''}`,
+    `Your request for ${kind} ${period(r, l)} was ${word}.${comment ? ` Comment: ${comment}` : ''}`,
+  );
   await ctx.mailer.send({ to: rcpt.email, subject: title, text: body });
   await ctx.push({
     kind: outcome === 'cancelled' ? 'leave.cancelled' : 'leave.decided',

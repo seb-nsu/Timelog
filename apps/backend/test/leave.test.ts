@@ -474,3 +474,33 @@ describe('Firmenkonto', () => {
     expect(await actions(org.orgId)).toContain('approval.reopen');
   });
 });
+
+describe('Sprache der E-Mails', () => {
+  it('folgt der hinterlegten Gerätesprache der empfangenden Person', async () => {
+    await api(env, org.manager, 'POST', '/devices', { locale: 'en' });
+    await api(env, org.member, 'POST', '/devices', { locale: 'en' });
+    try {
+      const res = await api<LeaveRequest>(env, org.member, 'POST', '/leave/requests', {
+        kind: 'vacation',
+        from: '2027-03-01',
+        to: '2027-03-02',
+      });
+      expect(res.status).toBe(200);
+      const toManager = [...env.mailer.outbox].reverse().find((m) => m.to === org.manager.email);
+      expect(toManager?.subject).toMatch(/requests vacation/);
+      expect(toManager?.text).toMatch(/Please approve or reject/);
+
+      await api(env, org.manager, 'POST', `/org/leave/requests/${res.body.id}/reject`, {
+        comment: 'Team offsite',
+      });
+      const toMember = [...env.mailer.outbox].reverse().find((m) => m.to === org.member.email);
+      expect(toMember?.subject).toBe('TimeLog: vacation rejected');
+      expect(toMember?.text).toMatch(
+        /^Your request for vacation .* was rejected\. Comment: Team offsite$/,
+      );
+    } finally {
+      await api(env, org.manager, 'POST', '/devices', { locale: 'de' });
+      await api(env, org.member, 'POST', '/devices', { locale: 'de' });
+    }
+  });
+});
