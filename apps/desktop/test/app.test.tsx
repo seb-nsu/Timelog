@@ -52,6 +52,9 @@ describe('Status', () => {
         quit: 'Quit TimeLog',
       });
     });
+    await waitFor(() => {
+      expect(backend.calls.requests).toContain('POST /api/v1/devices {"locale":"en"}');
+    });
   });
 
   it('ohne Erfassung: Arbeit beginnen', async () => {

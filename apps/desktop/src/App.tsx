@@ -50,6 +50,12 @@ export function App({
       })
       .catch(() => undefined);
   }, [backend, t]);
+  // Sprache dem Server mitteilen (für Exporte; die Desktop-App sendet kein Accept-Language)
+  const signedIn = state?.loggedIn === true;
+  useEffect(() => {
+    if (!signedIn) return;
+    void backend.api.devices.update({ locale: translator.locale }).catch(() => undefined);
+  }, [backend, signedIn, translator.locale]);
   const active = state?.loggedIn === true && state.setupDone;
   const tz = state?.tracker.timezone;
   useReminders(backend, active ? days : [], profile, now, tz, translator);
