@@ -53,6 +53,34 @@ describe('Native Konfiguration', () => {
     ]);
   });
 
+  it('iOS-Texte gibt es auf Deutsch und Englisch, auch für jeden Kurzbefehl-Titel', () => {
+    type Locale = {
+      ios: Record<string, unknown> & { 'Localizable.strings': Record<string, string> };
+    };
+    const read = (lang: string) =>
+      JSON.parse(readFileSync(join(root, `locales/${lang}.json`), 'utf8')) as Locale;
+    const de = read('de');
+    const en = read('en');
+    expect(Object.keys(en.ios).sort()).toEqual(Object.keys(de.ios).sort());
+    expect(Object.keys(en.ios['Localizable.strings']).sort()).toEqual(
+      Object.keys(de.ios['Localizable.strings']).sort(),
+    );
+    const intents = readFileSync(
+      join(root, 'modules/timelog-native/ios-app/TimelogIntents.swift'),
+      'utf8',
+    );
+    const titles = [
+      ...intents.matchAll(/(?:LocalizedStringResource = |shortTitle: )"([^"]+)"/g),
+      ...intents.matchAll(/IntentDescription\(\s*"([^"]+)"/g),
+    ].map((m) => m[1] ?? '');
+    expect(titles.length).toBeGreaterThanOrEqual(9);
+    for (const title of titles) {
+      expect(en.ios['Localizable.strings']).toHaveProperty([title]);
+    }
+    const config = loadConfig({});
+    expect(config.locales).toEqual({ de: './locales/de.json', en: './locales/en.json' });
+  });
+
   it('iOS ohne Hintergrundmodus „location“', () => {
     const plugin = readFileSync(join(root, 'plugins/withTimelog.js'), 'utf8');
     expect(plugin).not.toMatch(/UIBackgroundModes\s*[.=]/);

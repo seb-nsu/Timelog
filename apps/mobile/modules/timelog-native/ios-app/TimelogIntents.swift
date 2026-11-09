@@ -6,9 +6,18 @@
 // Kurzbefehle → Automation → WLAN → <Arbeits-WLAN> → „Sofort ausführen“.
 // Der WLAN-Name bleibt in der Kurzbefehle-App; TimeLog erfährt ihn nie.
 // Ungeprüft auf Gerät, siehe docs/MOBILE.md.
+//
+// Sprache: Titel und Beschreibungen sind deutsche Schlüssel; die englischen Texte stehen in
+// locales/en.json („Localizable.strings“, von Expo beim Prebuild erzeugt). Die Antworten
+// (Dialoge) wählen die Sprache zur Laufzeit.
 import AppIntents
 import Foundation
 import TimelogNative
+
+/// Deutsch oder Englisch nach der bevorzugten Sprache des Geräts (wie die App: en* = Englisch).
+private func tr(_ de: String, _ en: String) -> String {
+  (Locale.preferredLanguages.first ?? "de").lowercased().hasPrefix("en") ? en : de
+}
 
 @available(iOS 16.4, *)
 struct WorkNetworkConnectedIntent: AppIntent {
@@ -20,13 +29,17 @@ struct WorkNetworkConnectedIntent: AppIntent {
 
   func perform() async throws -> some IntentResult & ProvidesDialog {
     guard TimelogShared.detectionEnabled else {
-      return .result(dialog: "Netzwerkerkennung ist in TimeLog ausgeschaltet.")
+      let text = tr(
+        "Netzwerkerkennung ist in TimeLog ausgeschaltet.",
+        "Network detection is turned off in TimeLog.")
+      return .result(dialog: "\(text)")
     }
     let gateways = await withCheckedContinuation { continuation in
       TimelogShared.currentGateways { continuation.resume(returning: $0) }
     }
     TimelogShared.connect(source: "shortcut", gateways: gateways)
-    return .result(dialog: "Arbeitsnetz gemeldet.")
+    let text = tr("Arbeitsnetz gemeldet.", "Work network reported.")
+    return .result(dialog: "\(text)")
   }
 }
 
@@ -38,7 +51,8 @@ struct StartWorkIntent: AppIntent {
 
   func perform() async throws -> some IntentResult & ProvidesDialog {
     TimelogShared.manual("manual_start")
-    return .result(dialog: "Arbeit begonnen.")
+    let text = tr("Arbeit begonnen.", "Work started.")
+    return .result(dialog: "\(text)")
   }
 }
 
@@ -50,7 +64,8 @@ struct StopWorkIntent: AppIntent {
 
   func perform() async throws -> some IntentResult & ProvidesDialog {
     TimelogShared.manual("manual_end")
-    return .result(dialog: "Arbeit beendet.")
+    let text = tr("Arbeit beendet.", "Work stopped.")
+    return .result(dialog: "\(text)")
   }
 }
 
@@ -71,7 +86,10 @@ struct TimelogShortcuts: AppShortcutsProvider {
     )
     AppShortcut(
       intent: WorkNetworkConnectedIntent(),
-      phrases: ["Arbeitsnetz verbunden in \(.applicationName)"],
+      phrases: [
+        "Arbeitsnetz verbunden in \(.applicationName)",
+        "Work network connected in \(.applicationName)",
+      ],
       shortTitle: "Arbeitsnetz verbunden",
       systemImageName: "wifi"
     )

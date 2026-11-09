@@ -29,8 +29,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     bundleIdentifier: bundleId,
     supportsTablet: true,
     entitlements: { 'com.apple.security.application-groups': [appGroup] },
-    infoPlist: { ITSAppUsesNonExemptEncryption: false },
+    infoPlist: {
+      ITSAppUsesNonExemptEncryption: false,
+      // Die App ist zweisprachig; ohne diese Angabe zeigt iOS Systemtexte nur in der Entwicklungssprache.
+      CFBundleLocalizations: ['de', 'en'],
+      CFBundleAllowMixedLocalizations: true,
+    },
   },
+  // Zwecktexte und Kurzbefehl-Titel (Localizable.strings) je Sprache
+  locales: { de: './locales/de.json', en: './locales/en.json' },
   android: {
     package: bundleId,
     ...(env('TIMELOG_GOOGLE_SERVICES_FILE')

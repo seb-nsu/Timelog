@@ -1,0 +1,14 @@
+{
+  "ios": {
+    "NSLocationWhenInUseUsageDescription": "TimeLog determines your workplace once, when you set up the geofence yourself. The location never leaves your device.",
+    "NSLocationAlwaysAndWhenInUseUsageDescription": "Only if you turn on the geofence: TimeLog detects when you leave your workplace even when the app is closed, and ends your working time. Coordinates are neither stored nor sent.",
+    "Localizable.strings": {
+      "Arbeitsnetz verbunden": "Work network connected",
+      "Meldet TimeLog, dass das Gerät mit dem Arbeitsnetz verbunden ist. Für die Automation „WLAN verbunden“.": "Tells TimeLog that the device is connected to the work network. For the “Wi-Fi connected” automation.",
+      "Arbeit beginnen": "Start work",
+      "Startet die Zeiterfassung in TimeLog.": "Starts time tracking in TimeLog.",
+      "Arbeit beenden": "Stop work",
+      "Beendet die Zeiterfassung in TimeLog.": "Stops time tracking in TimeLog."
+    }
+  }
+}
