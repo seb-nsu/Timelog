@@ -122,7 +122,7 @@ fn fehler_werden_zugeordnet() {
 fn anmeldung_meldet_den_grund() {
     let (url, _) = server(vec![(401, r#"{"error":"totp_required"}"#)]);
     let req = LoginRequest {
-        email: "a@b.de".into(),
+        email: "a@example.com".into(),
         password: "geheim".into(),
         totp: None,
         device_id: None,
@@ -146,7 +146,7 @@ fn anmeldung_meldet_den_grund() {
 fn anmeldung_liefert_tokens() {
     let (url, log) = server(vec![(200, TOKENS)]);
     let req = LoginRequest {
-        email: "a@b.de".into(),
+        email: "a@example.com".into(),
         password: "geheim".into(),
         totp: None,
         device_id: None,

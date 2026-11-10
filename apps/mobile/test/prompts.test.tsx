@@ -38,7 +38,7 @@ describe('Push-Daten', () => {
     expect(parsePushData(data)).toEqual(data);
     expect(parsePushData(JSON.stringify(data))).toEqual(data);
     expect(parsePushData('{kaputt')).toBeUndefined();
-    expect(parsePushData({ kind: 'end_confirm', email: 'a@b.de' })).toBeUndefined();
+    expect(parsePushData({ kind: 'end_confirm', email: 'a@example.com' })).toBeUndefined();
   });
 
   it('„Stimmt“ bestätigt, „Korrigieren“ und Antippen öffnen den Tag bzw. die Woche', () => {

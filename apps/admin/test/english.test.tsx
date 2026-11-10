@@ -35,7 +35,7 @@ function renderApp(server: ReturnType<typeof fakeServer>, loggedIn = true) {
 describe('English', () => {
   it('login screen and error messages are in English', async () => {
     renderApp(fakeServer({ loginNeedsTotp: true }), false);
-    await userEvent.type(await screen.findByLabelText('Email'), 'alex@firma.de');
+    await userEvent.type(await screen.findByLabelText('Email'), 'alex@example.com');
     await userEvent.type(screen.getByLabelText('Password'), 'secret-enough');
     await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
     expect(

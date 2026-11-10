@@ -43,7 +43,7 @@ describe('Anmeldung', () => {
   it('Passwort, dann TOTP-Code; danach Freigaben', async () => {
     const server = fakeServer({ loginNeedsTotp: true });
     renderApp(signedIn(server, false));
-    await userEvent.type(await screen.findByLabelText('E-Mail'), 'alex@firma.de');
+    await userEvent.type(await screen.findByLabelText('E-Mail'), 'alex@example.com');
     await userEvent.type(screen.getByLabelText('Passwort'), 'geheim-genug');
     await expectAccessible();
     await userEvent.click(screen.getByRole('button', { name: 'Anmelden' }));
@@ -56,7 +56,7 @@ describe('Anmeldung', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Freigaben' })).toBeTruthy();
     const login = server.calls.filter((c) => c.path === '/auth/login');
     expect(login.at(-1)?.body).toMatchObject({
-      email: 'alex@firma.de',
+      email: 'alex@example.com',
       totp: '123456',
       device: { os: 'web' },
     });
@@ -200,7 +200,7 @@ describe('Rollen', () => {
         .getAllByRole('columnheader')
         .map((h) => h.textContent),
     ).toEqual(['Name', 'Team']);
-    expect(screen.queryByText('anna@firma.de')).toBeNull();
+    expect(screen.queryByText('anna@example.com')).toBeNull();
     expect(screen.queryByRole('heading', { name: 'Person einladen' })).toBeNull();
     await expectAccessible();
   });
@@ -247,20 +247,20 @@ describe('Verwaltung (Admin)', () => {
     const server = fakeServer();
     renderApp(signedIn(server));
     await userEvent.click(await screen.findByRole('button', { name: 'Mitglieder' }));
-    await screen.findByText('anna@firma.de');
+    await screen.findByText('anna@example.com');
     const form = within(screen.getByRole('region', { name: 'Person einladen' }));
-    await userEvent.type(form.getByLabelText('E-Mail'), 'neu@firma.de');
+    await userEvent.type(form.getByLabelText('E-Mail'), 'neu@example.com');
     await userEvent.selectOptions(form.getByLabelText('Rolle'), 'manager');
     await userEvent.selectOptions(form.getByLabelText('Team'), ID.team);
     await expectAccessible();
     await userEvent.click(form.getByRole('button', { name: 'Einladen' }));
-    expect(await screen.findByText('Einladung an neu@firma.de verschickt.')).toBeTruthy();
+    expect(await screen.findByText('Einladung an neu@example.com verschickt.')).toBeTruthy();
     expect(server.calls.find((c) => c.path === '/org/invite')?.body).toEqual({
-      email: 'neu@firma.de',
+      email: 'neu@example.com',
       role: 'manager',
       teamId: ID.team,
     });
-    expect(await screen.findByText(/neu@firma\.de · Manager/)).toBeTruthy();
+    expect(await screen.findByText(/neu@example\.com · Manager/)).toBeTruthy();
   });
 
   it('speichert Regelwerk-Parameter und zeigt die SSO-Adressen', async () => {

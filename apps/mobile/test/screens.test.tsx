@@ -66,7 +66,7 @@ describe('Einrichtungsassistent', () => {
     await show(h);
     const user = userEvent.setup();
     await user.type(await screen.findByLabelText('Server-Adresse'), 'https://zeit.example');
-    await user.type(screen.getByLabelText('E-Mail'), 'a@b.de');
+    await user.type(screen.getByLabelText('E-Mail'), 'a@example.com');
     await user.type(screen.getByLabelText('Passwort'), 'geheim-geheim');
     await user.press(await button('Anmelden'));
     expect(await screen.findByText('Schritt 2 von 5')).toBeOnTheScreen();
@@ -78,7 +78,7 @@ describe('Einrichtungsassistent', () => {
     await show(h);
     const user = userEvent.setup();
     await user.type(await screen.findByLabelText('Server-Adresse'), 'https://zeit.example');
-    await user.type(screen.getByLabelText('E-Mail'), 'a@b.de');
+    await user.type(screen.getByLabelText('E-Mail'), 'a@example.com');
     await user.type(screen.getByLabelText('Passwort'), 'falsch');
     await user.press(await button('Anmelden'));
     expect(await screen.findByRole('alert')).toHaveTextContent(/Anmeldung fehlgeschlagen/);

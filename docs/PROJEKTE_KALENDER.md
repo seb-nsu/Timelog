@@ -111,7 +111,7 @@ Abwesenheit/ganztägig. Deshalb werden die Termine selbst gelesen, mit der klein
    Testnutzer (👤 Einstufung und Ablauf vor dem Livebetrieb in der Console prüfen).
 5. „Clients“ → „Client erstellen“ → Typ **Webanwendung**. Autorisierte Weiterleitungs-URI:
    `<API_URL>/api/v1/calendar/google/callback`, z. B.
-   `https://api.example.de/api/v1/calendar/google/callback` (lokal:
+   `https://api.example.com/api/v1/calendar/google/callback` (lokal:
    `http://localhost:3000/api/v1/calendar/google/callback`).
 6. Client-ID und Secret in `.env` eintragen: `GOOGLE_CALENDAR_CLIENT_ID`,
    `GOOGLE_CALENDAR_CLIENT_SECRET`.

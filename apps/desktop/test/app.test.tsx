@@ -209,12 +209,12 @@ describe('Einrichtung', () => {
     render(<App locale="de" backend={backend} clock={clock('2026-10-15T09:00:00Z')} />);
     expect(await screen.findByRole('heading', { name: 'Konto anmelden' })).toBeTruthy();
     await userEvent.type(screen.getByLabelText('Server-Adresse'), 'https://zeit.example');
-    await userEvent.type(screen.getByLabelText('E-Mail'), 'a@b.de');
+    await userEvent.type(screen.getByLabelText('E-Mail'), 'a@example.com');
     await userEvent.type(screen.getByLabelText('Passwort'), 'geheim-geheim');
     await userEvent.click(screen.getByRole('button', { name: 'Anmelden' }));
     expect(backend.login).toHaveBeenCalledWith({
       baseUrl: 'https://zeit.example',
-      email: 'a@b.de',
+      email: 'a@example.com',
       password: 'geheim-geheim',
     });
 
@@ -256,7 +256,7 @@ describe('Einrichtung', () => {
     backend.login = vi.fn(() => Promise.reject('totp_required'));
     render(<App locale="de" backend={backend} clock={clock('2026-10-15T09:00:00Z')} />);
     await userEvent.type(await screen.findByLabelText('Server-Adresse'), 'https://zeit.example');
-    await userEvent.type(screen.getByLabelText('E-Mail'), 'a@b.de');
+    await userEvent.type(screen.getByLabelText('E-Mail'), 'a@example.com');
     await userEvent.type(screen.getByLabelText('Passwort'), 'x');
     await userEvent.click(screen.getByRole('button', { name: 'Anmelden' }));
     expect((await screen.findByRole('alert')).textContent).toBe(

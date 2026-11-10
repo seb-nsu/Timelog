@@ -215,7 +215,7 @@ export function fakeServer(clock: () => number = Date.now): FakeServer {
         }
         return json({
           name: 'Test',
-          email: 'a@b.de',
+          email: 'a@example.com',
           timezone: 'Europe/Berlin',
           state: server.state,
           settings: server.settings,

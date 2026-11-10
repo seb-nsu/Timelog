@@ -110,7 +110,7 @@ export function fakeServer(over: Partial<FakeState> = {}) {
       {
         id: ID.admin,
         name: 'Alex Admin',
-        email: 'alex@firma.de',
+        email: 'alex@example.com',
         role: 'admin',
         active: true,
         totpEnabled: true,
@@ -118,7 +118,7 @@ export function fakeServer(over: Partial<FakeState> = {}) {
       {
         id: ID.anna,
         name: 'Anna Arbeit',
-        email: 'anna@firma.de',
+        email: 'anna@example.com',
         role: 'user',
         teamId: ID.team,
         active: true,
@@ -166,7 +166,7 @@ export function fakeServer(over: Partial<FakeState> = {}) {
   const extra: Record<string, unknown> = {};
 
   const me = () => ({
-    user: { id: ID.admin, name: 'Alex Admin', email: 'alex@firma.de', role: state.role },
+    user: { id: ID.admin, name: 'Alex Admin', email: 'alex@example.com', role: state.role },
     org: { id: ID.org, name: state.config.name, slug: state.config.slug, plan: 'company' as const },
     managedTeamIds: state.role === 'manager' ? [ID.team] : [],
   });
@@ -381,7 +381,7 @@ export function fakeServer(over: Partial<FakeState> = {}) {
         state.totpEnabled = true;
         return [200, { ok: true }];
       case 'GET /auth/invite':
-        return [200, { orgName: 'Firma GmbH', email: 'neu@firma.de', role: 'user' }];
+        return [200, { orgName: 'Firma GmbH', email: 'neu@example.com', role: 'user' }];
       case 'POST /auth/invite/accept':
         return [200, { ok: true }];
       case 'POST /orgs':

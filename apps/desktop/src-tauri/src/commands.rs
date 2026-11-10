@@ -324,9 +324,9 @@ mod tests {
 
     #[test]
     fn nur_https_ausser_lokal() {
-        assert!(valid_base_url("https://zeit.example.de"));
+        assert!(valid_base_url("https://zeit.example.com"));
         assert!(valid_base_url("http://localhost:3000"));
-        assert!(!valid_base_url("http://zeit.example.de"));
+        assert!(!valid_base_url("http://zeit.example.com"));
         assert!(!valid_base_url("file:///etc/passwd"));
     }
 }

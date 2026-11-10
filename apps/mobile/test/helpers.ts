@@ -70,7 +70,7 @@ export async function loggedIn(opts: Parameters<typeof harness>[0] = {}): Promis
   const h = await harness(opts);
   await h.core.login({
     baseUrl: 'https://zeit.example/',
-    email: 'a@b.de',
+    email: 'a@example.com',
     password: 'geheim-geheim',
   });
   await h.core.sync(true);

@@ -264,7 +264,7 @@ describe('Konto', () => {
     expect(h.server.pushTokens).toEqual([]);
     await h.core.login({
       baseUrl: 'https://zeit.example',
-      email: 'a@b.de',
+      email: 'a@example.com',
       password: 'geheim-geheim',
     });
     expect(h.server.pushTokens).toEqual(['fcm-token-1']);

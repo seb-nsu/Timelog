@@ -112,7 +112,7 @@ export function fakeBackend(
     },
     'PUT /api/v1/settings': {
       name: 'Test',
-      email: 'a@b.de',
+      email: 'a@example.com',
       timezone: 'Europe/Berlin',
       state: 'BY',
       settings: {
