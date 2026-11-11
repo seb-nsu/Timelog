@@ -2,6 +2,26 @@
 
 Automatische Arbeitszeiterfassung für Laptop (Windows, macOS) und Handy (Android, iOS). Die Zeit wird über Arbeitsnetz, Hochfahren/Herunterfahren des Laptops und manuelle Eingabe erfasst; ein gemeinsames Regelwerk berechnet daraus Arbeitstage, Pausen und Warnungen nach Arbeitszeitgesetz.
 
+> **English:** Automatic working time tracking for laptop and phone. A shared rule set checks breaks and maximum working hours under German working time law; no location data is stored. The documents are in German.
+
+## Meine Rolle und wichtigste Entscheidungen
+
+Ich bin Product Owner dieses Projekts. Produktkonzept, Anforderungen, Phasen mit Akzeptanzkriterien und die Abnahme stammen von mir; den Code haben KI-Agenten (Claude Code) nach meiner Spezifikation geschrieben. Was ich noch an echten Geräten prüfen muss, steht unter [Stand](#stand) mit 👤.
+
+| Entscheidung | Begründung |
+| --- | --- |
+| Das Regelwerk kommt zuerst | Alle Clients hängen davon ab; es ist vollständig getestet, bevor Backend und Apps entstehen |
+| Standby und Deckel zu sind kein Arbeitsende | Nur echtes Herunterfahren zählt; ab 3 Stunden Inaktivität endet die Sitzung bei der letzten Aktivität |
+| Startpuffer als Bestätigung (Variante A) | Kurzes An- und Ausschalten wird ignoriert, aber es geht keine Arbeitszeit verloren |
+| Fehlende Pausen werden aufgefüllt und markiert | Der Abzug ist ausgewiesen, der Tag gilt als Pausenverstoß und muss bestätigt werden |
+| Arbeitsnetz über die Netzwerk-Kennung, ohne Standort | Datenschutz ist harte Anforderung: keine Standortdaten, Kennungen nur als Hash |
+| Keine Ende-zu-Ende-Verschlüsselung, dafür der Modus „Nur lokal“ | Die Privatversion kann ganz ohne Server laufen |
+| Privat-App und Firmenversion aus einem Produkt | Die Firmenversion ergänzt Rollen, Freigaben und Firmen-Login |
+
+- **Konzept:** [Produktkonzept](docs/PRODUKTKONZEPT.md) · [Implementierungskonzept mit Phasen und Akzeptanzkriterien](docs/IMPLEMENTATION.md)
+- **Entscheidungen:** [alle Entscheidungen, mit den verworfenen Varianten](docs/PRODUKTKONZEPT.md#roadmap--entscheidungen)
+- **Stand und offene Punkte:** [Stand je Phase](#stand)
+
 ## Dokumente
 
 | Datei                                                  | Inhalt                                                                                                             |
