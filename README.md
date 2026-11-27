@@ -4,6 +4,14 @@ Automatische Arbeitszeiterfassung für Laptop (Windows, macOS) und Handy (Androi
 
 > **English:** Automatic working time tracking for laptop and phone. A shared rule set checks breaks and maximum working hours under German working time law; no location data is stored. The documents are in German.
 
+## So nutzt du TimeLog
+
+1. **Desktop-App herunterladen:** [neueste Version](https://github.com/seb-nsu/Timelog/releases/latest) – `.msi` für Windows, `.dmg` für macOS – und installieren. (Der Workflow „Release Desktop“ legt Releases als Entwurf an; nach der Prüfung unter *Releases* auf „Publish“ klicken, dann funktioniert der Link.)
+2. Beim ersten Start führt ein kurzer Assistent durch die Einrichtung: Anmeldung am TimeLog-Server (Adresse kommt vom Arbeitgeber), optional Arbeitsnetz und Sollzeiten, dann „So wird erfasst“ und ein Testlauf. Ganz ohne Server und Konto geht es mit der Handy-App im Modus **„Nur lokal“**.
+3. Danach erfasst TimeLog im Hintergrund (Symbol im Infobereich). Unter „Heute“ siehst du den Tag, Hinweise zu Pausen und Höchstarbeitszeit erscheinen automatisch.
+
+Firmen mit eigenem Server und Web-Admin: siehe [Entwicklung](#entwicklung) und [docs/ADMIN.md](docs/ADMIN.md).
+
 ## Meine Rolle und wichtigste Entscheidungen
 
 Ich bin Product Owner dieses Projekts. Produktkonzept, Anforderungen, Phasen mit Akzeptanzkriterien und die Abnahme stammen von mir; den Code haben KI-Agenten (Claude Code) nach meiner Spezifikation geschrieben. Was ich noch an echten Geräten prüfen muss, steht unter [Stand](#stand) mit 👤.
@@ -77,7 +85,7 @@ Voraussetzungen: Node.js 22 (≥ 22.12, siehe `.nvmrc`) und pnpm 10 (am einfachs
 ```sh
 corepack enable
 pnpm install
-cp .env.example .env   # JWT_SECRET, TOTP_ENCRYPTION_KEY und NETWORK_HMAC_SECRET eintragen
+pnpm init:env          # legt .env an und erzeugt JWT_SECRET, TOTP_ENCRYPTION_KEY und NETWORK_HMAC_SECRET
 docker compose up -d   # PostgreSQL 16
 pnpm build
 pnpm --filter @timelog/backend dev   # API auf http://localhost:3000, Migrationen laufen beim Start
