@@ -50,7 +50,7 @@ const de = {
   'setup.weekday': 'Sollzeit {day} (Minuten)',
   'setup.explain': 'So wird erfasst',
   'setup.explainText':
-    'Hochfahren startet die Arbeitszeit, Herunterfahren beendet sie (plus 5 Minuten). Deckel zu, Standby oder Bildschirmsperre ab 15 Minuten gelten als Pause, ab 3 Stunden als Ende. Neustart, Abmelden und Standby beenden die Arbeitszeit nicht.',
+    'Hochfahren startet die Arbeitszeit, Herunterfahren beendet sie (plus 5 Minuten). Deckel zu, Standby oder Bildschirmsperre ab 15 Minuten gelten als Pause, ab 3 Stunden als Ende. Neustart, Abmelden und Standby beenden die Arbeitszeit nicht. TimeLog speichert keine Standortdaten und keine Inhalte – nur Zeitpunkte.',
   'setup.test': 'Testlauf',
   'setup.testText': 'Diese Signale hat TimeLog gerade erkannt:',
   'setup.step': 'Schritt {n} von {total}',
@@ -410,7 +410,7 @@ const en: Messages = {
   'setup.weekday': 'Target {day} (minutes)',
   'setup.explain': 'How tracking works',
   'setup.explainText':
-    'Booting starts working time, shutting down ends it (plus 5 minutes). Closing the lid, standby or screen lock for 15 minutes or more counts as a break, 3 hours or more as the end. Restart, sign-out and standby do not end working time.',
+    'Booting starts working time, shutting down ends it (plus 5 minutes). Closing the lid, standby or screen lock for 15 minutes or more counts as a break, 3 hours or more as the end. Restart, sign-out and standby do not end working time. TimeLog stores no location data and no content – only points in time.',
   'setup.test': 'Test run',
   'setup.testText': 'TimeLog currently detects these signals:',
   'setup.step': 'Step {n} of {total}',

@@ -204,9 +204,12 @@ describe('Zu prüfen', () => {
 });
 
 describe('Einrichtung', () => {
-  it('führt durch Anmeldung, Netz, Sollzeiten, Erklärung und Testlauf', async () => {
+  it('führt durch Erklärung, Anmeldung, Netz, Sollzeiten und Testlauf', async () => {
     const backend = fakeBackend({ loggedIn: false, setupDone: false, baseUrl: null });
     render(<App locale="de" backend={backend} clock={clock('2026-10-15T09:00:00Z')} />);
+    expect(await screen.findByRole('heading', { name: 'So wird erfasst' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Zurück' })).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Weiter' }));
     expect(await screen.findByRole('heading', { name: 'Konto anmelden' })).toBeTruthy();
     await userEvent.type(screen.getByLabelText('Server-Adresse'), 'https://zeit.example');
     await userEvent.type(screen.getByLabelText('E-Mail'), 'a@example.com');
@@ -232,7 +235,7 @@ describe('Einrichtung', () => {
     await userEvent.clear(friday);
     await userEvent.type(friday, '6');
     await userEvent.click(screen.getByRole('button', { name: 'Speichern' }));
-    expect(await screen.findByRole('heading', { name: 'So wird erfasst' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Testlauf' })).toBeTruthy();
     expect(backend.calls.requests).toContain('PUT /api/v1/settings {"state":"BY"}');
     expect(backend.calls.requests).toContainEqual(
       expect.stringMatching(
@@ -240,8 +243,6 @@ describe('Einrichtung', () => {
       ),
     );
 
-    await userEvent.click(screen.getByRole('button', { name: 'Weiter' }));
-    expect(await screen.findByRole('heading', { name: 'Testlauf' })).toBeTruthy();
     expect(screen.getByText('Rechner eingeschaltet um 08:00')).toBeTruthy();
     expect(screen.getByText('Kein Arbeitsnetz erkannt')).toBeTruthy();
     await userEvent.click(screen.getByRole('button', { name: 'Fertig' }));
@@ -255,6 +256,7 @@ describe('Einrichtung', () => {
     // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
     backend.login = vi.fn(() => Promise.reject('totp_required'));
     render(<App locale="de" backend={backend} clock={clock('2026-10-15T09:00:00Z')} />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Weiter' }));
     await userEvent.type(await screen.findByLabelText('Server-Adresse'), 'https://zeit.example');
     await userEvent.type(screen.getByLabelText('E-Mail'), 'a@example.com');
     await userEvent.type(screen.getByLabelText('Passwort'), 'x');

@@ -202,6 +202,10 @@ const de = {
   'setup.notificationsText':
     'TimeLog erinnert an Pausen, warnt vor 10 Stunden und fragt nach, wenn abends noch Arbeitszeit läuft. Ruhezeiten kannst du festlegen.',
   'setup.allowNotifications': 'Benachrichtigungen erlauben',
+  'setup.account': 'Konto',
+  'setup.ready': 'Alles bereit',
+  'setup.readyText':
+    'TimeLog erfasst ab jetzt im Hintergrund. Alles lässt sich später unter Einstellungen ändern.',
   'setup.explain': 'So wird erfasst',
   'setup.explainText':
     'Arbeitsnetz verbunden startet die Arbeitszeit, Netz weg beendet sie (nach 10 Minuten Karenz). Lücken ab 15 Minuten gelten als Pause, ab 2 Stunden als neue Sitzung. Fehlt die Pause nach 6 bzw. 9 Stunden, wird sie ausgewiesen abgezogen – deine echten Zeiten bleiben unverändert. Manuelle Korrekturen haben immer Vorrang.',
@@ -434,6 +438,10 @@ const en: Record<MobileKey, string> = {
   'setup.notificationsText':
     'TimeLog reminds you of breaks, warns before 10 hours and asks when working time is still running in the evening. You can set quiet hours.',
   'setup.allowNotifications': 'Allow notifications',
+  'setup.account': 'Account',
+  'setup.ready': 'All set',
+  'setup.readyText':
+    'TimeLog now records in the background. You can change everything later in Settings.',
   'setup.explain': 'How tracking works',
   'setup.explainText':
     'Connecting to the work network starts working time, leaving ends it (after 10 minutes grace). Gaps of 15 minutes or more count as breaks, 2 hours or more start a new session. A missing break after 6 or 9 hours is deducted visibly – your actual times stay unchanged. Manual corrections always take precedence.',
