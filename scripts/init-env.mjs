@@ -27,4 +27,6 @@ const lines = readFileSync('.env', 'utf8')
     return line;
   });
 writeFileSync('.env', lines.join('\n'));
-console.log(filled.length ? `Erzeugt: ${filled.join(', ')}` : 'Alle Geheimnisse waren schon gesetzt.');
+console.log(
+  filled.length ? `Erzeugt: ${filled.join(', ')}` : 'Alle Geheimnisse waren schon gesetzt.',
+);
