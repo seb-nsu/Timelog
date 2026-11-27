@@ -6,8 +6,8 @@ Automatische Arbeitszeiterfassung für Laptop (Windows, macOS) und Handy (Androi
 
 ## So nutzt du TimeLog
 
-1. **Desktop-App herunterladen:** [neueste Version](https://github.com/seb-nsu/Timelog/releases/latest) – `.msi` für Windows, `.dmg` für macOS – und installieren. (Der Workflow „Release Desktop“ legt Releases als Entwurf an; nach der Prüfung unter *Releases* auf „Publish“ klicken, dann funktioniert der Link.)
-2. Beim ersten Start führt ein kurzer Assistent durch die Einrichtung: Anmeldung am TimeLog-Server (Adresse kommt vom Arbeitgeber), optional Arbeitsnetz und Sollzeiten, dann „So wird erfasst“ und ein Testlauf. Ganz ohne Server und Konto geht es mit der Handy-App im Modus **„Nur lokal“**.
+1. **Desktop-App herunterladen:** [neueste Version](https://github.com/seb-nsu/Timelog/releases/latest) – `.msi` für Windows, `.dmg` für macOS – und installieren. (Der Workflow „Release Desktop“ legt Releases als Entwurf an; nach der Prüfung unter _Releases_ auf „Publish“ klicken, dann funktioniert der Link.)
+2. Beim ersten Start führt ein kurzer Assistent durch die Einrichtung: zuerst „So wird erfasst“, dann Anmeldung am TimeLog-Server (Adresse kommt vom Arbeitgeber), optional Arbeitsnetz und Sollzeiten und zum Schluss ein Testlauf. Ganz ohne Server und Konto geht es mit der Handy-App im Modus **„Nur lokal“**.
 3. Danach erfasst TimeLog im Hintergrund (Symbol im Infobereich). Unter „Heute“ siehst du den Tag, Hinweise zu Pausen und Höchstarbeitszeit erscheinen automatisch.
 
 Firmen mit eigenem Server und Web-Admin: siehe [Entwicklung](#entwicklung) und [docs/ADMIN.md](docs/ADMIN.md).
@@ -16,15 +16,15 @@ Firmen mit eigenem Server und Web-Admin: siehe [Entwicklung](#entwicklung) und [
 
 Ich bin Product Owner dieses Projekts. Produktkonzept, Anforderungen, Phasen mit Akzeptanzkriterien und die Abnahme stammen von mir; den Code haben KI-Agenten (Claude Code) nach meiner Spezifikation geschrieben. Was ich noch an echten Geräten prüfen muss, steht unter [Stand](#stand) mit 👤.
 
-| Entscheidung | Begründung |
-| --- | --- |
-| Das Regelwerk kommt zuerst | Alle Clients hängen davon ab; es ist vollständig getestet, bevor Backend und Apps entstehen |
-| Standby und Deckel zu sind kein Arbeitsende | Nur echtes Herunterfahren zählt; ab 3 Stunden Inaktivität endet die Sitzung bei der letzten Aktivität |
-| Startpuffer als Bestätigung (Variante A) | Kurzes An- und Ausschalten wird ignoriert, aber es geht keine Arbeitszeit verloren |
-| Fehlende Pausen werden aufgefüllt und markiert | Der Abzug ist ausgewiesen, der Tag gilt als Pausenverstoß und muss bestätigt werden |
-| Arbeitsnetz über die Netzwerk-Kennung, ohne Standort | Datenschutz ist harte Anforderung: keine Standortdaten, Kennungen nur als Hash |
-| Keine Ende-zu-Ende-Verschlüsselung, dafür der Modus „Nur lokal“ | Die Privatversion kann ganz ohne Server laufen |
-| Privat-App und Firmenversion aus einem Produkt | Die Firmenversion ergänzt Rollen, Freigaben und Firmen-Login |
+| Entscheidung                                                    | Begründung                                                                                            |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Das Regelwerk kommt zuerst                                      | Alle Clients hängen davon ab; es ist vollständig getestet, bevor Backend und Apps entstehen           |
+| Standby und Deckel zu sind kein Arbeitsende                     | Nur echtes Herunterfahren zählt; ab 3 Stunden Inaktivität endet die Sitzung bei der letzten Aktivität |
+| Startpuffer als Bestätigung (Variante A)                        | Kurzes An- und Ausschalten wird ignoriert, aber es geht keine Arbeitszeit verloren                    |
+| Fehlende Pausen werden aufgefüllt und markiert                  | Der Abzug ist ausgewiesen, der Tag gilt als Pausenverstoß und muss bestätigt werden                   |
+| Arbeitsnetz über die Netzwerk-Kennung, ohne Standort            | Datenschutz ist harte Anforderung: keine Standortdaten, Kennungen nur als Hash                        |
+| Keine Ende-zu-Ende-Verschlüsselung, dafür der Modus „Nur lokal“ | Die Privatversion kann ganz ohne Server laufen                                                        |
+| Privat-App und Firmenversion aus einem Produkt                  | Die Firmenversion ergänzt Rollen, Freigaben und Firmen-Login                                          |
 
 - **Konzept:** [Produktkonzept](docs/PRODUKTKONZEPT.md) · [Implementierungskonzept mit Phasen und Akzeptanzkriterien](docs/IMPLEMENTATION.md)
 - **Entscheidungen:** [alle Entscheidungen, mit den verworfenen Varianten](docs/PRODUKTKONZEPT.md#roadmap--entscheidungen)
