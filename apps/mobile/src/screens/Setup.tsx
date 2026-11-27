@@ -1,4 +1,5 @@
-// Einrichtungsassistent: Konto (oder „Nur lokal“), Sollzeiten, Erkennung, Benachrichtigungen, Erklärung.
+// Einrichtungsassistent: Erklärung und Konto (oder „Nur lokal“), Sollzeiten, Erkennung, Benachrichtigungen, Abschluss.
+// Die Erklärung steht vor der Anmeldung: Wer weiß, was erfasst wird (und was nicht), meldet sich eher an.
 import { useState } from 'react';
 import { Body, Button, Notice, Screen, Section } from '../ui/components';
 import { useMobile } from '../ui/context';
@@ -24,31 +25,38 @@ export function SetupScreen() {
       <Body muted>{t.m('setup.step', { n: step + 1, total: TOTAL })}</Body>
 
       {step === 0 ? (
-        <Section title={t.m('setup.welcome')}>
-          <Body>{t.m('setup.welcomeText')}</Body>
-          {state.account === 'none' ? (
-            <>
-              <LoginForm onDone={next} />
-              <Button
-                variant="secondary"
-                label={t.m('setup.localOnly')}
-                onPress={async () => {
-                  await core.useLocalOnly();
-                  next();
-                }}
-              />
-            </>
-          ) : (
-            <>
-              <Notice tone="success">
-                {state.account === 'loggedIn'
-                  ? t.m('settings.loggedIn', { url: state.baseUrl ?? '' })
-                  : t.m('settings.localOnly')}
-              </Notice>
-              <Button label={t.m('setup.next')} onPress={next} />
-            </>
-          )}
-        </Section>
+        <>
+          <Section title={t.m('setup.welcome')}>
+            <Body>{t.m('setup.welcomeText')}</Body>
+          </Section>
+          <Section title={t.m('setup.explain')}>
+            <Body>{t.m('setup.explainText')}</Body>
+          </Section>
+          <Section title={t.m('setup.account')}>
+            {state.account === 'none' ? (
+              <>
+                <LoginForm onDone={next} />
+                <Button
+                  variant="secondary"
+                  label={t.m('setup.localOnly')}
+                  onPress={async () => {
+                    await core.useLocalOnly();
+                    next();
+                  }}
+                />
+              </>
+            ) : (
+              <>
+                <Notice tone="success">
+                  {state.account === 'loggedIn'
+                    ? t.m('settings.loggedIn', { url: state.baseUrl ?? '' })
+                    : t.m('settings.localOnly')}
+                </Notice>
+                <Button label={t.m('setup.next')} onPress={next} />
+              </>
+            )}
+          </Section>
+        </>
       ) : null}
 
       {step === 1 ? (
@@ -87,8 +95,8 @@ export function SetupScreen() {
       ) : null}
 
       {step === 4 ? (
-        <Section title={t.m('setup.explain')}>
-          <Body>{t.m('setup.explainText')}</Body>
+        <Section title={t.m('setup.ready')}>
+          <Body>{t.m('setup.readyText')}</Body>
           <Button
             testID="setup-finish"
             label={t.m('setup.finish')}

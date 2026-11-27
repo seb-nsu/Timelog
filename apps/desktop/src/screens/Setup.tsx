@@ -8,13 +8,19 @@ import { AddCurrentNetwork } from './NetworkStep.js';
 import { SyncLine } from './Status.js';
 import { TargetForm } from './TargetForm.js';
 
+// Erst erklären, dann anmelden: Wer weiß, was erfasst wird (und was nicht), meldet sich eher an.
 const STEPS = [
+  'setup.explain',
   'setup.account',
   'setup.network',
   'setup.target',
-  'setup.explain',
   'setup.test',
 ] as const;
+const EXPLAIN = 0;
+const ACCOUNT = 1;
+const NETWORK = 2;
+const TARGET = 3;
+const TEST = 4;
 const DEFAULT_WEEK: [number, number, number, number, number, number, number] = [
   0, 480, 480, 480, 480, 480, 0,
 ];
@@ -31,7 +37,9 @@ export function Setup({
   const backend = useBackend();
   const tr = useT();
   const { t } = tr;
-  const [step, setStep] = useState(state.loggedIn ? 1 : 0);
+  // Schon angemeldet (Einrichtung unterbrochen): Erklärung und Anmeldung sind erledigt.
+  const first = state.loggedIn ? NETWORK : EXPLAIN;
+  const [step, setStep] = useState(first);
   const heading = useRef<HTMLHeadingElement>(null);
 
   // Fokus auf die Überschrift jedes Schritts (Screenreader und Tastatur).
@@ -43,21 +51,22 @@ export function Setup({
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
   };
   const back = () => {
-    setStep((s) => Math.max(s - 1, state.loggedIn ? 1 : 0));
+    setStep((s) => Math.max(s - 1, first));
   };
   const finish = async () => {
     await backend.finishSetup();
     onFinished();
   };
 
-  const key = STEPS[step] ?? 'setup.account';
+  const key = STEPS[step] ?? 'setup.explain';
   return (
     <main className="screen">
       <p className="muted">{t('setup.step', { n: step + 1, total: STEPS.length })}</p>
       <h1 ref={heading} tabIndex={-1}>
         {t(key)}
       </h1>
-      {step === 0 && (
+      {step === EXPLAIN && <p>{t('setup.explainText')}</p>}
+      {step === ACCOUNT && (
         <LoginForm
           defaultUrl={
             state.baseUrl ?? (import.meta.env.VITE_DEFAULT_SERVER as string | undefined) ?? ''
@@ -69,8 +78,8 @@ export function Setup({
           }}
         />
       )}
-      {step === 1 && <AddCurrentNetwork />}
-      {step === 2 && (
+      {step === NETWORK && <AddCurrentNetwork />}
+      {step === TARGET && (
         <TargetForm
           initialState="BE"
           initialWeek={DEFAULT_WEEK}
@@ -78,8 +87,7 @@ export function Setup({
           onSaved={next}
         />
       )}
-      {step === 3 && <p>{t('setup.explainText')}</p>}
-      {step === 4 && (
+      {step === TEST && (
         <div className="stack">
           <p>{t('setup.testText')}</p>
           <ul>
@@ -99,14 +107,14 @@ export function Setup({
         </div>
       )}
       <div className="actions">
-        {step > (state.loggedIn ? 1 : 0) && (
+        {step > first && (
           <button type="button" onClick={back}>
             {t('action.back')}
           </button>
         )}
-        {step > 0 && step < STEPS.length - 1 && (
-          <button type="button" className={step === 2 ? '' : 'primary'} onClick={next}>
-            {t(step === 1 || step === 2 ? 'setup.skip' : 'action.next')}
+        {step !== ACCOUNT && step < STEPS.length - 1 && (
+          <button type="button" className={step === TARGET ? '' : 'primary'} onClick={next}>
+            {t(step === NETWORK || step === TARGET ? 'setup.skip' : 'action.next')}
           </button>
         )}
         {step === STEPS.length - 1 && (
